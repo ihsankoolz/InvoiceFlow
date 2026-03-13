@@ -1,0 +1,124 @@
+_format_version: "3.0"
+
+services:
+  # --- Auth (no JWT) ---
+  - name: auth-service
+    url: http://user-service:5000
+    routes:
+      - name: auth-login
+        paths:
+          - /api/auth/login
+        methods:
+          - POST
+        strip_path: false
+      - name: auth-register
+        paths:
+          - /api/auth/register
+        methods:
+          - POST
+        strip_path: false
+
+  # --- Invoice Orchestrator (JWT required) ---
+  - name: invoice-orchestrator
+    url: http://invoice-orchestrator:5010
+    routes:
+      - name: invoice-create
+        paths:
+          - /api/invoices
+        methods:
+          - POST
+        strip_path: false
+
+  # --- Bidding Orchestrator (JWT required) ---
+  - name: bidding-orchestrator
+    url: http://bidding-orchestrator:5011
+    routes:
+      - name: place-bid
+        paths:
+          - /api/bids
+        methods:
+          - POST
+        strip_path: false
+      - name: wallet-topup
+        paths:
+          - /api/wallet/topup
+        methods:
+          - POST
+        strip_path: false
+
+  # --- Stripe Webhook (no JWT — uses Stripe signature) ---
+  - name: stripe-webhook
+    url: http://bidding-orchestrator:5011
+    routes:
+      - name: stripe-webhook-route
+        paths:
+          - /api/webhooks/stripe
+        methods:
+          - POST
+        strip_path: false
+
+  # --- Loan Orchestrator (JWT required) ---
+  - name: loan-orchestrator
+    url: http://loan-orchestrator:5012
+    routes:
+      - name: loan-repay
+        paths:
+          - /api/loans
+        methods:
+          - POST
+        strip_path: false
+
+  # --- Notification Service (JWT required, direct to atomic) ---
+  - name: notification-service
+    url: http://notification-service:5005
+    routes:
+      - name: notifications-read
+        paths:
+          - /api/notifications
+        methods:
+          - GET
+        strip_path: false
+
+  # --- Marketplace GraphQL (JWT required) ---
+  - name: marketplace-graphql
+    url: http://marketplace-service:5002
+    routes:
+      - name: graphql-query
+        paths:
+          - /graphql
+        methods:
+          - POST
+          - GET
+        strip_path: false
+
+plugins:
+  # CORS — global
+  - name: cors
+    config:
+      origins:
+        - "http://localhost:8080"
+      methods:
+        - GET
+        - POST
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Authorization
+        - Content-Type
+        - X-Correlation-ID
+      credentials: true
+      max_age: 3600
+
+  # Rate Limiting — global
+  - name: rate-limiting
+    config:
+      minute: 100
+      policy: local
+
+  # Correlation ID — global
+  - name: correlation-id
+    config:
+      header_name: X-Correlation-ID
+      generator: uuid
+      echo_downstream: true
