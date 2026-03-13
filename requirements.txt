@@ -1,0 +1,52 @@
+# Root requirements — consolidated for local development (IDE autocomplete, linting).
+# Each service has its own requirements.txt used by Docker.
+# Install: pip install -r requirements.txt
+
+# Web framework
+fastapi==0.115.0
+uvicorn==0.30.0
+
+# Data validation
+pydantic==2.9.0
+
+# Database
+sqlalchemy==2.0.35
+pymysql==1.1.1
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
+
+# HTTP client
+httpx==0.27.0
+
+# Async messaging
+aio-pika==9.4.3
+
+# Temporal workflows
+temporalio==1.7.1
+
+# gRPC
+grpcio==1.66.0
+grpcio-tools==1.66.0
+
+# GraphQL
+strawberry-graphql[fastapi]==0.243.0
+
+# Storage / PDF
+minio==7.2.9
+pdfplumber==0.11.4
+
+# Integrations
+stripe==10.12.0
+resend==2.5.1
+
+# WebSockets
+websockets==12.0
+
+# Templating
+jinja2==3.1.4
+
+# Config
+python-dotenv==1.0.1

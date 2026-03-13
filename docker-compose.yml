@@ -1,0 +1,430 @@
+version: "3.8"
+
+services:
+  # ============================================================
+  # INFRASTRUCTURE
+  # ============================================================
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  temporal:
+    image: temporalio/auto-setup:1.24
+    ports:
+      - "7233:7233"
+    environment:
+      - DB=sqlite
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  temporal-ui:
+    image: temporalio/ui:2.26.2
+    ports:
+      - "8088:8080"
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    depends_on:
+      temporal:
+        condition: service_healthy
+
+  kong:
+    image: kong:3.4
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_LOG_LEVEL: info
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./gateway/kong.yml:/etc/kong/kong.yml
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ============================================================
+  # DATABASES
+  # ============================================================
+
+  user-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: user_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./databases/user-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  invoice-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: invoice_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./databases/invoice-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  market-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: market_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - ./databases/market-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  bidding-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: bidding_db
+    ports:
+      - "3309:3306"
+    volumes:
+      - ./databases/bidding-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  payment-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: payment_db
+    ports:
+      - "3310:3306"
+    volumes:
+      - ./databases/payment-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  # ============================================================
+  # ATOMIC SERVICES
+  # ============================================================
+
+  user-service:
+    build: ./services/user-service
+    ports:
+      - "5000:5000"
+    environment:
+      DB_URL: mysql+pymysql://root:password@user-db:3306/user_db
+      JWT_SECRET: your-jwt-secret-change-in-production
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRY_HOURS: "24"
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      user-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  invoice-service:
+    build: ./services/invoice-service
+    ports:
+      - "5001:5001"
+    environment:
+      DB_URL: mysql+pymysql://root:password@invoice-db:3306/invoice_db
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: invoices
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      invoice-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  marketplace-service:
+    build: ./services/marketplace-service
+    ports:
+      - "5002:5002"
+    environment:
+      DB_URL: mysql+pymysql://root:password@market-db:3306/market_db
+    depends_on:
+      market-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  bidding-service:
+    build: ./services/bidding-service
+    ports:
+      - "5003:5003"
+    environment:
+      DB_URL: mysql+pymysql://root:password@bidding-db:3306/bidding_db
+    depends_on:
+      bidding-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  payment-service:
+    build: ./services/payment-service
+    ports:
+      - "5004:5004"
+      - "50051:50051"
+    environment:
+      DB_URL: mysql://root:password@payment-db:3306/payment_db
+      GRPC_PORT: "50051"
+      REST_PORT: "5004"
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5004/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  notification-service:
+    build: ./services/notification-service
+    ports:
+      - "5005:5005"
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RESEND_API_KEY: re_your_resend_api_key
+      RESEND_FROM_EMAIL: notifications@invoiceflow.dev
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ============================================================
+  # COMPOSITE SERVICES (ORCHESTRATORS)
+  # ============================================================
+
+  invoice-orchestrator:
+    build: ./orchestrators/invoice-orchestrator
+    ports:
+      - "5010:5010"
+    environment:
+      USER_SERVICE_URL: http://user-service:5000
+      INVOICE_SERVICE_URL: http://invoice-service:5001
+      MARKETPLACE_SERVICE_URL: http://marketplace-service:5002
+      ACRA_WRAPPER_URL: http://acra-wrapper:5007
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      TEMPORAL_HOST: temporal:7233
+    depends_on:
+      user-service:
+        condition: service_healthy
+      invoice-service:
+        condition: service_healthy
+      marketplace-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5010/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  bidding-orchestrator:
+    build: ./orchestrators/bidding-orchestrator
+    ports:
+      - "5011:5011"
+    environment:
+      BIDDING_SERVICE_URL: http://bidding-service:5003
+      MARKETPLACE_SERVICE_URL: http://marketplace-service:5002
+      STRIPE_WRAPPER_URL: http://stripe-wrapper:5008
+      PAYMENT_SERVICE_GRPC: payment-service:50051
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      TEMPORAL_HOST: temporal:7233
+      STRIPE_WEBHOOK_SECRET: whsec_your_stripe_webhook_secret
+    depends_on:
+      bidding-service:
+        condition: service_healthy
+      marketplace-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5011/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  loan-orchestrator:
+    build: ./orchestrators/loan-orchestrator
+    ports:
+      - "5012:5012"
+    environment:
+      PAYMENT_SERVICE_GRPC: payment-service:50051
+      STRIPE_WRAPPER_URL: http://stripe-wrapper:5008
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      payment-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5012/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ============================================================
+  # WRAPPER SERVICES
+  # ============================================================
+
+  acra-wrapper:
+    build: ./wrappers/acra-wrapper
+    ports:
+      - "5007:5007"
+    environment:
+      DATA_GOV_API_URL: https://data.gov.sg/api/action/datastore_search
+      ACRA_DATASET_RESOURCE_ID: your-acra-resource-id
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5007/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  stripe-wrapper:
+    build: ./wrappers/stripe-wrapper
+    ports:
+      - "5008:5008"
+    environment:
+      STRIPE_SECRET_KEY: sk_test_your_stripe_secret_key
+      STRIPE_SUCCESS_URL: http://localhost:8080/payment/success
+      STRIPE_CANCEL_URL: http://localhost:8080/payment/cancel
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ============================================================
+  # TEMPORAL WORKER
+  # ============================================================
+
+  temporal-worker:
+    build: ./temporal-worker
+    environment:
+      TEMPORAL_HOST: temporal:7233
+      INVOICE_SERVICE_URL: http://invoice-service:5001
+      BIDDING_SERVICE_URL: http://bidding-service:5003
+      MARKETPLACE_SERVICE_URL: http://marketplace-service:5002
+      PAYMENT_SERVICE_GRPC: payment-service:50051
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REPAYMENT_WINDOW_SECONDS: "120"
+    depends_on:
+      temporal:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  # ============================================================
+  # FRONTEND (placeholder)
+  # ============================================================
+
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     kong:
+  #       condition: service_healthy

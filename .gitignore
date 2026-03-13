@@ -4,31 +4,55 @@ __pycache__/
 *$py.class
 *.so
 .Python
+.venv/
 venv/
 env/
+*.egg-info/
+dist/
+build/
 
-# Node
+# Node.js
 node_modules/
 npm-debug.log*
-package-lock.json
+yarn-debug.log*
+yarn-error.log*
 
-# Database
-*.sql~
-mysql-data/
+# Environment files (keep .env.example)
+*.env
+!.env.example
 
 # Docker
-*.log
+docker-compose.override.yml
 
-# Environment
-.env
-.env.local
+# Database volumes
+db_data/
+mysql_data/
+mysql-data/
+
+# Claude Code
+.claude/
 
 # IDE
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
-EOF
+
+# MinIO data
+minio_data/
+
+# Temporal
+temporal_data/
+
+# Logs
+*.log
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
