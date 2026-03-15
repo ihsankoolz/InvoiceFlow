@@ -11,52 +11,83 @@ class EscrowService {
   /**
    * Lock funds in escrow for an invoice bid.
    * Debits the investor's wallet and creates an escrow record.
-   * @param {number} investorId - The investor placing the bid.
-   * @param {string} invoiceToken - The invoice being bid on.
-   * @param {string|number} amount - The bid amount to lock.
-   * @param {string} idempotencyKey - Unique key to prevent duplicate locks.
-   * @returns {Promise<Escrow>} The created escrow record.
-   * @throws {Error} If insufficient wallet balance or duplicate escrow.
+   * @param {number} investorId
+   * @param {string} invoiceToken
+   * @param {string|number} amount
+   * @param {string} idempotencyKey
+   * @returns {Promise<Escrow>}
    */
   async lockEscrow(investorId, invoiceToken, amount, idempotencyKey) {
-    // TODO: Check idempotency — return existing escrow if key already used
-    // TODO: Debit investor wallet by amount (walletService.debitWallet)
-    // TODO: Create escrow record with status LOCKED
-    // TODO: Return escrow
-    throw new Error('Not implemented');
+    // Idempotency: return existing escrow if key already used
+    const existing = await Escrow.findOne({ where: { idempotency_key: idempotencyKey } });
+    if (existing) return existing;
+
+    return await sequelize.transaction(async (t) => {
+      // Debit wallet first — throws if insufficient balance
+      await walletService.debitWallet(investorId, amount);
+
+      const escrow = await Escrow.create({
+        investor_id: investorId,
+        invoice_token: invoiceToken,
+        amount: parseFloat(amount).toFixed(2),
+        status: 'LOCKED',
+        idempotency_key: idempotencyKey,
+      }, { transaction: t });
+
+      return escrow;
+    });
   }
 
   /**
    * Release escrowed funds back to the investor's wallet.
-   * Marks the escrow as RELEASED and credits the wallet.
-   * @param {number} investorId - The investor whose escrow to release.
-   * @param {string} invoiceToken - The invoice token identifying the escrow.
-   * @param {string} idempotencyKey - Unique key to prevent duplicate releases.
-   * @returns {Promise<Escrow>} The updated escrow record.
-   * @throws {Error} If escrow not found or already released/converted.
+   * @param {number} investorId
+   * @param {string} invoiceToken
+   * @param {string} idempotencyKey
+   * @returns {Promise<Escrow>}
    */
   async releaseEscrow(investorId, invoiceToken, idempotencyKey) {
-    // TODO: Find LOCKED escrow for (investorId, invoiceToken)
-    // TODO: Credit investor wallet with escrow amount (walletService.creditWallet)
-    // TODO: Update escrow status to RELEASED
-    // TODO: Return updated escrow
-    throw new Error('Not implemented');
+    return await sequelize.transaction(async (t) => {
+      const escrow = await Escrow.findOne({
+        where: { investor_id: investorId, invoice_token: invoiceToken, status: 'LOCKED' },
+        lock: t.LOCK.UPDATE,
+        transaction: t,
+      });
+
+      if (!escrow) {
+        throw new Error(`No LOCKED escrow found for investor ${investorId} on token ${invoiceToken}`);
+      }
+
+      await walletService.creditWallet(investorId, escrow.amount);
+      await escrow.update({ status: 'RELEASED' }, { transaction: t });
+      return escrow;
+    });
   }
 
   /**
    * Convert a locked escrow to a loan (mark as CONVERTED).
-   * Does not move funds — the loan service handles disbursement.
-   * @param {number} investorId - The investor whose escrow to convert.
-   * @param {string} invoiceToken - The invoice token identifying the escrow.
-   * @param {string} idempotencyKey - Unique key to prevent duplicate conversions.
-   * @returns {Promise<Escrow>} The updated escrow record.
-   * @throws {Error} If escrow not found or not in LOCKED status.
+   * Funds stay in the system — LoanService handles disbursement.
+   * @param {number} investorId
+   * @param {string} invoiceToken
+   * @param {string} idempotencyKey
+   * @returns {Promise<Escrow>}
    */
   async convertToLoan(investorId, invoiceToken, idempotencyKey) {
-    // TODO: Find LOCKED escrow for (investorId, invoiceToken)
-    // TODO: Update escrow status to CONVERTED
-    // TODO: Return updated escrow
-    throw new Error('Not implemented');
+    // Idempotency: already converted
+    const existing = await Escrow.findOne({
+      where: { investor_id: investorId, invoice_token: invoiceToken, status: 'CONVERTED' },
+    });
+    if (existing) return existing;
+
+    const escrow = await Escrow.findOne({
+      where: { investor_id: investorId, invoice_token: invoiceToken, status: 'LOCKED' },
+    });
+
+    if (!escrow) {
+      throw new Error(`No LOCKED escrow found for investor ${investorId} on token ${invoiceToken}`);
+    }
+
+    await escrow.update({ status: 'CONVERTED' });
+    return escrow;
   }
 }
 
