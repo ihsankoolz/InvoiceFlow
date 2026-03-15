@@ -6,6 +6,7 @@ from strawberry.types import Info
 
 from app.database import SessionLocal
 from app.models.listing import Listing as ListingModel
+from app.graphql.dataloader import listing_loader
 
 
 @strawberry.type
@@ -62,15 +63,11 @@ class Query:
             db.close()
 
     @strawberry.field
-    def listing(self, id: int) -> Optional[ListingType]:
-        db = SessionLocal()
-        try:
-            result = db.query(ListingModel).filter(ListingModel.id == id).first()
-            if result is None:
-                return None
-            return _model_to_type(result)
-        finally:
-            db.close()
+    async def listing(self, id: int) -> Optional[ListingType]:
+        result = await listing_loader.load(id)
+        if result is None:
+            return None
+        return _model_to_type(result)
 
 
 schema = strawberry.Schema(query=Query)
