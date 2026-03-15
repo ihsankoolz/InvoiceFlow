@@ -585,7 +585,7 @@ The `create_bid` method must:
 **Port:** 5004 (REST) / 50051 (gRPC)
 **Technology:** Node.js / Express + gRPC (BTL #2)
 **Database:** payment_db (MySQL :3310)
-**Owner:** *(assign team member)*
+**Owner:** Ihsan
 
 ### Purpose
 
@@ -1215,7 +1215,7 @@ TEMPORAL_HOST=temporal:7233
 **Type:** Composite Service
 **Port:** 5011
 **Technology:** Python / FastAPI
-**Owner:** *(assign team member)*
+**Owner:** Ihsan
 
 ### Purpose
 
