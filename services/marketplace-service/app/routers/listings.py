@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
@@ -15,6 +13,13 @@ def create_listing(data: ListingCreate, db: Session = Depends(get_db)):
     service = ListingService(db)
     listing = service.create_listing(data)
     return listing
+
+
+@router.delete("/")
+def bulk_delete_listings(seller_id: int = Query(...), db: Session = Depends(get_db)):
+    service = ListingService(db)
+    deleted_count = service.bulk_delete_by_seller(seller_id)
+    return {"deleted_count": deleted_count}
 
 
 @router.get("/{listing_id}", response_model=ListingResponse)
@@ -39,11 +44,4 @@ def update_listing(listing_id: int, data: ListingUpdate, db: Session = Depends(g
 def delete_listing(listing_id: int, db: Session = Depends(get_db)):
     service = ListingService(db)
     service.delete_listing(listing_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
-def bulk_delete_listings(seller_id: int = Query(...), db: Session = Depends(get_db)):
-    service = ListingService(db)
-    service.bulk_delete_by_seller(seller_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
