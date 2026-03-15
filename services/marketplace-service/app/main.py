@@ -16,4 +16,4 @@ app.include_router(graphql_app, prefix="/graphql")
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    return {"status": "healthy", "service": "marketplace-service"}
+    return {"status": "ok", "service": "marketplace-service"}

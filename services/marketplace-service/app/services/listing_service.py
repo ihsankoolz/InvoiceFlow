@@ -9,21 +9,45 @@ class ListingService:
         self.db = db
 
     def create_listing(self, data: ListingCreate) -> Listing:
-        # TODO: Create a new listing record from data and persist to DB
-        pass
+        listing = Listing(
+            invoice_token=data.invoice_token,
+            seller_id=data.seller_id,
+            debtor_uen=data.debtor_uen,
+            amount=data.amount,
+            urgency_level=data.urgency_level,
+            deadline=data.deadline,
+        )
+        self.db.add(listing)
+        self.db.commit()
+        self.db.refresh(listing)
+        return listing
 
     def get_listing(self, listing_id: int) -> Listing:
-        # TODO: Retrieve a listing by its primary key
-        pass
+        return self.db.query(Listing).filter(Listing.id == listing_id).first()
 
     def update_listing(self, listing_id: int, data: ListingUpdate) -> Listing:
-        # TODO: Partially update listing fields (deadline, status) by ID
-        pass
+        listing = self.db.query(Listing).filter(Listing.id == listing_id).first()
+        if not listing:
+            return None
+        if data.deadline is not None:
+            listing.deadline = data.deadline
+        if data.status is not None:
+            listing.status = data.status
+        self.db.commit()
+        self.db.refresh(listing)
+        return listing
 
     def delete_listing(self, listing_id: int) -> None:
-        # TODO: Delete a single listing by ID
-        pass
+        listing = self.db.query(Listing).filter(Listing.id == listing_id).first()
+        if listing:
+            self.db.delete(listing)
+            self.db.commit()
 
     def bulk_delete_by_seller(self, seller_id: int) -> int:
-        # TODO: Delete all listings for a given seller_id, return count deleted
-        pass
+        count = (
+            self.db.query(Listing)
+            .filter(Listing.seller_id == seller_id)
+            .delete(synchronize_session=False)
+        )
+        self.db.commit()
+        return count
