@@ -11,6 +11,9 @@
 
 const amqplib = require('amqplib');
 const config = require('../config');
+const EscrowService = require('../services/EscrowService');
+const WalletService = require('../services/WalletService');
+const LoanService = require('../services/LoanService');
 
 const EXCHANGE = 'invoiceflow_events';
 
@@ -34,32 +37,33 @@ const SUBSCRIPTIONS = [
 
 /**
  * Handle bid.outbid — release previous bidder's escrow back to wallet.
- * @param {object} payload - { invoice_token, outbid_investor_id, outbid_amount, ... }
  */
 async function handleOutbid(payload) {
-  // TODO: Implement
-  // 1. Call EscrowService.releaseEscrow(payload.outbid_investor_id, payload.invoice_token)
-  console.log('[payment-consumer] bid.outbid received:', payload);
+  const { invoice_token, outbid_investor_id } = payload;
+  await EscrowService.releaseEscrow(
+    outbid_investor_id,
+    invoice_token,
+    `release-outbid-${invoice_token}-${outbid_investor_id}`,
+  );
+  console.log(`[payment-consumer] bid.outbid: released escrow for investor ${outbid_investor_id} on ${invoice_token}`);
 }
 
 /**
  * Handle loan.repaid — credit investor wallet with repaid principal.
- * @param {object} payload - { loan_id, investor_id, principal, ... }
  */
 async function handleRepaid(payload) {
-  // TODO: Implement
-  // 1. Call WalletService.creditWallet(payload.investor_id, payload.principal)
-  console.log('[payment-consumer] loan.repaid received:', payload);
+  const { investor_id, principal } = payload;
+  await WalletService.creditWallet(investor_id, principal);
+  console.log(`[payment-consumer] loan.repaid: credited ${principal} to investor ${investor_id}`);
 }
 
 /**
  * Handle loan.overdue — calculate and apply 5% penalty.
- * @param {object} payload - { loan_id, ... }
  */
 async function handleOverdue(payload) {
-  // TODO: Implement
-  // 1. Call LoanService.calculatePenalty(payload.loan_id)
-  console.log('[payment-consumer] loan.overdue received:', payload);
+  const { loan_id } = payload;
+  const penalty = await LoanService.calculatePenalty(loan_id);
+  console.log(`[payment-consumer] loan.overdue: applied penalty ${penalty} on loan ${loan_id}`);
 }
 
 /**
