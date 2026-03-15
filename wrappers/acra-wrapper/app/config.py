@@ -1,4 +1,4 @@
 import os
 
 DATA_GOV_API_URL = os.getenv("DATA_GOV_API_URL", "https://data.gov.sg/api/action/datastore_search")
-ACRA_DATASET_RESOURCE_ID = os.getenv("ACRA_DATASET_RESOURCE_ID", "your-acra-resource-id")
+ACRA_DATASET_RESOURCE_ID = os.getenv("ACRA_DATASET_RESOURCE_ID", "d_3f960c10fed6145404ca7b821f263b87")
