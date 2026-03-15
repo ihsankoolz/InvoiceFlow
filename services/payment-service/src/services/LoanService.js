@@ -8,79 +8,98 @@ const Loan = require('../models/Loan');
 const walletService = require('./WalletService');
 const { sequelize } = require('../database');
 
+const VALID_TRANSITIONS = {
+  ACTIVE: ['DUE'],
+  DUE: ['REPAID', 'OVERDUE'],
+  REPAID: [],
+  OVERDUE: [],
+};
+
 class LoanService {
   /**
    * Create a new loan record.
-   * @param {Object} data - Loan creation payload.
-   * @param {string} data.invoice_token - The invoice this loan is for.
-   * @param {number} data.investor_id - The investor funding the loan.
-   * @param {number} data.seller_id - The seller receiving funds.
-   * @param {string|number} data.principal - The loan principal amount.
-   * @param {string} data.due_date - The repayment due date (YYYY-MM-DD).
-   * @param {string} idempotencyKey - Unique key to prevent duplicate loans.
-   * @returns {Promise<Loan>} The created loan record.
+   * @param {Object} data - { invoice_token, investor_id, seller_id, principal, due_date }
+   * @param {string} idempotencyKey
+   * @returns {Promise<Loan>}
    */
   async createLoan(data, idempotencyKey) {
-    // TODO: Check idempotency — return existing loan if duplicate
-    // TODO: Generate loan_id via uuid
-    // TODO: Create loan record with status ACTIVE
-    // TODO: Return created loan
-    throw new Error('Not implemented');
+    // Idempotency: return existing loan if key already used
+    const existing = await Loan.findOne({ where: { loan_id: idempotencyKey } });
+    if (existing) return existing;
+
+    const loan = await Loan.create({
+      loan_id: uuidv4(),
+      invoice_token: data.invoice_token,
+      investor_id: data.investor_id,
+      seller_id: data.seller_id,
+      principal: parseFloat(data.principal).toFixed(2),
+      due_date: data.due_date,
+      status: 'ACTIVE',
+    });
+
+    return loan;
   }
 
   /**
    * Retrieve a loan by its loan_id.
-   * @param {string} loanId - The unique loan identifier.
-   * @returns {Promise<Loan>} The loan record.
-   * @throws {Error} If loan not found.
+   * @param {string} loanId
+   * @returns {Promise<Loan>}
    */
   async getLoan(loanId) {
-    // TODO: Find loan by loan_id
-    // TODO: Throw if not found
-    // TODO: Return loan
-    throw new Error('Not implemented');
+    const loan = await Loan.findOne({ where: { loan_id: loanId } });
+    if (!loan) throw new Error(`Loan not found: ${loanId}`);
+    return loan;
   }
 
   /**
-   * Update the status of a loan.
-   * @param {string} loanId - The unique loan identifier.
-   * @param {string} status - The new status (ACTIVE | DUE | REPAID | OVERDUE).
-   * @returns {Promise<Loan>} The updated loan record.
-   * @throws {Error} If loan not found or invalid status transition.
+   * Update the status of a loan with transition validation.
+   * @param {string} loanId
+   * @param {string} status - DUE | REPAID | OVERDUE
+   * @returns {Promise<Loan>}
    */
   async updateStatus(loanId, status) {
-    // TODO: Find loan by loan_id
-    // TODO: Validate status transition
-    // TODO: Update status
-    // TODO: Return updated loan
-    throw new Error('Not implemented');
+    const loan = await this.getLoan(loanId);
+    const allowed = VALID_TRANSITIONS[loan.status] || [];
+
+    if (!allowed.includes(status)) {
+      throw new Error(`Invalid status transition: ${loan.status} → ${status}`);
+    }
+
+    await loan.update({ status });
+    return loan;
   }
 
   /**
-   * Release funds to the seller's wallet after escrow conversion.
-   * @param {number} sellerId - The seller to credit.
-   * @param {string|number} amount - The amount to release.
-   * @param {string} idempotencyKey - Unique key to prevent duplicate releases.
-   * @returns {Promise<{success: boolean, message: string}>} Transfer result.
+   * Credit seller wallet with loan principal (called after escrow conversion).
+   * @param {number} sellerId
+   * @param {string|number} amount
+   * @param {string} idempotencyKey
+   * @returns {Promise<{success: boolean, message: string}>}
    */
   async releaseFundsToSeller(sellerId, amount, idempotencyKey) {
-    // TODO: Credit seller wallet via walletService.creditWallet
-    // TODO: Return success response
-    throw new Error('Not implemented');
+    await walletService.creditWallet(sellerId, amount);
+    return { success: true, message: `Credited ${amount} to seller ${sellerId}` };
   }
 
   /**
-   * Calculate penalty for an overdue loan (5% of principal).
-   * @param {string} loanId - The unique loan identifier.
+   * Calculate and record a 5% penalty for an overdue loan.
+   * @param {string} loanId
    * @returns {Promise<string>} The penalty amount as a decimal string.
-   * @throws {Error} If loan not found.
    */
   async calculatePenalty(loanId) {
-    // TODO: Find loan by loan_id
-    // TODO: Calculate 5% of principal
-    // TODO: Update penalty_amount on loan record
-    // TODO: Return penalty amount
-    throw new Error('Not implemented');
+    const loan = await this.getLoan(loanId);
+    const penalty = (parseFloat(loan.principal) * 0.05).toFixed(2);
+    await loan.update({ penalty_amount: penalty });
+    return penalty;
+  }
+
+  /**
+   * Get all loans for a given investor.
+   * @param {number} investorId
+   * @returns {Promise<Loan[]>}
+   */
+  async getLoansByInvestor(investorId) {
+    return await Loan.findAll({ where: { investor_id: investorId } });
   }
 }
 
