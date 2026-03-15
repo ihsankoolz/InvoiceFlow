@@ -11,104 +11,130 @@ const LoanService = require('../services/LoanService');
 
 /**
  * LockEscrow — debit investor wallet, create escrow record.
- * @param {object} call - { investor_id, invoice_token, amount, idempotency_key }
- * @param {function} callback
  */
 async function lockEscrow(call, callback) {
-  // TODO: Implement
-  // 1. Parse call.request (investor_id, invoice_token, amount, idempotency_key)
-  // 2. Check idempotency — if key already exists, return existing escrow
-  // 3. Call WalletService.debitWallet(investor_id, amount)
-  // 4. Call EscrowService.lockEscrow(investor_id, invoice_token, amount, idempotency_key)
-  // 5. Return EscrowResponse { id, status, amount }
-  callback({ code: 12, message: 'LockEscrow not implemented yet' });
+  try {
+    const { investor_id, invoice_token, amount, idempotency_key } = call.request;
+    const escrow = await EscrowService.lockEscrow(investor_id, invoice_token, amount, idempotency_key);
+    callback(null, { id: String(escrow.id), status: escrow.status, amount: String(escrow.amount) });
+  } catch (err) {
+    callback({ code: 3, message: err.message }); // INVALID_ARGUMENT
+  }
 }
 
 /**
  * ReleaseEscrow — return escrowed funds to investor wallet, mark RELEASED.
- * @param {object} call - { investor_id, invoice_token, idempotency_key }
- * @param {function} callback
  */
 async function releaseEscrow(call, callback) {
-  // TODO: Implement
-  // 1. Find escrow by investor_id + invoice_token
-  // 2. Credit wallet with escrow amount
-  // 3. Mark escrow RELEASED
-  // 4. Return EscrowResponse
-  callback({ code: 12, message: 'ReleaseEscrow not implemented yet' });
+  try {
+    const { investor_id, invoice_token, idempotency_key } = call.request;
+    const escrow = await EscrowService.releaseEscrow(investor_id, invoice_token, idempotency_key);
+    callback(null, { id: String(escrow.id), status: escrow.status, amount: String(escrow.amount) });
+  } catch (err) {
+    callback({ code: 5, message: err.message }); // NOT_FOUND
+  }
 }
 
 /**
  * ConvertEscrowToLoan — mark escrow CONVERTED (funds stay in system for loan).
- * @param {object} call - { investor_id, invoice_token, idempotency_key }
- * @param {function} callback
  */
 async function convertEscrowToLoan(call, callback) {
-  // TODO: Implement
-  // 1. Find escrow by investor_id + invoice_token
-  // 2. Mark escrow CONVERTED
-  // 3. Return EscrowResponse
-  callback({ code: 12, message: 'ConvertEscrowToLoan not implemented yet' });
+  try {
+    const { investor_id, invoice_token, idempotency_key } = call.request;
+    const escrow = await EscrowService.convertToLoan(investor_id, invoice_token, idempotency_key);
+    callback(null, { id: String(escrow.id), status: escrow.status, amount: String(escrow.amount) });
+  } catch (err) {
+    callback({ code: 5, message: err.message });
+  }
 }
 
 /**
  * CreateLoan — create a new loan record.
- * @param {object} call - { invoice_token, investor_id, seller_id, principal, due_date, idempotency_key }
- * @param {function} callback
  */
 async function createLoan(call, callback) {
-  // TODO: Implement
-  // 1. Call LoanService.createLoan(data, idempotencyKey)
-  // 2. Return LoanResponse { loan_id, status, principal, due_date, investor_id, seller_id }
-  callback({ code: 12, message: 'CreateLoan not implemented yet' });
+  try {
+    const { invoice_token, investor_id, seller_id, principal, due_date, idempotency_key } = call.request;
+    const loan = await LoanService.createLoan(
+      { invoice_token, investor_id, seller_id, principal, due_date },
+      idempotency_key,
+    );
+    callback(null, {
+      loan_id: loan.loan_id,
+      status: loan.status,
+      principal: String(loan.principal),
+      due_date: String(loan.due_date),
+      investor_id: loan.investor_id,
+      seller_id: loan.seller_id,
+    });
+  } catch (err) {
+    callback({ code: 3, message: err.message });
+  }
 }
 
 /**
  * ReleaseFundsToSeller — credit seller wallet with loan principal.
- * @param {object} call - { seller_id, amount, invoice_token, idempotency_key }
- * @param {function} callback
  */
 async function releaseFundsToSeller(call, callback) {
-  // TODO: Implement
-  // 1. Call LoanService.releaseFundsToSeller(sellerId, amount, idempotencyKey)
-  // 2. Return TransferResponse { success, message }
-  callback({ code: 12, message: 'ReleaseFundsToSeller not implemented yet' });
+  try {
+    const { seller_id, amount, idempotency_key } = call.request;
+    const result = await LoanService.releaseFundsToSeller(seller_id, amount, idempotency_key);
+    callback(null, { success: result.success, message: result.message });
+  } catch (err) {
+    callback({ code: 3, message: err.message });
+  }
 }
 
 /**
- * CreditWallet — add funds to a user wallet (used for Stripe top-up and escrow release).
- * @param {object} call - { user_id, amount, idempotency_key }
- * @param {function} callback
+ * CreditWallet — add funds to a user wallet (Stripe top-up or escrow release).
  */
 async function creditWallet(call, callback) {
-  // TODO: Implement
-  // 1. Call WalletService.creditWallet(userId, amount, idempotencyKey)
-  // 2. Return WalletResponse { user_id, balance }
-  callback({ code: 12, message: 'CreditWallet not implemented yet' });
+  try {
+    const { user_id, amount } = call.request;
+    const wallet = await WalletService.creditWallet(user_id, amount);
+    callback(null, { user_id: wallet.user_id, balance: String(wallet.balance) });
+  } catch (err) {
+    callback({ code: 3, message: err.message });
+  }
 }
 
 /**
  * GetLoan — fetch loan by loan_id.
- * @param {object} call - { loan_id }
- * @param {function} callback
  */
 async function getLoan(call, callback) {
-  // TODO: Implement
-  // 1. Call LoanService.getLoan(loanId)
-  // 2. Return LoanResponse
-  callback({ code: 12, message: 'GetLoan not implemented yet' });
+  try {
+    const { loan_id } = call.request;
+    const loan = await LoanService.getLoan(loan_id);
+    callback(null, {
+      loan_id: loan.loan_id,
+      status: loan.status,
+      principal: String(loan.principal),
+      due_date: String(loan.due_date),
+      investor_id: loan.investor_id,
+      seller_id: loan.seller_id,
+    });
+  } catch (err) {
+    callback({ code: 5, message: err.message });
+  }
 }
 
 /**
  * UpdateLoanStatus — update loan status (DUE, REPAID, OVERDUE).
- * @param {object} call - { loan_id, status }
- * @param {function} callback
  */
 async function updateLoanStatus(call, callback) {
-  // TODO: Implement
-  // 1. Call LoanService.updateStatus(loanId, status)
-  // 2. Return LoanResponse
-  callback({ code: 12, message: 'UpdateLoanStatus not implemented yet' });
+  try {
+    const { loan_id, status } = call.request;
+    const loan = await LoanService.updateStatus(loan_id, status);
+    callback(null, {
+      loan_id: loan.loan_id,
+      status: loan.status,
+      principal: String(loan.principal),
+      due_date: String(loan.due_date),
+      investor_id: loan.investor_id,
+      seller_id: loan.seller_id,
+    });
+  } catch (err) {
+    callback({ code: 3, message: err.message });
+  }
 }
 
 module.exports = {
