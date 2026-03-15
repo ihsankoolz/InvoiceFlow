@@ -9,45 +9,69 @@ const { sequelize } = require('../database');
 class WalletService {
   /**
    * Add funds to a user's wallet. Creates the wallet if it does not exist.
-   * @param {number} userId - The ID of the wallet owner.
-   * @param {string|number} amount - The amount to credit.
-   * @param {string} idempotencyKey - Unique key to prevent duplicate credits.
-   * @returns {Promise<Wallet>} The updated wallet record.
+   * Idempotency is enforced by the caller (escrow/loan idempotency keys).
+   * @param {number} userId
+   * @param {string|number} amount
+   * @returns {Promise<Wallet>}
    */
-  async creditWallet(userId, amount, idempotencyKey) {
-    // TODO: Implement idempotency check
-    // TODO: Find or create wallet for userId
-    // TODO: Increment balance by amount within a transaction
-    // TODO: Return updated wallet
-    throw new Error('Not implemented');
+  async creditWallet(userId, amount) {
+    return await sequelize.transaction(async (t) => {
+      const [wallet] = await Wallet.findOrCreate({
+        where: { user_id: userId },
+        defaults: { user_id: userId, balance: 0.00 },
+        transaction: t,
+      });
+
+      const newBalance = parseFloat(wallet.balance) + parseFloat(amount);
+      await wallet.update({ balance: newBalance.toFixed(2) }, { transaction: t });
+      return wallet;
+    });
   }
 
   /**
    * Deduct funds from a user's wallet.
-   * @param {number} userId - The ID of the wallet owner.
-   * @param {string|number} amount - The amount to debit.
-   * @returns {Promise<Wallet>} The updated wallet record.
-   * @throws {Error} If insufficient balance.
+   * @param {number} userId
+   * @param {string|number} amount
+   * @returns {Promise<Wallet>}
+   * @throws {Error} If wallet not found or insufficient balance.
    */
   async debitWallet(userId, amount) {
-    // TODO: Find wallet for userId (throw if not found)
-    // TODO: Verify sufficient balance
-    // TODO: Decrement balance by amount within a transaction
-    // TODO: Return updated wallet
-    throw new Error('Not implemented');
+    return await sequelize.transaction(async (t) => {
+      const wallet = await Wallet.findOne({
+        where: { user_id: userId },
+        lock: t.LOCK.UPDATE,
+        transaction: t,
+      });
+
+      if (!wallet) {
+        throw new Error(`Wallet not found for user ${userId}`);
+      }
+
+      const current = parseFloat(wallet.balance);
+      const debit = parseFloat(amount);
+
+      if (current < debit) {
+        throw new Error(`Insufficient balance: have ${current}, need ${debit}`);
+      }
+
+      const newBalance = (current - debit).toFixed(2);
+      await wallet.update({ balance: newBalance }, { transaction: t });
+      return wallet;
+    });
   }
 
   /**
    * Retrieve the current wallet for a user.
-   * @param {number} userId - The ID of the wallet owner.
-   * @returns {Promise<Wallet>} The wallet record.
+   * @param {number} userId
+   * @returns {Promise<Wallet>}
    * @throws {Error} If wallet not found.
    */
   async getBalance(userId) {
-    // TODO: Find wallet by user_id
-    // TODO: Throw if not found
-    // TODO: Return wallet
-    throw new Error('Not implemented');
+    const wallet = await Wallet.findOne({ where: { user_id: userId } });
+    if (!wallet) {
+      throw new Error(`Wallet not found for user ${userId}`);
+    }
+    return wallet;
   }
 }
 
