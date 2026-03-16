@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from app.schemas.requests import TopUpRequest, TopUpResponse
+from app.services.wallet_orchestrator import WalletOrchestrator
 
 router = APIRouter()
 
@@ -10,13 +11,13 @@ router = APIRouter()
     response_model=TopUpResponse,
     tags=["Wallet"],
     summary="Create Stripe checkout session for wallet top-up",
-    description="Creates a Stripe checkout session via Stripe Wrapper for investor wallet top-up.",
+    description=(
+        "Calls Stripe Wrapper to create a hosted checkout session. "
+        "Returns a checkout_url the frontend redirects the investor to. "
+        "Wallet is credited after Stripe fires the webhook to /api/webhooks/stripe."
+    ),
 )
 async def topup_wallet(data: TopUpRequest):
-    """
-    Create Stripe checkout session for wallet top-up.
-
-    See BUILD_INSTRUCTIONS_V2.md Section 9 — WalletOrchestrator.create_topup()
-    """
-    # TODO: Implement — instantiate WalletOrchestrator and call create_topup()
-    raise HTTPException(501, "Not implemented yet")
+    orchestrator = WalletOrchestrator()
+    result = await orchestrator.create_topup(data)
+    return result

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from app.schemas.requests import PlaceBidRequest, BidResponse
+from app.schemas.requests import BidResponse, PlaceBidRequest
+from app.services.bid_orchestrator import BidOrchestrator
 
 router = APIRouter()
 
@@ -10,13 +11,13 @@ router = APIRouter()
     response_model=BidResponse,
     tags=["Bidding"],
     summary="Place a bid on an invoice listing",
-    description="Orchestrates bid placement: creates bid, locks escrow via gRPC, handles outbid, checks anti-snipe.",
+    description=(
+        "Orchestrates bid placement: creates bid in Bidding Service, locks escrow "
+        "via gRPC, publishes bid.outbid if someone is displaced, checks anti-snipe "
+        "window (extends deadline if bid lands in final 5 min), and publishes bid.placed."
+    ),
 )
 async def place_bid(data: PlaceBidRequest):
-    """
-    Place bid, lock escrow, handle outbid, check anti-snipe.
-
-    See BUILD_INSTRUCTIONS_V2.md Section 9 — BidOrchestrator.place_bid()
-    """
-    # TODO: Implement — instantiate BidOrchestrator and call place_bid()
-    raise HTTPException(501, "Not implemented yet")
+    orchestrator = BidOrchestrator()
+    result = await orchestrator.place_bid(data)
+    return result

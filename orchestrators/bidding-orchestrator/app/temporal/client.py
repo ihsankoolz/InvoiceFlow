@@ -1,8 +1,8 @@
 """
 Temporal client for starting workflows and signaling running workflows.
-
-See BUILD_INSTRUCTIONS_V2.md Section 9 — TemporalClient
 """
+
+from temporalio.client import Client
 
 from app import config
 
@@ -11,44 +11,47 @@ class TemporalClient:
     """Wraps the Temporal SDK client for starting/signaling workflows."""
 
     def __init__(self):
-        self.client = None
+        self.client: Client | None = None
 
     async def connect(self):
-        """
-        Connect to Temporal Server.
+        """Connect to Temporal Server at config.TEMPORAL_HOST."""
+        self.client = await Client.connect(config.TEMPORAL_HOST)
 
-        Steps:
-        1. Import temporalio.client.Client
-        2. Connect to config.TEMPORAL_HOST
-        3. Store client reference
+    async def _get_client(self) -> Client:
+        if not self.client:
+            await self.connect()
+        return self.client
 
-        See temporalio Python SDK documentation.
+    async def start_workflow(
+        self,
+        workflow_name: str,
+        workflow_id: str,
+        args: dict,
+        task_queue: str = "invoiceflow-queue",
+    ):
         """
-        # TODO: Implement
-        pass
-
-    async def start_workflow(self, workflow_name: str, workflow_id: str, args: dict, task_queue: str = "invoiceflow-queue"):
-        """
-        Start a Temporal workflow.
+        Start a Temporal workflow by string name.
 
         Args:
-            workflow_name: Name of the workflow class (e.g., "WalletTopUpWorkflow")
-            workflow_id: Unique ID for this workflow instance
-            args: Arguments to pass to the workflow run method
-            task_queue: Temporal task queue name
+            workflow_name: Registered workflow type name (e.g., "WalletTopUpWorkflow")
+            workflow_id:   Unique ID — acts as idempotency key (duplicate start is a no-op)
+            args:          Single dict argument passed to the workflow run method
+            task_queue:    Temporal task queue name
         """
-        # TODO: Implement
-        pass
+        client = await self._get_client()
+        await client.start_workflow(
+            workflow_name,
+            args=[args],
+            id=workflow_id,
+            task_queue=task_queue,
+        )
 
     async def signal_workflow(self, workflow_id: str, signal_name: str):
         """
-        Signal a running Temporal workflow (e.g., extend_deadline for anti-snipe).
+        Signal a running Temporal workflow.
 
-        Args:
-            workflow_id: ID of the running workflow (e.g., "auction-{invoice_token}")
-            signal_name: Name of the signal to send (e.g., "extend_deadline")
-
-        See BUILD_INSTRUCTIONS_V2.md Section 9 — anti-snipe signal
+        Used for anti-snipe: sends 'extend_deadline' to the running AuctionCloseWorkflow.
         """
-        # TODO: Implement
-        pass
+        client = await self._get_client()
+        handle = client.get_workflow_handle(workflow_id)
+        await handle.signal(signal_name)
