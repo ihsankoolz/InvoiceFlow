@@ -3,11 +3,9 @@ LoanMaturityWorkflow — waits until loan due date, then checks for repayment.
 
 Started as a CHILD workflow from AuctionCloseWorkflow via start_child_workflow (fire-and-forget).
 This workflow runs for days/weeks — it sleeps until the loan's due date.
-
-See BUILD_INSTRUCTIONS_V2.md Section 13 — LoanMaturityWorkflow
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from temporalio import workflow
 
@@ -24,21 +22,39 @@ class LoanMaturityWorkflow:
 
     @workflow.run
     async def run(self, loan_id: str, due_date: str):
-        """
-        Run the loan maturity workflow.
+        act_opts = {"schedule_to_close_timeout": timedelta(seconds=30)}
 
-        Steps:
-        1. Sleep until due_date (datetime ISO string)
-        2. Mark loan DUE via gRPC update_loan_status_grpc(loan_id, "DUE")
-        3. Publish loan.due event
-        4. Sleep for repayment window (REPAYMENT_WINDOW_SECONDS — 120s demo / 86400s production)
-        5. Check loan status via gRPC get_loan_grpc(loan_id)
-        6. If status == "REPAID" → return (business repaid in time)
-        7. If not repaid → mark OVERDUE via gRPC update_loan_status_grpc(loan_id, "OVERDUE")
-        8. Publish loan.overdue event (triggers 4-consumer choreography)
-        9. Bulk delist defaulting seller's listings
+        # Step 1: Sleep until due date
+        due_dt = datetime.fromisoformat(due_date).replace(tzinfo=timezone.utc)
+        await workflow.sleep_until(due_dt)
 
-        See BUILD_INSTRUCTIONS_V2.md Section 13 — LoanMaturityWorkflow
-        """
-        # TODO: Implement
-        pass
+        # Step 2: Mark loan DUE
+        await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "DUE"], **act_opts)
+        await workflow.execute_activity(
+            publish_event,
+            args=["loan.due", {"loan_id": loan_id}],
+            **act_opts,
+        )
+
+        # Step 3: Wait for repayment window
+        repayment_window = timedelta(seconds=config.REPAYMENT_WINDOW_SECONDS)
+        await workflow.sleep(repayment_window)
+
+        # Step 4: Check if repaid
+        loan = await workflow.execute_activity(get_loan_grpc, args=[loan_id], **act_opts)
+        if loan["status"] == "REPAID":
+            return  # Seller repaid in time — done
+
+        # Step 5: Mark OVERDUE + publish event + bulk delist
+        await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "OVERDUE"], **act_opts)
+        await workflow.execute_activity(
+            publish_event,
+            args=["loan.overdue", {
+                "loan_id": loan_id,
+                "invoice_token": loan.get("invoice_token", ""),
+                "investor_id": loan["investor_id"],
+                "seller_id": loan["seller_id"],
+            }],
+            **act_opts,
+        )
+        await workflow.execute_activity(bulk_delist, args=[loan["seller_id"]], **act_opts)
