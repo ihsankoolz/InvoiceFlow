@@ -91,11 +91,11 @@ services:
     volumes:
       - ./databases/user-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysql -uroot -ppassword user_db -e 'SELECT 1' 2>/dev/null"]
       interval: 5s
       timeout: 3s
-      retries: 10
-      start_period: 20s
+      retries: 15
+      start_period: 30s
 
   invoice-db:
     image: mysql:8.0
@@ -107,11 +107,11 @@ services:
     volumes:
       - ./databases/invoice-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysql -uroot -ppassword invoice_db -e 'SELECT 1' 2>/dev/null"]
       interval: 5s
       timeout: 3s
-      retries: 10
-      start_period: 20s
+      retries: 15
+      start_period: 30s
 
   market-db:
     image: mysql:8.0
@@ -123,11 +123,11 @@ services:
     volumes:
       - ./databases/market-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysql -uroot -ppassword market_db -e 'SELECT 1' 2>/dev/null"]
       interval: 5s
       timeout: 3s
-      retries: 10
-      start_period: 20s
+      retries: 15
+      start_period: 30s
 
   bidding-db:
     image: mysql:8.0
@@ -139,11 +139,11 @@ services:
     volumes:
       - ./databases/bidding-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysql -uroot -ppassword bidding_db -e 'SELECT 1' 2>/dev/null"]
       interval: 5s
       timeout: 3s
-      retries: 10
-      start_period: 20s
+      retries: 15
+      start_period: 30s
 
   payment-db:
     image: mysql:8.0
@@ -155,11 +155,11 @@ services:
     volumes:
       - ./databases/payment-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysql -uroot -ppassword payment_db -e 'SELECT 1' 2>/dev/null"]
       interval: 5s
       timeout: 3s
-      retries: 10
-      start_period: 20s
+      retries: 15
+      start_period: 30s
 
   # ============================================================
   # ATOMIC SERVICES
@@ -181,7 +181,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -206,7 +206,7 @@ services:
       minio:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5001/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -222,7 +222,7 @@ services:
       market-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5002/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -237,8 +237,9 @@ services:
     depends_on:
       bidding-db:
         condition: service_healthy
+    restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5003/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5003/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -260,7 +261,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5004/health"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:5004/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -278,7 +279,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5005/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5005/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -309,7 +310,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5010/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5010/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -337,7 +338,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5011/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5011/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -357,7 +358,7 @@ services:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5012/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5012/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -375,7 +376,7 @@ services:
       DATA_GOV_API_URL: https://data.gov.sg/api/action/datastore_search
       ACRA_DATASET_RESOURCE_ID: d_3f960c10fed6145404ca7b821f263b87
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5007/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5007/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -390,7 +391,7 @@ services:
       STRIPE_SUCCESS_URL: http://localhost:8080/payment/success
       STRIPE_CANCEL_URL: http://localhost:8080/payment/cancel
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5008/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5008/health')\""]
       interval: 10s
       timeout: 5s
       retries: 5
