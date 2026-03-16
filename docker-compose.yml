@@ -429,3 +429,14 @@ services:
   #   depends_on:
   #     kong:
   #       condition: service_healthy
+
+  activity-log-bridge:
+      build:
+        context: ./services/activity-log-bridge
+      container_name: activity-log-bridge
+      restart: always
+      environment:
+        - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      depends_on:
+        rabbitmq:
+          condition: service_healthy
