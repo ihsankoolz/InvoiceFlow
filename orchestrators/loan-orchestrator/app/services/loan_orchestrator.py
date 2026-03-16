@@ -1,7 +1,5 @@
 """
 LoanOrchestrator — orchestrates Scenario 3 loan repayment flow.
-
-See BUILD_INSTRUCTIONS_V2.md Section 10 — LoanOrchestrator
 """
 
 from fastapi import HTTPException
@@ -26,31 +24,63 @@ class LoanOrchestrator:
         Initiate loan repayment via Stripe.
 
         Steps:
-        1. Get loan details via gRPC get_loan(loan_id)
-        2. Verify loan status is DUE — reject if not
-        3. Create Stripe checkout session via Stripe Wrapper with type=loan_repayment
-        4. Return { checkout_url: session.url }
-
-        See BUILD_INSTRUCTIONS_V2.md Section 10 — LoanOrchestrator.initiate_repayment()
+        1. Get loan details via gRPC
+        2. Verify loan status is DUE
+        3. Create Stripe checkout session via Stripe Wrapper
+        4. Return checkout_url
         """
-        # TODO: Implement
-        pass
+        # ── Step 1: Get loan details ───────────────────────────────────────
+        loan = await self.grpc_client.get_loan(loan_id)
+
+        # ── Step 2: Verify loan is DUE ─────────────────────────────────────
+        if loan["status"] != "DUE":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Loan {loan_id} is not due for repayment (status: {loan['status']})",
+            )
+
+        # ── Step 3: Create Stripe checkout session ─────────────────────────
+        session = await self.http_client.post(
+            f"{config.STRIPE_WRAPPER_URL}/create-checkout-session",
+            json={
+                "amount": float(loan["principal"]),
+                "user_id": data.seller_id,
+                "type": "loan_repayment",
+                "loan_id": str(loan_id),
+            },
+        )
+
+        # ── Step 4: Return checkout URL ────────────────────────────────────
+        return {"checkout_url": session["url"]}
 
     async def confirm_repayment(self, loan_id: int, stripe_session_id: str) -> RepaymentResponse:
         """
         Confirm repayment after Stripe payment succeeds.
 
         Steps:
-        1. Update loan status to REPAID via gRPC update_loan_status(loan_id, "REPAID")
-        2. Get full loan details via gRPC get_loan(loan_id)
-        3. Publish loan.repaid event → four consumers react via choreography:
-           - Invoice Service: update invoice status
-           - Payment Service: release escrow / update records
-           - User Service: set account_status back to ACTIVE
-           - Notification Service: send repayment confirmation
-        4. Return RepaymentResponse(status="REPAID", loan_id=loan_id)
-
-        See BUILD_INSTRUCTIONS_V2.md Section 10 — LoanOrchestrator.confirm_repayment()
+        1. Update loan status to REPAID via gRPC
+        2. Get full loan details via gRPC
+        3. Publish loan.repaid event
+        4. Return RepaymentResponse
         """
-        # TODO: Implement
-        pass
+        # ── Step 1: Update loan status to REPAID ──────────────────────────
+        await self.grpc_client.update_loan_status(loan_id, "REPAID")
+
+        # ── Step 2: Get full loan details ──────────────────────────────────
+        loan = await self.grpc_client.get_loan(loan_id)
+
+        # ── Step 3: Publish loan.repaid event ─────────────────────────────
+        # Consumers: Invoice Service, Payment Service, User Service, Notification Service
+        await self.publisher.publish(
+            "loan.repaid",
+            {
+                "loan_id": str(loan_id),
+                "seller_id": loan["seller_id"],
+                "investor_id": loan["investor_id"],
+                "principal": loan["principal"],
+                "stripe_session_id": stripe_session_id,
+            },
+        )
+
+        # ── Step 4: Return response ────────────────────────────────────────
+        return RepaymentResponse(status="REPAID", loan_id=loan_id)
