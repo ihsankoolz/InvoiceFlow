@@ -6,7 +6,10 @@ via email (Resend) and real-time WebSocket push to the frontend.
 """
 
 import asyncio
+import logging
 from contextlib import asynccontextmanager
+
+logging.basicConfig(level=logging.INFO)
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
