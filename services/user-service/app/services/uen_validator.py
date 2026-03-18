@@ -23,6 +23,7 @@ class UENValidator:
         }
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(UENValidator.ACRA_API_URL, params=params)
-            response.raise_for_status()
+            if response.status_code != 200:
+                return True  # data.gov.sg unavailable — allow registration to proceed
             data = response.json()
         return data.get("result", {}).get("total", 0) > 0
