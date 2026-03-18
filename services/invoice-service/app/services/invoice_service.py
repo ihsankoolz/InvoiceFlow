@@ -19,64 +19,48 @@ class InvoiceService:
         self.storage_service = StorageService()
 
     def create_invoice(self, data: InvoiceCreate, pdf_bytes: bytes) -> Invoice:
-        """Create a new invoice record, upload the PDF to MinIO, and extract text fields.
-
-        Steps:
-            1. Generate a unique invoice_token (UUID4).
-            2. Upload the PDF to object storage via StorageService.
-            3. Extract structured fields from the PDF via PDFExtractor.
-            4. Persist the invoice row in the database.
-            5. Return the created Invoice ORM object.
-
-        Args:
-            data: Validated invoice creation payload.
-            pdf_bytes: Raw bytes of the uploaded PDF file.
-
-        Returns:
-            The newly created Invoice instance.
-        """
-        # TODO: implement
-        raise NotImplementedError
+        """Create a new invoice record, upload the PDF to MinIO, and extract text fields."""
+        invoice_token = str(uuid.uuid4())
+        
+        # 1. Upload to MinIO
+        pdf_url = self.storage_service.upload_pdf(invoice_token, pdf_bytes)
+        
+        # 2. Extract fields from PDF
+        extracted_data = self.pdf_extractor.extract_fields(pdf_bytes)
+        
+        # 3. Create DB record
+        invoice = Invoice(
+            invoice_token=invoice_token,
+            seller_id=data.seller_id,
+            debtor_name=extracted_data.get("debtor_name"),
+            debtor_uen=data.debtor_uen,
+            amount=data.amount,
+            due_date=data.due_date,
+            pdf_url=pdf_url,
+            status="DRAFT",  # Initial status per architecture
+            extracted_data=extracted_data
+        )
+        
+        self.db.add(invoice)
+        self.db.commit()
+        self.db.refresh(invoice)
+        return invoice
 
     def get_invoice(self, invoice_token: str) -> Invoice:
-        """Retrieve a single invoice by its unique token.
-
-        Args:
-            invoice_token: The UUID token identifying the invoice.
-
-        Returns:
-            The matching Invoice instance.
-
-        Raises:
-            HTTPException 404 if the invoice is not found.
-        """
-        # TODO: implement
-        raise NotImplementedError
+        """Retrieve a single invoice by its unique token."""
+        invoice = self.db.query(Invoice).filter(Invoice.invoice_token == invoice_token).first()
+        if not invoice:
+            raise HTTPException(404, f"Invoice {invoice_token} not found")
+        return invoice
 
     def get_invoices_by_seller(self, seller_id: int) -> List[Invoice]:
-        """Return all invoices belonging to the given seller.
-
-        Args:
-            seller_id: The ID of the seller whose invoices to retrieve.
-
-        Returns:
-            A list of Invoice instances (may be empty).
-        """
-        # TODO: implement
-        raise NotImplementedError
+        """Return all invoices belonging to the given seller."""
+        return self.db.query(Invoice).filter(Invoice.seller_id == seller_id).all()
 
     def update_status(self, invoice_token: str, status: str) -> Invoice:
-        """Transition an invoice to a new status.
-
-        Args:
-            invoice_token: The UUID token identifying the invoice.
-            status: The target status string (must be a valid ENUM value).
-
-        Returns:
-            The updated Invoice instance.
-
-        Raises:
-            HTTPException 404 if the invoice is not found.
-        """
-        # TODO: implement
-        raise NotImplementedError
+        """Transition an invoice to a new status."""
+        invoice = self.get_invoice(invoice_token)
+        invoice.status = status
+        self.db.commit()
+        self.db.refresh(invoice)
+        return invoice
