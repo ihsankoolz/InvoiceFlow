@@ -21,7 +21,7 @@ class LoanEventConsumer:
             On message -> UserService.update_status(seller_id, "DEFAULTED")
     """
 
-    EXCHANGE_NAME = "loan_events"
+    EXCHANGE_NAME = "invoiceflow_events"
 
     async def start(self):
         """Connect to RabbitMQ, declare exchange and queues, and begin consuming.
