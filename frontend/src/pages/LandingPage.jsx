@@ -5,6 +5,7 @@ import imgSpiral from '../assets/svgs/hero/OrangeSpiral.svg'
 import imgOrangeDiamond from '../assets/svgs/hero/OrangeHollowDiamond.svg'
 import imgPurpleDiamond from '../assets/svgs/hero/PurpleDiamond.svg'
 import imgArrow from '../assets/svgs/hero/RedirectArrow.svg'
+import imgFinancialData from '../assets/svgs/hero/financial-data.svg'
 import hiwPurpleArrow from '../assets/svgs/how_it_works/PurpleArrow.svg'
 import hiwBlackArrow from '../assets/svgs/how_it_works/BlackArrow.svg'
 import hiwOrangeDiamond from '../assets/svgs/how_it_works/OrangeDiamond.svg'
@@ -285,23 +286,31 @@ export default function LandingPage() {
           style={{ width: 22, ...fadeIn(heroVisible, 300) }}
         />
 
-        <div className="relative" style={{ zIndex: 1 }}>
-          <h1 className="font-display font-semibold text-[52px] leading-tight text-ink mb-2 max-w-[700px]" style={fadeUp(heroVisible, 150)}>
-            A Smarter Marketplace for Invoice Financing
-            {/* Purple diamond inline after heading */}
-            <img src={imgPurpleDiamond} alt="" aria-hidden="true" className="inline-block ml-3 mb-1 pointer-events-none select-none" style={{ width: 22, verticalAlign: 'middle' }} />
-          </h1>
-          {/* Asterisk — below heading */}
-          <div className="mb-4" style={fadeIn(heroVisible, 350)}>
-            <img src={imgAsterisk} alt="" aria-hidden="true" className="pointer-events-none select-none" style={{ width: 12 }} />
+        <div className="relative flex items-center gap-16" style={{ zIndex: 1 }}>
+          {/* Left: text content */}
+          <div className="flex-1">
+            <h1 className="font-display font-semibold text-[52px] leading-tight text-ink mb-2 max-w-[700px]" style={fadeUp(heroVisible, 150)}>
+              A Smarter Marketplace for Invoice Financing
+              {/* Purple diamond inline after heading */}
+              <img src={imgPurpleDiamond} alt="" aria-hidden="true" className="inline-block ml-3 mb-1 pointer-events-none select-none" style={{ width: 22, verticalAlign: 'middle' }} />
+            </h1>
+            {/* Asterisk — below heading */}
+            <div className="mb-4" style={fadeIn(heroVisible, 350)}>
+              <img src={imgAsterisk} alt="" aria-hidden="true" className="pointer-events-none select-none" style={{ width: 12 }} />
+            </div>
+            <p className="font-['Lato'] text-lg text-ink leading-relaxed mb-8 max-w-[560px]" style={fadeUp(heroVisible, 250)}>
+              InvoiceFlow is a digital invoice-financing platform where businesses sell unpaid invoices to investors
+              in exchange for immediate cash, while investors earn short-term returns.
+            </p>
+            <div className="flex flex-col gap-4" style={fadeUp(heroVisible, 380)}>
+              <ArrowCTA to="/invoices/new">List an Invoice</ArrowCTA>
+              <ArrowCTA to="/marketplace">View marketplace</ArrowCTA>
+            </div>
           </div>
-          <p className="font-['Lato'] text-lg text-ink leading-relaxed mb-8 max-w-[560px]" style={fadeUp(heroVisible, 250)}>
-            InvoiceFlow is a digital invoice-financing platform where businesses sell unpaid invoices to investors
-            in exchange for immediate cash, while investors earn short-term returns.
-          </p>
-          <div className="flex flex-col gap-4" style={fadeUp(heroVisible, 380)}>
-            <ArrowCTA to="/invoices/new">List an Invoice</ArrowCTA>
-            <ArrowCTA to="/marketplace">View marketplace</ArrowCTA>
+
+          {/* Right: financial data illustration */}
+          <div className="hidden lg:flex flex-shrink-0 items-center justify-center" style={{ ...fadeIn(heroVisible, 300), transform: 'translateX(-60px)' }}>
+            <img src={imgFinancialData} alt="Financial data illustration" className="w-[260px] h-[260px]" />
           </div>
         </div>
       </section>
