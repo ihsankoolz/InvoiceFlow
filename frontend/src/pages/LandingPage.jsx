@@ -1,4 +1,9 @@
 import { Link } from 'react-router-dom'
+import imgAsterisk from '../assets/svgs/hero/Asterisk1.svg'
+import imgSpiral from '../assets/svgs/hero/OrangeSpiral.svg'
+import imgOrangeDiamond from '../assets/svgs/hero/OrangeHollowDiamond.svg'
+import imgPurpleDiamond from '../assets/svgs/hero/PurpleDiamond.svg'
+import imgArrow from '../assets/svgs/hero/RedirectArrow.svg'
 
 
 function TimerIcon() {
@@ -133,11 +138,7 @@ function InvoiceCard({ rotateClass }) {
 function ArrowCTA({ children, to = '#' }) {
   return (
     <Link to={to} className="flex items-center gap-3 group">
-      <div className="w-8 h-8 flex items-center justify-center">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="rotate-180 group-hover:translate-x-1 transition-transform">
-          <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="#222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </div>
+      <img src={imgArrow} alt="" aria-hidden="true" className="w-7 h-7 group-hover:translate-x-0.5 transition-transform" />
       <span className="font-['Lato'] text-lg text-ink">{children}</span>
     </Link>
   )
@@ -172,10 +173,21 @@ export default function LandingPage() {
 
       {/* ─── Hero ────────────────────────────────────────────────── */}
       <section className="relative px-16 pt-16 pb-24 max-w-[1440px] mx-auto">
+        {/* Spiral — top right */}
+        <img src={imgSpiral} alt="" aria-hidden="true" className="absolute top-4 left-[60%] pointer-events-none select-none" />
+        {/* Orange hollow diamond — top left of heading */}
+        <img src={imgOrangeDiamond} alt="" aria-hidden="true" className="absolute top-12 left-12 pointer-events-none select-none" style={{ width: 22 }} />
+
         <div className="relative" style={{ zIndex: 1 }}>
-          <h1 className="font-display font-semibold text-[52px] leading-tight text-ink mb-6 max-w-[700px]">
+          <h1 className="font-display font-semibold text-[52px] leading-tight text-ink mb-2 max-w-[700px]">
             A Smarter Marketplace for Invoice Financing
+            {/* Purple diamond inline after heading */}
+            <img src={imgPurpleDiamond} alt="" aria-hidden="true" className="inline-block ml-3 mb-1 pointer-events-none select-none" style={{ width: 22, verticalAlign: 'middle' }} />
           </h1>
+          {/* Asterisk — below heading */}
+          <div className="mb-4">
+            <img src={imgAsterisk} alt="" aria-hidden="true" className="pointer-events-none select-none" style={{ width: 12 }} />
+          </div>
           <p className="font-['Lato'] text-lg text-ink leading-relaxed mb-8 max-w-[560px]">
             InvoiceFlow is a digital invoice-financing platform where businesses sell unpaid invoices to investors
             in exchange for immediate cash, while investors earn short-term returns.
