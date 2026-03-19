@@ -26,7 +26,9 @@ class LoanMaturityWorkflow:
 
         # Step 1: Sleep until due date
         due_dt = datetime.fromisoformat(due_date).replace(tzinfo=timezone.utc)
-        await workflow.sleep_until(due_dt)
+        delay = due_dt - workflow.now()
+        if delay.total_seconds() > 0:
+            await workflow.sleep(delay)
 
         # Step 2: Mark loan DUE
         await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "DUE"], **act_opts)

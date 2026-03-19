@@ -46,7 +46,7 @@ class AuctionCloseWorkflow:
         # T-12h warning
         t12h = deadline - timedelta(hours=12)
         if t12h > workflow.now():
-            await workflow.sleep_until(t12h)
+            await workflow.sleep(t12h - workflow.now())
             await workflow.execute_activity(
                 publish_event,
                 args=["auction.closing.warning", {"invoice_token": invoice_token, "hours_remaining": 12}],
@@ -56,7 +56,7 @@ class AuctionCloseWorkflow:
         # T-1h warning
         t1h = deadline - timedelta(hours=1)
         if t1h > workflow.now():
-            await workflow.sleep_until(t1h)
+            await workflow.sleep(t1h - workflow.now())
             await workflow.execute_activity(
                 publish_event,
                 args=["auction.closing.warning", {"invoice_token": invoice_token, "hours_remaining": 1}],
@@ -64,7 +64,7 @@ class AuctionCloseWorkflow:
             )
 
         # Wait until deadline
-        await workflow.sleep_until(deadline)
+        await workflow.sleep(deadline - workflow.now())
 
         # Anti-snipe loop: keep extending while signals arrive
         # CRITICAL: Check flag BEFORE resetting — a signal may have arrived during sleep_until
