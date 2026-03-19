@@ -227,13 +227,9 @@ export default function LandingPage() {
           from { opacity: 0; transform: translateX(32px); }
           to   { opacity: 1; transform: translateX(0); }
         }
-        @keyframes floatCard1 {
-          0%, 100% { transform: rotate(-5deg) translateY(0px); }
-          50%       { transform: rotate(-5deg) translateY(-12px); }
-        }
-        @keyframes floatCard2 {
-          0%, 100% { transform: rotate(10deg) translateY(0px); }
-          50%       { transform: rotate(10deg) translateY(-12px); }
+        @keyframes floatY {
+          0%, 100% { transform: translateY(0px); }
+          50%       { transform: translateY(-12px); }
         }
         @keyframes spinSlow {
           from { transform: rotate(0deg); }
@@ -315,17 +311,16 @@ export default function LandingPage() {
         <div className="grid grid-cols-2 gap-24 items-start">
           {/* Left: decorative invoice cards */}
           <div className="relative h-[480px] hidden lg:block">
-            <div
-              className="absolute top-4 left-16"
-              style={{ animation: hiwInView ? 'floatCard1 4s ease-in-out infinite' : undefined, opacity: hiwInView ? 1 : 0, transition: 'opacity 600ms ease' }}
-            >
-              <InvoiceCard rotateClass="" />
+            {/* Outer div holds rotation (always applied); inner div holds float (animation only) */}
+            <div className="absolute top-4 left-16 -rotate-[5deg]" style={{ opacity: hiwInView ? 1 : 0, transition: 'opacity 600ms ease' }}>
+              <div style={{ animation: hiwInView ? 'floatY 4s ease-in-out infinite' : undefined }}>
+                <InvoiceCard rotateClass="" />
+              </div>
             </div>
-            <div
-              className="absolute top-32 left-44"
-              style={{ animation: hiwInView ? 'floatCard2 4s ease-in-out infinite 0.8s' : undefined, opacity: hiwInView ? 1 : 0, transition: 'opacity 600ms ease 200ms' }}
-            >
-              <InvoiceCard rotateClass="" />
+            <div className="absolute top-32 left-44 rotate-[10deg]" style={{ opacity: hiwInView ? 1 : 0, transition: 'opacity 600ms ease 200ms' }}>
+              <div style={{ animation: hiwInView ? 'floatY 4s ease-in-out infinite 0.8s' : undefined }}>
+                <InvoiceCard rotateClass="" />
+              </div>
             </div>
           </div>
 
