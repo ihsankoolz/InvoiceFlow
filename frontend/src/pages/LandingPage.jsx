@@ -4,6 +4,17 @@ import imgSpiral from '../assets/svgs/hero/OrangeSpiral.svg'
 import imgOrangeDiamond from '../assets/svgs/hero/OrangeHollowDiamond.svg'
 import imgPurpleDiamond from '../assets/svgs/hero/PurpleDiamond.svg'
 import imgArrow from '../assets/svgs/hero/RedirectArrow.svg'
+import hiwPurpleArrow from '../assets/svgs/how_it_works/PurpleArrow.svg'
+import hiwBlackArrow from '../assets/svgs/how_it_works/BlackArrow.svg'
+import hiwOrangeDiamond from '../assets/svgs/how_it_works/OrangeDiamond.svg'
+import featPurpleDiamond from '../assets/svgs/features/PurpleDiamond.svg'
+import featAsterisk from '../assets/svgs/features/Asterisk2.svg'
+import featOrangeSpiral from '../assets/svgs/features/OrangeSpiral.svg'
+import forPurpleArrow from '../assets/svgs/for/PurpleArrow.svg'
+import forOrangeDiamond from '../assets/svgs/for/OrangeHollowDiamond.svg'
+import teamAsterisk1 from '../assets/svgs/our_team/Asterisk1.svg'
+import teamAsterisk2 from '../assets/svgs/our_team/Asterisk2.svg'
+import teamPurpleSpiral from '../assets/svgs/our_team/PurpleSpiral.svg'
 
 
 function TimerIcon() {
@@ -127,7 +138,7 @@ function InvoiceCard({ rotateClass }) {
 
       {/* CTA */}
       <div className="px-4 pb-4 pt-2">
-        <button className="w-full bg-ink text-white rounded-[10px] py-3 font-['Inter'] font-medium text-base">
+        <button className="w-full bg-ink text-white rounded-[10px] py-3 font-['Lato'] font-medium text-sm">
           Place bid
         </button>
       </div>
@@ -200,23 +211,27 @@ export default function LandingPage() {
       </section>
 
       {/* ─── How it works ────────────────────────────────────────── */}
-      <section className="pt-8 pb-24 max-w-[1440px] mx-auto px-16">
+      <section className="relative pt-8 pb-24 max-w-[1440px] mx-auto px-16">
         <div className="grid grid-cols-2 gap-24 items-start">
-          {/* Left: decorative invoice cards (same cards, different layout) */}
+          {/* Left: decorative invoice cards */}
           <div className="relative h-[480px] hidden lg:block">
-            <div className="absolute top-4 left-0 -rotate-[5deg]">
+            <div className="absolute top-4 left-16 -rotate-[5deg]">
               <InvoiceCard rotateClass="" />
             </div>
-            <div className="absolute top-32 left-28 rotate-[10deg]">
+            <div className="absolute top-32 left-44 rotate-[10deg]">
               <InvoiceCard rotateClass="" />
             </div>
           </div>
 
           {/* Right: steps */}
-          <div>
+          <div className="relative">
+            {/* Purple arrow — top-left, above heading */}
+            <img src={hiwPurpleArrow} alt="" aria-hidden="true" className="absolute -top-10 pointer-events-none select-none w-16" style={{ left: 'calc(-1.5rem + 10px)' }} />
             <h2 className="font-display font-semibold text-[40px] text-ink text-center mb-8">
               How it works
             </h2>
+            {/* Black arrow — right of heading */}
+            <img src={hiwBlackArrow} alt="" aria-hidden="true" className="absolute top-2 pointer-events-none select-none w-12" style={{ right: 'calc(-1.5rem + 10px)' }} />
             <div className="space-y-0 w-full">
               {HOW_IT_WORKS.map((step, i) => (
                 <div key={i} className={`flex items-center gap-6 h-[48px] w-full ${i < HOW_IT_WORKS.length - 1 ? 'border-b border-ink/80' : ''}`}>
@@ -225,16 +240,22 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+            {/* Orange diamond — below last step, centered */}
+            <div className="flex justify-end mt-6" style={{ paddingRight: '40px' }}>
+              <img src={hiwOrangeDiamond} alt="" aria-hidden="true" className="pointer-events-none select-none w-5" />
+            </div>
           </div>
         </div>
       </section>
 
       {/* ─── Features ────────────────────────────────────────────── */}
-      <section className="pt-8 pb-24 max-w-[1440px] mx-auto px-16">
+      <section className="relative pt-8 pb-24 max-w-[1440px] mx-auto px-16">
         <h2 className="font-display font-semibold text-[40px] text-ink text-center mb-12">
           Features
         </h2>
-        <div className="grid grid-cols-3 gap-6">
+        {/* Purple diamond — top left above grid */}
+        <img src={featPurpleDiamond} alt="" aria-hidden="true" className="absolute top-20 left-40 pointer-events-none select-none w-6" />
+        <div className="relative grid grid-cols-3 gap-6 max-w-[900px] mx-auto">
           {FEATURES.map((f) => (
             <div
               key={f.num}
@@ -245,11 +266,19 @@ export default function LandingPage() {
               <p className="font-['Lato'] font-light text-sm text-ink leading-relaxed">{f.desc}</p>
             </div>
           ))}
+          {/* Asterisk — right side between rows */}
+          <img src={featAsterisk} alt="" aria-hidden="true" className="absolute -right-12 top-[45%] pointer-events-none select-none w-6" />
         </div>
+        {/* Orange spiral — bottom left below grid */}
+        <img src={featOrangeSpiral} alt="" aria-hidden="true" className="absolute bottom-10 left-36 pointer-events-none select-none w-16" />
       </section>
 
       {/* ─── For Businesses / For Investors ──────────────────────── */}
-      <section className="py-24 max-w-[1440px] mx-auto px-16">
+      <section className="relative py-24 max-w-[1440px] mx-auto px-16">
+        {/* Purple arrow — top right */}
+        <img src={forPurpleArrow} alt="" aria-hidden="true" className="absolute top-16 right-10 pointer-events-none select-none w-14" />
+        {/* Orange hollow diamond — bottom left */}
+        <img src={forOrangeDiamond} alt="" aria-hidden="true" className="absolute -bottom-1 left-96 pointer-events-none select-none w-5" />
         <div className="grid grid-cols-2 divide-x divide-ink/20 gap-0">
           {/* For Businesses */}
           <div className="pr-16 flex flex-col h-full">
@@ -282,11 +311,16 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Our Team ────────────────────────────────────────────── */}
-      <section className="py-24 max-w-[1440px] mx-auto px-16">
+      <section className="relative py-24 max-w-[1440px] mx-auto px-16">
+
         <h2 className="font-display font-semibold text-[40px] text-ink text-center mb-12">
           Our Team
         </h2>
-        <div className="grid grid-cols-3 gap-y-12 gap-x-8">
+        {/* Asterisk1 — right side, slightly higher than rightmost circle */}
+        <img src={teamAsterisk1} alt="" aria-hidden="true" className="absolute top-[20%] right-40 pointer-events-none select-none w-4" />
+        {/* Asterisk2 — left side, slightly below Keene */}
+        <img src={teamAsterisk2} alt="" aria-hidden="true" className="absolute top-[52%] left-40 pointer-events-none select-none w-6" />
+        <div className="grid grid-cols-3 gap-y-12 gap-x-12 max-w-[900px] mx-auto">
           {TEAM.map((member) => (
             <div key={member.name} className="flex flex-col items-center gap-4">
               <div className="w-[220px] h-[220px] rounded-full bg-white border border-ink" />
@@ -294,6 +328,8 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+        {/* Purple spiral — bottom right */}
+        <img src={teamPurpleSpiral} alt="" aria-hidden="true" className="absolute bottom-16 right-40 pointer-events-none select-none w-12" />
       </section>
 
       {/* ─── Footer ──────────────────────────────────────────────── */}
