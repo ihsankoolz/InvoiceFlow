@@ -38,12 +38,12 @@ def relay_to_outsystems(ch, method, properties, body):
         print(f" [FAILED] Could not process message: {e}")
 
 # CONNECT TO RABBITMQ 
-# 'localhost' works for local testing, 'rabbitmq' works for Docker.
+# 'localhost' works for local testing, 'rabbitmq' works for docker
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
 channel = connection.channel()
 
 # declare the exchange 
-channel.exchange_declare(exchange='invoiceflow_events', exchange_type='topic')
+channel.exchange_declare(exchange='invoiceflow_events', exchange_type='topic', durable=True)
 
 # create a temporary queue for bridge
 result = channel.queue_declare(queue='outsystems_audit_queue', durable=True)
