@@ -188,7 +188,7 @@ function InvoiceCard({ rotateClass }) {
 
 function ArrowCTA({ children, to = '#' }) {
   return (
-    <Link to={to} className="flex items-center gap-3 group cursor-pointer">
+    <Link to={to} className="flex items-center gap-3 group cursor-pointer py-2">
       <img src={imgArrow} alt="" aria-hidden="true" className="w-7 h-7 group-hover:translate-x-1 transition-transform duration-200" />
       <span className="font-['Lato'] text-lg text-ink">{children}</span>
     </Link>
@@ -208,7 +208,7 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div className="relative bg-cream min-h-screen">
+    <div className="relative bg-cream min-h-screen overflow-x-clip">
 
       {/* ── Keyframe definitions ───────────────────────────────────── */}
       <style>{`
@@ -254,12 +254,12 @@ export default function LandingPage() {
 
       {/* ─── Navbar ─────────────────────────────────────────────── */}
       <nav
-        className="relative flex items-center justify-between px-16 py-6 border-b border-transparent whitespace-nowrap"
+        className="relative flex items-center justify-between px-4 sm:px-8 lg:px-16 py-6 border-b border-transparent whitespace-nowrap"
         style={{ zIndex: 2, ...fadeIn(heroVisible, 0) }}
       >
         <span className="font-['Lato'] font-bold text-[22px] text-ink">InvoiceFlow</span>
         <div className="flex items-center gap-8">
-          <Link to="/login" className="font-['Lato'] font-bold text-base text-ink hover:opacity-70 transition-opacity duration-200">
+          <Link to="/login" className="font-['Lato'] font-bold text-base text-ink hover:opacity-70 transition-opacity duration-200 py-2 px-1">
             Sign In
           </Link>
           <Link
@@ -272,7 +272,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ─── Hero ────────────────────────────────────────────────── */}
-      <section className="relative px-16 pt-16 pb-24 max-w-[1440px] mx-auto">
+      <section className="relative px-4 sm:px-8 lg:px-16 pt-10 pb-16 sm:pt-12 lg:pt-16 lg:pb-24 max-w-[1440px] mx-auto">
         {/* Spiral — top right */}
         <img
           src={imgSpiral} alt="" aria-hidden="true"
@@ -289,7 +289,7 @@ export default function LandingPage() {
         <div className="relative flex items-center gap-16" style={{ zIndex: 1 }}>
           {/* Left: text content */}
           <div className="flex-1">
-            <h1 className="font-display font-semibold text-[52px] leading-tight text-ink mb-2 max-w-[700px]" style={fadeUp(heroVisible, 150)}>
+            <h1 className="font-display font-semibold text-[32px] sm:text-[44px] lg:text-[52px] leading-tight text-ink mb-2 max-w-[700px]" style={fadeUp(heroVisible, 150)}>
               A Smarter Marketplace for Invoice Financing
               {/* Purple diamond inline after heading */}
               <img src={imgPurpleDiamond} alt="" aria-hidden="true" className="inline-block ml-3 mb-1 pointer-events-none select-none" style={{ width: 22, verticalAlign: 'middle' }} />
@@ -316,8 +316,8 @@ export default function LandingPage() {
       </section>
 
       {/* ─── How it works ────────────────────────────────────────── */}
-      <section ref={hiwRef} className="relative pt-8 pb-24 max-w-[1440px] mx-auto px-16">
-        <div className="grid grid-cols-2 gap-24 items-start">
+      <section ref={hiwRef} className="relative pt-6 pb-12 lg:pt-8 lg:pb-24 max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-start">
           {/* Left: decorative invoice cards */}
           <div className="relative h-[480px] hidden lg:block">
             {/* Outer div holds rotation (always applied); inner div holds float (animation only) */}
@@ -337,7 +337,7 @@ export default function LandingPage() {
           <div className="relative">
             {/* Purple arrow — top-left, above heading */}
             <img src={hiwPurpleArrow} alt="" aria-hidden="true" className="absolute -top-10 pointer-events-none select-none w-16" style={{ left: 'calc(-1.5rem + 10px)', ...fadeIn(hiwInView, 100) }} />
-            <h2 className="font-display font-semibold text-[40px] text-ink text-center mb-8" style={fadeUp(hiwInView, 0)}>
+            <h2 className="font-display font-semibold text-[28px] lg:text-[40px] text-ink text-center mb-8" style={fadeUp(hiwInView, 0)}>
               How it works
             </h2>
             {/* Black arrow — right of heading */}
@@ -346,7 +346,7 @@ export default function LandingPage() {
               {HOW_IT_WORKS.map((step, i) => (
                 <div
                   key={i}
-                  className={`flex items-center gap-6 h-[48px] w-full ${i < HOW_IT_WORKS.length - 1 ? 'border-b border-ink/80' : ''}`}
+                  className={`flex items-center gap-6 min-h-[48px] h-auto py-3 w-full ${i < HOW_IT_WORKS.length - 1 ? 'border-b border-ink/80' : ''}`}
                   style={fadeUp(hiwInView, 100 + i * 80)}
                 >
                   <span className="font-['Lato'] font-bold text-base text-ink shrink-0">0{i + 1}</span>
@@ -363,13 +363,13 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Features ────────────────────────────────────────────── */}
-      <section ref={featRef} className="relative pt-8 pb-24 max-w-[1440px] mx-auto px-16">
-        <h2 className="font-display font-semibold text-[40px] text-ink text-center mb-12" style={fadeUp(featInView, 0)}>
+      <section ref={featRef} className="relative pt-6 pb-12 lg:pt-8 lg:pb-24 max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16">
+        <h2 className="font-display font-semibold text-[28px] lg:text-[40px] text-ink text-center mb-12" style={fadeUp(featInView, 0)}>
           Features
         </h2>
         {/* Purple diamond — top left above grid */}
-        <img src={featPurpleDiamond} alt="" aria-hidden="true" className="absolute top-20 left-40 pointer-events-none select-none w-6" style={fadeIn(featInView, 200)} />
-        <div className="relative grid grid-cols-3 gap-6 max-w-[900px] mx-auto">
+        <img src={featPurpleDiamond} alt="" aria-hidden="true" className="absolute top-20 left-40 pointer-events-none select-none w-6 hidden sm:block" style={fadeIn(featInView, 200)} />
+        <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[900px] mx-auto">
           {FEATURES.map((f, i) => (
             <div
               key={f.num}
@@ -389,16 +389,16 @@ export default function LandingPage() {
       </section>
 
       {/* ─── For Businesses / For Investors ──────────────────────── */}
-      <section ref={forRef} className="relative py-24 max-w-[1440px] mx-auto px-16">
+      <section ref={forRef} className="relative py-12 lg:py-24 max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16">
         {/* Purple arrow — top right */}
-        <img src={forPurpleArrow} alt="" aria-hidden="true" className="absolute top-16 right-10 pointer-events-none select-none w-14" style={fadeIn(forInView, 100)} />
+        <img src={forPurpleArrow} alt="" aria-hidden="true" className="absolute top-16 right-10 pointer-events-none select-none w-14 hidden sm:block" style={fadeIn(forInView, 100)} />
         {/* Orange hollow diamond — bottom left */}
-        <img src={forOrangeDiamond} alt="" aria-hidden="true" className="absolute -bottom-1 left-96 pointer-events-none select-none w-5" style={fadeIn(forInView, 300)} />
-        <div className="grid grid-cols-2 divide-x divide-ink/20 gap-0">
+        <img src={forOrangeDiamond} alt="" aria-hidden="true" className="absolute -bottom-1 left-96 pointer-events-none select-none w-5 hidden lg:block" style={fadeIn(forInView, 300)} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-ink/20">
           {/* For Businesses */}
-          <div className="pr-16 flex flex-col h-full" style={slideLeft(forInView, 0)}>
+          <div className="pb-10 lg:pb-0 lg:pr-16 flex flex-col h-full" style={slideLeft(forInView, 0)}>
             <p className="font-['Lato'] text-xl text-ink mb-4">For Businesses</p>
-            <h3 className="font-['Lato'] font-semibold text-[32px] text-ink leading-tight mb-6">
+            <h3 className="font-['Lato'] font-semibold text-[26px] lg:text-[32px] text-ink leading-tight mb-6">
               Stop waiting 90 days to get paid.
             </h3>
             <p className="font-['Lato'] text-base text-ink leading-relaxed mb-8">
@@ -409,9 +409,9 @@ export default function LandingPage() {
           </div>
 
           {/* For Investors */}
-          <div className="pl-16 flex flex-col h-full" style={slideRight(forInView, 150)}>
+          <div className="pt-10 lg:pt-0 lg:pl-16 flex flex-col h-full" style={slideRight(forInView, 150)}>
             <p className="font-['Lato'] text-xl text-ink mb-4">For Investors</p>
-            <h3 className="font-['Lato'] font-semibold text-[32px] text-ink leading-tight mb-6">
+            <h3 className="font-['Lato'] font-semibold text-[26px] lg:text-[32px] text-ink leading-tight mb-6">
               Short-duration assets.
               <br />
               Verified debtors.
@@ -426,29 +426,29 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Our Team ────────────────────────────────────────────── */}
-      <section ref={teamRef} className="relative py-24 max-w-[1440px] mx-auto px-16">
+      <section ref={teamRef} className="relative py-12 lg:py-24 max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16">
 
-        <h2 className="font-display font-semibold text-[40px] text-ink text-center mb-12" style={fadeUp(teamInView, 0)}>
+        <h2 className="font-display font-semibold text-[28px] lg:text-[40px] text-ink text-center mb-12" style={fadeUp(teamInView, 0)}>
           Our Team
         </h2>
         {/* Asterisk1 — right side, slightly higher than rightmost circle */}
-        <img src={teamAsterisk1} alt="" aria-hidden="true" className="absolute top-[20%] right-40 pointer-events-none select-none w-4" style={fadeIn(teamInView, 200)} />
+        <img src={teamAsterisk1} alt="" aria-hidden="true" className="absolute top-[20%] right-40 pointer-events-none select-none w-4 hidden sm:block" style={fadeIn(teamInView, 200)} />
         {/* Asterisk2 — left side, slightly below Keene */}
-        <img src={teamAsterisk2} alt="" aria-hidden="true" className="absolute top-[52%] left-40 pointer-events-none select-none w-6" style={fadeIn(teamInView, 400)} />
-        <div className="grid grid-cols-3 gap-y-12 gap-x-12 max-w-[900px] mx-auto">
+        <img src={teamAsterisk2} alt="" aria-hidden="true" className="absolute top-[52%] left-40 pointer-events-none select-none w-6 hidden sm:block" style={fadeIn(teamInView, 400)} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-8 sm:gap-y-12 gap-x-6 sm:gap-x-12 max-w-[900px] mx-auto">
           {TEAM.map((member, i) => (
             <div key={member.name} className="flex flex-col items-center gap-4" style={fadeUp(teamInView, 80 + i * 70)}>
-              <div className="w-[220px] h-[220px] rounded-full bg-white border border-ink hover:shadow-md transition-shadow duration-300" />
+              <div className="w-[140px] h-[140px] sm:w-[180px] sm:h-[180px] lg:w-[220px] lg:h-[220px] rounded-full bg-white border border-ink hover:shadow-md transition-shadow duration-300" />
               <p className="font-['Lato'] text-lg text-ink text-center">{member.name}</p>
             </div>
           ))}
         </div>
         {/* Purple spiral — bottom right */}
-        <img src={teamPurpleSpiral} alt="" aria-hidden="true" className="absolute bottom-16 right-40 pointer-events-none select-none w-12" style={fadeIn(teamInView, 500)} />
+        <img src={teamPurpleSpiral} alt="" aria-hidden="true" className="absolute bottom-16 right-40 pointer-events-none select-none w-12 hidden sm:block" style={fadeIn(teamInView, 500)} />
       </section>
 
       {/* ─── Footer ──────────────────────────────────────────────── */}
-      <footer className="border-t border-ink/10 py-10 px-16 text-center">
+      <footer className="border-t border-ink/10 py-10 px-4 sm:px-8 lg:px-16 text-center">
         <p className="font-['Lato'] text-base text-ink/50">
           © 2026 InvoiceFlow · SMU IS213 Enterprise Solution Development
         </p>
