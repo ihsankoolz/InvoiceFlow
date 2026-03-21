@@ -17,7 +17,8 @@ async def main():
 
     # Due date 30 seconds from now so the first sleep is short
     due_date = (datetime.now(timezone.utc) + timedelta(seconds=30)).isoformat()
-    loan_id = "smoke-loan-001"
+    run_id = int(datetime.now(timezone.utc).timestamp())
+    loan_id = f"smoke-loan-{run_id}"
 
     print(f"Starting LoanMaturityWorkflow: loan_id={loan_id}, due_date={due_date}")
 
