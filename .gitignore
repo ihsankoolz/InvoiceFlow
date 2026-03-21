@@ -32,6 +32,9 @@ mysql-data/
 # Claude Code
 .claude/
 
+#stripe
+stripe.exe
+
 # IDE
 .vscode/
 .idea/
