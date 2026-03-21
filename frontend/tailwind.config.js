@@ -11,8 +11,10 @@ export default {
         body: ['Lato', 'sans-serif'],
       },
       colors: {
-        cream: '#fffcf7',
+        cream: '#fff8ec',
         ink: '#222222',
+        teal: '#1c3f3a',
+        slate: '#303437',
         orange: '#ff9500',
         green: '#3e9b00',
       },
