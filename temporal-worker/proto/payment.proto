@@ -1,0 +1,88 @@
+syntax = "proto3";
+package payment;
+
+service PaymentService {
+    rpc LockEscrow (LockEscrowRequest) returns (EscrowResponse);
+    rpc ReleaseEscrow (ReleaseEscrowRequest) returns (EscrowResponse);
+    rpc ConvertEscrowToLoan (ConvertEscrowRequest) returns (EscrowResponse);
+    rpc CreateLoan (CreateLoanRequest) returns (LoanResponse);
+    rpc ReleaseFundsToSeller (ReleaseFundsRequest) returns (TransferResponse);
+    rpc CreditWallet (CreditWalletRequest) returns (WalletResponse);
+    rpc GetLoan (GetLoanRequest) returns (LoanResponse);
+    rpc UpdateLoanStatus (UpdateLoanStatusRequest) returns (LoanResponse);
+}
+
+message LockEscrowRequest {
+    int32 investor_id = 1;
+    string invoice_token = 2;
+    string amount = 3;
+    string idempotency_key = 4;
+}
+
+message ReleaseEscrowRequest {
+    int32 investor_id = 1;
+    string invoice_token = 2;
+    string idempotency_key = 3;
+}
+
+message ConvertEscrowRequest {
+    int32 investor_id = 1;
+    string invoice_token = 2;
+    string idempotency_key = 3;
+}
+
+message CreateLoanRequest {
+    string invoice_token = 1;
+    int32 investor_id = 2;
+    int32 seller_id = 3;
+    string principal = 4;
+    string due_date = 5;
+    string idempotency_key = 6;
+}
+
+message ReleaseFundsRequest {
+    int32 seller_id = 1;
+    string amount = 2;
+    string invoice_token = 3;
+    string idempotency_key = 4;
+}
+
+message CreditWalletRequest {
+    int32 user_id = 1;
+    string amount = 2;
+    string idempotency_key = 3;
+}
+
+message GetLoanRequest {
+    string loan_id = 1;
+}
+
+message UpdateLoanStatusRequest {
+    string loan_id = 1;
+    string status = 2;
+}
+
+message EscrowResponse {
+    string id = 1;
+    string status = 2;
+    string amount = 3;
+}
+
+message LoanResponse {
+    string loan_id = 1;
+    string status = 2;
+    string principal = 3;
+    string due_date = 4;
+    int32 investor_id = 5;
+    int32 seller_id = 6;
+}
+
+message TransferResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message WalletResponse {
+    int32 user_id = 1;
+    string balance = 2;
+}

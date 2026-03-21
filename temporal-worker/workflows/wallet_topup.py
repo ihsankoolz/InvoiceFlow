@@ -1,10 +1,9 @@
 """
 WalletTopUpWorkflow — credits investor wallet after Stripe payment confirmation.
-
 Started by Bidding Orchestrator's Stripe webhook handler.
-
-See BUILD_INSTRUCTIONS_V2.md Section 13 — WalletTopUpWorkflow
 """
+
+from datetime import timedelta
 
 from temporalio import workflow
 
@@ -19,14 +18,11 @@ class WalletTopUpWorkflow:
 
     @workflow.run
     async def run(self, user_id: int, amount: float):
-        """
-        Run wallet top-up workflow.
+        act_opts = {"schedule_to_close_timeout": timedelta(seconds=30)}
 
-        Steps:
-        1. Credit wallet via gRPC credit_wallet(user_id, amount)
-        2. Publish wallet.credited event
-
-        See BUILD_INSTRUCTIONS_V2.md Section 13 — WalletTopUpWorkflow
-        """
-        # TODO: Implement
-        pass
+        await workflow.execute_activity(credit_wallet, args=[user_id, amount], **act_opts)
+        await workflow.execute_activity(
+            publish_event,
+            args=["wallet.credited", {"user_id": user_id, "amount": amount}],
+            **act_opts,
+        )

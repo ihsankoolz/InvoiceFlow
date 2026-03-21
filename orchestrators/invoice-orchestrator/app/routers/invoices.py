@@ -20,6 +20,17 @@ temporal_client = TemporalClient()
     response_model=ListInvoiceResponse,
     tags=["Invoice Workflow"],
     summary="List an invoice for auction (full Scenario 1 orchestration)",
+    description="""
+Full Scenario 1 orchestration:
+1. Check seller account is ACTIVE (User Service)
+2. Create invoice + upload PDF (Invoice Service)
+3. Validate debtor UEN (ACRA Wrapper)
+4. If invalid → PATCH status to REJECTED + publish invoice.rejected
+5. Create marketplace listing (Marketplace Service)
+6. Update invoice status to LISTED (Invoice Service)
+7. Start AuctionCloseWorkflow (Temporal)
+8. Publish invoice.listed event (RabbitMQ)
+    """,
 )
 async def list_invoice(
     seller_id: int = Form(...),
