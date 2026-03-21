@@ -21,7 +21,7 @@ class TemporalClient:
         Args:
             workflow_name: Name of the workflow class (e.g., "AuctionCloseWorkflow")
             workflow_id: Unique ID for this workflow instance (e.g., "auction-{invoice_token}")
-            args: Arguments to pass to the workflow run method
+            args: Dict of arguments passed positionally to the workflow run method
             task_queue: Temporal task queue name
         """
         client = await self.connect()

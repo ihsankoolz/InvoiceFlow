@@ -6,6 +6,8 @@ See BUILD_INSTRUCTIONS_V2.md Section 8 — Orchestration Flow
 
 from datetime import datetime, timedelta
 
+from fastapi import HTTPException
+
 from app.services.http_client import HTTPClient
 from app.services.rabbitmq_publisher import RabbitMQPublisher
 from app.temporal.client import TemporalClient

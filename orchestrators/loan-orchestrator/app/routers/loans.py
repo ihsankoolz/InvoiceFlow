@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from app.schemas.requests import (
     RepayLoanRequest,
@@ -6,6 +6,7 @@ from app.schemas.requests import (
     RepaymentResponse,
     CheckoutUrlResponse,
 )
+from app.services.loan_orchestrator import LoanOrchestrator
 
 router = APIRouter()
 
@@ -18,13 +19,8 @@ router = APIRouter()
     description="Gets loan details via gRPC, creates Stripe checkout session via Stripe Wrapper.",
 )
 async def repay_loan(loan_id: int, data: RepayLoanRequest):
-    """
-    Initiate loan repayment — create Stripe checkout session.
-
-    See BUILD_INSTRUCTIONS_V2.md Section 10 — LoanOrchestrator.initiate_repayment()
-    """
-    # TODO: Implement — instantiate LoanOrchestrator and call initiate_repayment()
-    raise HTTPException(501, "Not implemented yet")
+    orchestrator = LoanOrchestrator()
+    return await orchestrator.initiate_repayment(loan_id, data)
 
 
 @router.post(
@@ -35,10 +31,5 @@ async def repay_loan(loan_id: int, data: RepayLoanRequest):
     description="Updates loan status to REPAID via gRPC, publishes loan.repaid event.",
 )
 async def confirm_repayment(loan_id: int, data: ConfirmRepaymentRequest):
-    """
-    Confirm repayment — update loan status and publish loan.repaid.
-
-    See BUILD_INSTRUCTIONS_V2.md Section 10 — LoanOrchestrator.confirm_repayment()
-    """
-    # TODO: Implement — instantiate LoanOrchestrator and call confirm_repayment()
-    raise HTTPException(501, "Not implemented yet")
+    orchestrator = LoanOrchestrator()
+    return await orchestrator.confirm_repayment(loan_id, data.stripe_session_id)
