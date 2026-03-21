@@ -15,6 +15,11 @@ from app import config
 
 router = APIRouter()
 
+# Instantiate dependencies (Global or per-request)
+http_client = HTTPClient()
+publisher = RabbitMQPublisher(config.RABBITMQ_URL)
+temporal_client = TemporalClient()
+
 
 @router.post(
     "/api/invoices",

@@ -1,8 +1,11 @@
-import os
+import asyncio
+import logging
 from pathlib import Path
 
 import resend
 from jinja2 import Environment, FileSystemLoader
+
+logger = logging.getLogger(__name__)
 
 from app.config import RESEND_API_KEY, RESEND_FROM_EMAIL
 
@@ -40,12 +43,15 @@ class EmailService:
             subject: Email subject line.
             html_body: Rendered HTML body content.
         """
-        # TODO: Implement Resend API call
-        # params = {
-        #     "from": RESEND_FROM_EMAIL,
-        #     "to": [to],
-        #     "subject": subject,
-        #     "html": html_body,
-        # }
-        # resend.Emails.send(params)
-        pass
+        params = {
+            "from": RESEND_FROM_EMAIL,
+            "to": [to],
+            "subject": subject,
+            "html": html_body,
+        }
+        try:
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, resend.Emails.send, params)
+            logger.info("Email sent to %s — subject: %s", to, subject)
+        except Exception as e:
+            logger.error("Failed to send email to %s: %s", to, e)

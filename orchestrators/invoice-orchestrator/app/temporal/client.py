@@ -1,9 +1,3 @@
-"""
-Temporal client for starting workflows.
-
-See BUILD_INSTRUCTIONS_V2.md Section 8 — TemporalClient
-"""
-
 from temporalio.client import Client
 from app import config
 
@@ -15,7 +9,10 @@ class TemporalClient:
         self.client = None
 
     async def connect(self):
-        self.client = await Client.connect(config.TEMPORAL_HOST)
+        """Connect to Temporal Server."""
+        if not self.client:
+            self.client = await Client.connect(config.TEMPORAL_HOST)
+        return self.client
 
     async def start_workflow(self, workflow_name: str, workflow_id: str, args: dict, task_queue: str = "invoiceflow-queue"):
         """
