@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from app.schemas.checkout import CheckoutRequest, CheckoutResponse
+from app.services.stripe_service import StripeService
 
 router = APIRouter()
 
@@ -17,5 +18,5 @@ async def create_checkout_session(data: CheckoutRequest):
 
     See BUILD_INSTRUCTIONS_V2.md Section 12 — StripeService
     """
-    # TODO: Implement — instantiate StripeService and call create_checkout_session()
-    raise HTTPException(501, "Not implemented yet")
+    service = StripeService()
+    return service.create_checkout_session(data)
