@@ -24,14 +24,11 @@ class TemporalClient:
             args: Dict of arguments passed positionally to the workflow run method
             task_queue: Temporal task queue name
         """
-        client = await self.connect()
-        
-        # Start the workflow
-        # Note: In a production app, the workflow class definition would be imported.
-        # Here we use the string name of the workflow.
-        await client.start_workflow(
+        if not self.client:
+            await self.connect()
+        await self.client.start_workflow(
             workflow_name,
-            args=[args],
+            args=list(args.values()),
             id=workflow_id,
             task_queue=task_queue,
         )
