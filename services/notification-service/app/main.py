@@ -6,16 +6,17 @@ via email (Resend) and real-time WebSocket push to the frontend.
 """
 
 import asyncio
+import logging
 from contextlib import asynccontextmanager
+
+logging.basicConfig(level=logging.INFO)
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import notifications
-from app.services.websocket_manager import WebSocketManager
+from app.services.websocket_manager import ws_manager
 from app.consumers.event_consumer import EventConsumer
 from app import config
-
-websocket_manager = WebSocketManager()
 
 
 @asynccontextmanager
@@ -23,7 +24,7 @@ async def lifespan(app: FastAPI):
     """Start RabbitMQ consumer on startup, clean up on shutdown."""
     consumer = EventConsumer(
         rabbitmq_url=config.RABBITMQ_URL,
-        websocket_manager=websocket_manager,
+        websocket_manager=ws_manager,
     )
     consumer_task = asyncio.create_task(consumer.start())
     print("[notification-service] RabbitMQ consumer started")
@@ -64,10 +65,10 @@ async def health():
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
     """WebSocket endpoint for real-time push notifications to frontend."""
-    await websocket_manager.connect(user_id, websocket)
+    await ws_manager.connect(str(user_id), websocket)
     try:
         while True:
             # Keep connection alive — client doesn't send meaningful data
             await websocket.receive_text()
     except WebSocketDisconnect:
-        websocket_manager.disconnect(user_id)
+        await ws_manager.disconnect(str(user_id), websocket)
