@@ -1,5 +1,19 @@
 _format_version: "3.0"
 
+# ============================================================
+# Consumers & JWT Credentials (required for DB-less JWT auth)
+# Kong needs a consumer with a JWT credential whose secret
+# matches the JWT_SECRET used by the user-service.
+# The user-service must include `iss: "invoiceflow"` in the
+# JWT payload so Kong knows which credential to validate with.
+# ============================================================
+consumers:
+  - username: invoiceflow-app
+    jwt_secrets:
+      - key: invoiceflow                          # must match `iss` claim in JWT
+        secret: your-jwt-secret-change-in-production   # must match JWT_SECRET env var
+        algorithm: HS256
+
 services:
   # --- Auth (no JWT) ---
   - name: auth-service
@@ -21,6 +35,12 @@ services:
   # --- Invoice Orchestrator (JWT required) ---
   - name: invoice-orchestrator
     url: http://invoice-orchestrator:5010
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
     routes:
       - name: invoice-create
         paths:
@@ -29,9 +49,15 @@ services:
           - POST
         strip_path: false
 
-  # --- Bidding Orchestrator (JWT required) ---
+  # --- Bidding Orchestrator (JWT required on bids + wallet) ---
   - name: bidding-orchestrator
     url: http://bidding-orchestrator:5011
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
     routes:
       - name: place-bid
         paths:
@@ -60,10 +86,22 @@ services:
   # --- Loan Orchestrator (JWT required) ---
   - name: loan-orchestrator
     url: http://loan-orchestrator:5012
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
     routes:
       - name: loan-repay
         paths:
-          - /api/loans
+          - ~/api/loans/[^/]+/repay$
+        methods:
+          - POST
+        strip_path: false
+      - name: loan-confirm-repayment
+        paths:
+          - ~/api/loans/[^/]+/confirm-repayment$
         methods:
           - POST
         strip_path: false
@@ -71,6 +109,12 @@ services:
   # --- Notification Service (JWT required, direct to atomic) ---
   - name: notification-service
     url: http://notification-service:5005
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
     routes:
       - name: notifications-read
         paths:
@@ -82,6 +126,12 @@ services:
   # --- Marketplace GraphQL (JWT required) ---
   - name: marketplace-graphql
     url: http://marketplace-service:5002
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
     routes:
       - name: graphql-query
         paths:
