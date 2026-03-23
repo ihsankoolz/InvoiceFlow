@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../../context/AuthContext'
 
 const SELLER_NAV = [
-  { icon: LayoutDashboard, label: 'Dashboard',    path: '/dashboard' },
+  { icon: LayoutDashboard, label: 'Home',          path: '/dashboard' },
   { icon: PlusCircle,      label: 'List Invoice', path: '/invoices/new' },
   { icon: FileText,        label: 'My Invoices',  path: '/invoices' },
   { icon: CreditCard,      label: 'Loans',        path: '/loans' },
@@ -21,14 +21,14 @@ const SELLER_NAV = [
 ]
 
 const INVESTOR_NAV = [
-  { icon: LayoutDashboard, label: 'Dashboard',    path: '/dashboard' },
+  { icon: LayoutDashboard, label: 'Home',          path: '/dashboard' },
   { icon: ShoppingCart,    label: 'Marketplace',  path: '/marketplace' },
   { icon: FileSpreadsheet, label: 'My Bids',      path: '/bids' },
   { icon: Wallet,          label: 'Wallet',       path: '/wallet' },
   { icon: Bell,            label: 'Notifications',path: '/notifications' },
 ]
 
-export default function AppLayout({ children }) {
+export default function DashboardLayout({ children }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -40,10 +40,10 @@ export default function AppLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col font-['Lato'] bg-white">
+    <div className="min-h-screen flex flex-col font-['Lato']">
 
       {/* ── Top Navbar ── */}
-      <nav className="flex items-center justify-between px-8 lg:px-10 bg-white border-b border-black/8 flex-shrink-0 h-[64px]">
+      <nav className="bg-white border-b border-black/8 flex items-center justify-between px-8 lg:px-10 h-[64px] flex-shrink-0 sticky top-0 z-10">
 
         {/* Logo */}
         <Link
@@ -76,10 +76,7 @@ export default function AppLayout({ children }) {
         {/* Right: user + logout */}
         <div className="flex items-center gap-4 flex-shrink-0">
           {user && (
-            <div className="text-right">
-              <p className="font-['Lato'] text-sm font-semibold text-black leading-tight">{user.full_name}</p>
-              <span className="font-['Lato'] text-[11px] text-black/40">{user.role}</span>
-            </div>
+            <p className="font-['Lato'] text-sm font-semibold text-black">{user.full_name}</p>
           )}
           <button
             onClick={handleLogout}

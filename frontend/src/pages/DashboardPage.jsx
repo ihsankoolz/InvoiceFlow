@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { PlusCircle, FileText, ShoppingCart, Wallet, TrendingUp, DollarSign, BarChart2, CreditCard, ArrowRight } from 'lucide-react'
-import AppLayout from '../components/layout/AppLayout'
+import { PlusCircle, FileText, ShoppingCart, ArrowRight } from 'lucide-react'
+import iconArrow from '../assets/icons/8.svg'
+import DashboardLayout from '../components/layout/DashboardLayout'
 import Badge from '../components/ui/Badge'
 import api from '../api/axios'
-import { fetchListings } from '../api/marketplace'
 import { useAuth } from '../context/AuthContext'
 
 /* ── Animation helpers ── */
@@ -35,17 +35,9 @@ function fmt(n) {
   return `$${Number(n).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-function Skeleton({ className = '' }) {
-  return <div className={`bg-white/20 rounded-lg animate-pulse ${className}`} />
-}
-
-function SkeletonDark({ className = '' }) {
-  return <div className={`bg-ink/5 rounded-lg animate-pulse ${className}`} />
-}
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const [heroRef,  heroInView]  = useInView(0.05)
   const [statsRef, statsInView] = useInView(0.05)
   const [bodyRef,  bodyInView]  = useInView(0.05)
 
@@ -57,9 +49,9 @@ export default function DashboardPage() {
   const [invoicesLoading, setInvoicesLoading] = useState(false)
 
   /* ── Investor state ── */
-  const [investorStats, setInvestorStats]     = useState(null)
-  const [featuredListings, setFeaturedListings] = useState([])
-  const [listingsLoading, setListingsLoading] = useState(false)
+  const [investorStats, setInvestorStats] = useState(null)
+  const [recentBids, setRecentBids]       = useState([])
+  const [bidsLoading, setBidsLoading]     = useState(false)
 
   const [statsLoading, setStatsLoading] = useState(true)
 
@@ -94,26 +86,24 @@ export default function DashboardPage() {
 
     async function loadInvestorData() {
       setStatsLoading(true)
-      setListingsLoading(true)
+      setBidsLoading(true)
       try {
-        const [bidsRes, walletRes, listingsRes] = await Promise.allSettled([
+        const [bidsRes, walletRes] = await Promise.allSettled([
           api.get(`/bids?investor_id=${user.sub}`),
           api.get('/wallet/balance'),
-          fetchListings({}),
         ])
-        const bids     = bidsRes.status === 'fulfilled' ? (bidsRes.value.data?.bids || bidsRes.value.data || []) : []
-        const wallet   = walletRes.status === 'fulfilled' ? walletRes.value.data : null
-        const listings = listingsRes.status === 'fulfilled' ? listingsRes.value : []
+        const bids   = bidsRes.status === 'fulfilled' ? (bidsRes.value.data?.bids || bidsRes.value.data || []) : []
+        const wallet = walletRes.status === 'fulfilled' ? walletRes.value.data : null
         const activeBids    = bids.filter((b) => b.status === 'PENDING').length
         const totalInvested = bids.filter((b) => b.status === 'ACCEPTED').reduce((s, b) => s + Number(b.amount || 0), 0)
         setInvestorStats({ walletBalance: wallet?.balance ?? wallet?.available_balance ?? null, activeBids, totalInvested, activeReturns: bids.filter((b) => b.status === 'ACCEPTED').length })
-        setFeaturedListings(Array.isArray(listings) ? listings.slice(0, 3) : [])
+        setRecentBids(bids.slice(0, 5))
       } catch {
         setInvestorStats({ walletBalance: null, activeBids: 0, totalInvested: 0, activeReturns: 0 })
-        setFeaturedListings([])
+        setRecentBids([])
       } finally {
         setStatsLoading(false)
-        setListingsLoading(false)
+        setBidsLoading(false)
       }
     }
 
@@ -122,7 +112,7 @@ export default function DashboardPage() {
   }, [user, isSeller])
 
   return (
-    <AppLayout>
+    <DashboardLayout>
       <style>{`
         @keyframes dashFadeUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -130,314 +120,202 @@ export default function DashboardPage() {
         }
       `}</style>
 
-      {/* ── Welcome strip ── */}
-      <div ref={heroRef} className="bg-teal px-8 py-10" style={fadeUp(heroInView, 0)}>
-        <div className="max-w-6xl mx-auto flex items-end justify-between">
-          <div>
-            <p className="font-['Lato'] text-[#fff8ec]/60 text-sm mb-1">
-              {isSeller ? 'Seller Dashboard' : 'Investor Dashboard'}
-            </p>
-            <h1 className="font-display font-semibold text-[42px] text-[#fff8ec] leading-tight">
-              Welcome back, {user?.full_name?.split(' ')[0] || 'there'}
-            </h1>
-          </div>
-          {isSeller ? (
-            <Link
-              to="/invoices/new"
-              className="flex items-center gap-2 bg-[#fff8ec] text-teal rounded-[22px] px-6 py-3 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity"
-            >
-              <PlusCircle size={16} />
-              List Invoice
-            </Link>
-          ) : (
-            <Link
-              to="/marketplace"
-              className="flex items-center gap-2 bg-[#fff8ec] text-teal rounded-[22px] px-6 py-3 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity"
-            >
-              <ShoppingCart size={16} />
-              Browse Market
-            </Link>
-          )}
+      <div className="px-10 py-10 max-w-6xl mx-auto">
+
+        {/* ── Greeting ── */}
+        <div className="mb-10" style={fadeUp(statsInView, 0)}>
+          <h1 className="font-['Lato'] font-bold text-[28px] text-ink leading-tight">
+            Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.full_name?.split(' ')[0] || 'there'}
+          </h1>
+          <p className="font-['Lato'] text-sm text-ink/40 mt-1">
+            {isSeller ? "Here's an overview of your listings and loans." : "Here's an overview of your portfolio."}
+          </p>
         </div>
-      </div>
 
-      <div className="px-8 py-8 max-w-6xl mx-auto">
-
-        {/* ── Bento stats ── */}
-        {isSeller ? (
-          <div ref={statsRef} className="grid grid-cols-12 gap-4 mb-8">
-            {/* Wallet — wide cream card */}
-            <div className="col-span-5 bg-cream rounded-[20px] p-7 flex flex-col justify-between" style={fadeUp(statsInView, 0)}>
-              <div className="flex items-center gap-2 mb-2">
-                <Wallet size={16} className="text-ink/50" />
-                <p className="font-['Lato'] text-sm text-ink/50">Wallet Balance</p>
-              </div>
-              {statsLoading
-                ? <div className="h-14 w-40 bg-ink/10 rounded-lg animate-pulse" />
-                : <p className="font-display font-semibold text-[52px] text-ink leading-none">
-                    {fmt(sellerStats?.walletBalance)}
-                  </p>
-              }
-              <Link to="/wallet" className="flex items-center gap-1 font-['Lato'] text-sm text-ink/60 hover:text-ink transition-colors mt-4">
-                Manage wallet <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            {/* Active Listings */}
-            <div className="col-span-3 bg-teal rounded-[20px] p-7 flex flex-col justify-between" style={fadeUp(statsInView, 60)}>
-              <div className="flex items-center gap-2 mb-2">
-                <FileText size={16} className="text-[#fff8ec]/60" />
-                <p className="font-['Lato'] text-sm text-[#fff8ec]/60">Active Listings</p>
-              </div>
-              {statsLoading
-                ? <Skeleton className="h-14 w-16" />
-                : <p className="font-display font-semibold text-[52px] text-[#fff8ec] leading-none">
-                    {sellerStats?.activeListings ?? 0}
-                  </p>
-              }
-              <Link to="/invoices" className="flex items-center gap-1 font-['Lato'] text-sm text-[#fff8ec]/60 hover:text-[#fff8ec] transition-colors mt-4">
-                View all <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            {/* Total Financed */}
-            <div className="col-span-4 bg-white border border-ink/10 rounded-[20px] p-7 flex flex-col justify-between" style={fadeUp(statsInView, 120)}>
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign size={16} className="text-ink/50" />
-                <p className="font-['Lato'] text-sm text-ink/50">Total Financed</p>
-              </div>
-              {statsLoading
-                ? <SkeletonDark className="h-14 w-36" />
-                : <p className="font-display font-semibold text-[40px] text-ink leading-none">
-                    {fmt(sellerStats?.totalFinanced)}
-                  </p>
-              }
-              <div className="flex items-center gap-2 mt-4">
-                <CreditCard size={14} className="text-ink/40" />
-                <span className="font-['Lato'] text-sm text-ink/50">
-                  {statsLoading ? '—' : sellerStats?.activeLoans ?? 0} active loan{sellerStats?.activeLoans !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div ref={statsRef} className="grid grid-cols-12 gap-4 mb-8">
-            {/* Wallet — wide cream */}
-            <div className="col-span-5 bg-cream rounded-[20px] p-7 flex flex-col justify-between" style={fadeUp(statsInView, 0)}>
-              <div className="flex items-center gap-2 mb-2">
-                <Wallet size={16} className="text-ink/50" />
-                <p className="font-['Lato'] text-sm text-ink/50">Wallet Balance</p>
-              </div>
-              {statsLoading
-                ? <div className="h-14 w-40 bg-ink/10 rounded-lg animate-pulse" />
-                : <p className="font-display font-semibold text-[52px] text-ink leading-none">
-                    {fmt(investorStats?.walletBalance)}
-                  </p>
-              }
-              <Link to="/wallet" className="flex items-center gap-1 font-['Lato'] text-sm text-ink/60 hover:text-ink transition-colors mt-4">
-                Top up wallet <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            {/* Active Bids */}
-            <div className="col-span-3 bg-teal rounded-[20px] p-7 flex flex-col justify-between" style={fadeUp(statsInView, 60)}>
-              <div className="flex items-center gap-2 mb-2">
-                <BarChart2 size={16} className="text-[#fff8ec]/60" />
-                <p className="font-['Lato'] text-sm text-[#fff8ec]/60">Active Bids</p>
-              </div>
-              {statsLoading
-                ? <Skeleton className="h-14 w-16" />
-                : <p className="font-display font-semibold text-[52px] text-[#fff8ec] leading-none">
-                    {investorStats?.activeBids ?? 0}
-                  </p>
-              }
-              <Link to="/bids" className="flex items-center gap-1 font-['Lato'] text-sm text-[#fff8ec]/60 hover:text-[#fff8ec] transition-colors mt-4">
-                View bids <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            {/* Total Invested */}
-            <div className="col-span-4 bg-white border border-ink/10 rounded-[20px] p-7 flex flex-col justify-between" style={fadeUp(statsInView, 120)}>
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp size={16} className="text-ink/50" />
-                <p className="font-['Lato'] text-sm text-ink/50">Total Invested</p>
-              </div>
-              {statsLoading
-                ? <SkeletonDark className="h-14 w-36" />
-                : <p className="font-display font-semibold text-[40px] text-ink leading-none">
-                    {fmt(investorStats?.totalInvested)}
-                  </p>
-              }
-              <div className="flex items-center gap-2 mt-4">
-                <DollarSign size={14} className="text-ink/40" />
-                <span className="font-['Lato'] text-sm text-ink/50">
-                  {statsLoading ? '—' : investorStats?.activeReturns ?? 0} active return{investorStats?.activeReturns !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Body content ── */}
-        <div ref={bodyRef} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ── Stat cards ── */}
+        <div ref={statsRef} className="grid grid-cols-4 gap-4 mb-10">
           {isSeller ? (
             <>
-              {/* Recent invoices */}
-              <div className="lg:col-span-2 bg-white border border-ink/10 rounded-[20px] overflow-hidden" style={fadeUp(bodyInView, 0)}>
-                <div className="flex items-center justify-between px-7 py-5 border-b border-ink/8">
-                  <h2 className="font-['Lato'] font-semibold text-base text-ink">Recent Invoices</h2>
-                  <Link to="/invoices" className="font-['Lato'] text-sm text-ink/50 hover:text-ink transition-colors flex items-center gap-1">
-                    View all <ArrowRight size={13} />
-                  </Link>
-                </div>
-                <div className="px-7 py-5">
-                  {invoicesLoading ? (
-                    <div className="space-y-3">
-                      {[...Array(4)].map((_, i) => <SkeletonDark key={i} className="h-10 w-full" />)}
-                    </div>
-                  ) : recentInvoices.length === 0 ? (
-                    <div className="text-center py-12">
-                      <FileText size={36} className="text-ink/15 mx-auto mb-3" />
-                      <p className="font-['Lato'] text-sm text-ink/40 mb-4">No invoices yet</p>
-                      <Link
-                        to="/invoices/new"
-                        className="inline-flex items-center gap-2 bg-teal text-white rounded-[22px] px-5 py-2 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity"
-                      >
-                        <PlusCircle size={15} /> List your first invoice
-                      </Link>
-                    </div>
-                  ) : (
-                    <table className="w-full text-sm font-['Lato']">
-                      <thead>
-                        <tr className="border-b border-ink/8 text-ink/40">
-                          <th className="text-left pb-3 font-medium">Token</th>
-                          <th className="text-left pb-3 font-medium">Debtor</th>
-                          <th className="text-right pb-3 font-medium">Face Value</th>
-                          <th className="text-center pb-3 font-medium">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recentInvoices.map((inv) => (
-                          <tr key={inv.id} className="border-b border-ink/5 hover:bg-cream transition-colors">
-                            <td className="py-3 text-ink font-medium">{inv.invoice_token || inv.id}</td>
-                            <td className="py-3 text-ink/60">{inv.debtor_name || '—'}</td>
-                            <td className="py-3 text-right text-ink font-medium">{fmt(inv.face_value)}</td>
-                            <td className="py-3 text-center"><Badge status={inv.status} /></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+              {/* Wallet — teal */}
+              <div className="bg-teal rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 0)}>
+                <p className="font-['Lato'] text-xs text-white/60 uppercase tracking-wider">Wallet Balance</p>
+                {statsLoading
+                  ? <div className="h-9 w-32 bg-white/20 rounded animate-pulse" />
+                  : <p className="font-['Lato'] font-bold text-[28px] text-white leading-none">{fmt(sellerStats?.walletBalance)}</p>
+                }
+                <Link to="/wallet" className="font-['Lato'] text-xs text-white/60 hover:text-white transition-colors flex items-center gap-1 mt-auto">
+                  Manage <ArrowRight size={11} />
+                </Link>
               </div>
-
-              {/* Quick actions */}
-              <div className="space-y-4" style={fadeUp(bodyInView, 80)}>
-                <div className="bg-cream rounded-[20px] p-7">
-                  <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider mb-4">Quick Actions</p>
-                  <div className="space-y-3">
-                    <Link
-                      to="/invoices/new"
-                      className="flex items-center justify-between bg-teal text-[#fff8ec] rounded-[14px] px-5 py-4 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity"
-                    >
-                      <span className="flex items-center gap-2"><PlusCircle size={16} /> List New Invoice</span>
-                      <ArrowRight size={16} />
-                    </Link>
-                    <Link
-                      to="/invoices"
-                      className="flex items-center justify-between bg-white border border-ink/10 rounded-[14px] px-5 py-4 font-['Lato'] font-medium text-sm text-ink hover:border-ink/30 hover:bg-white transition-all"
-                    >
-                      <span className="flex items-center gap-2"><FileText size={16} /> My Invoices</span>
-                      <ArrowRight size={16} className="text-ink/40" />
-                    </Link>
-                    <Link
-                      to="/loans"
-                      className="flex items-center justify-between bg-white border border-ink/10 rounded-[14px] px-5 py-4 font-['Lato'] font-medium text-sm text-ink hover:border-ink/30 transition-all"
-                    >
-                      <span className="flex items-center gap-2"><CreditCard size={16} /> My Loans</span>
-                      <ArrowRight size={16} className="text-ink/40" />
-                    </Link>
-                  </div>
-                </div>
+              <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 60)}>
+                <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Listings</p>
+                {statsLoading
+                  ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
+                  : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{sellerStats?.activeListings ?? 0}</p>
+                }
+                <Link to="/invoices" className="font-['Lato'] text-xs text-ink/40 hover:text-ink transition-colors flex items-center gap-1 mt-auto">
+                  View all <ArrowRight size={11} />
+                </Link>
+              </div>
+              <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 120)}>
+                <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Total Financed</p>
+                {statsLoading
+                  ? <div className="h-9 w-32 bg-ink/8 rounded animate-pulse" />
+                  : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{fmt(sellerStats?.totalFinanced)}</p>
+                }
+                <p className="font-['Lato'] text-xs text-ink/40 mt-auto">across financed invoices</p>
+              </div>
+              <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 180)}>
+                <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Loans</p>
+                {statsLoading
+                  ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
+                  : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{sellerStats?.activeLoans ?? 0}</p>
+                }
+                <Link to="/loans" className="font-['Lato'] text-xs text-ink/40 hover:text-ink transition-colors flex items-center gap-1 mt-auto">
+                  View loans <ArrowRight size={11} />
+                </Link>
               </div>
             </>
           ) : (
             <>
-              {/* Featured listings */}
-              <div className="lg:col-span-2 bg-white border border-ink/10 rounded-[20px] overflow-hidden" style={fadeUp(bodyInView, 0)}>
-                <div className="flex items-center justify-between px-7 py-5 border-b border-ink/8">
-                  <h2 className="font-['Lato'] font-semibold text-base text-ink">Live Listings</h2>
-                  <Link to="/marketplace" className="font-['Lato'] text-sm text-ink/50 hover:text-ink transition-colors flex items-center gap-1">
-                    Browse all <ArrowRight size={13} />
-                  </Link>
-                </div>
-                <div className="px-7 py-5">
-                  {listingsLoading ? (
-                    <div className="space-y-3">
-                      {[...Array(3)].map((_, i) => <SkeletonDark key={i} className="h-16 w-full" />)}
-                    </div>
-                  ) : featuredListings.length === 0 ? (
-                    <div className="text-center py-12">
-                      <ShoppingCart size={36} className="text-ink/15 mx-auto mb-3" />
-                      <p className="font-['Lato'] text-sm text-ink/40">No listings available</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {featuredListings.map((listing) => (
-                        <Link
-                          key={listing.id}
-                          to={`/marketplace/${listing.id}`}
-                          className="flex items-center justify-between p-4 rounded-[12px] border border-ink/8 hover:border-ink/20 hover:bg-cream transition-all duration-150"
-                        >
-                          <div>
-                            <p className="font-['Lato'] font-medium text-sm text-ink">{listing.invoice_token}</p>
-                            <p className="font-['Lato'] text-xs text-ink/50">{listing.debtor_name}</p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Badge status={listing.urgency_level} />
-                            <p className="font-['Lato'] font-semibold text-sm text-ink">{fmt(listing.current_bid || listing.minimum_bid)}</p>
-                            <ArrowRight size={14} className="text-ink/30" />
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {/* Wallet — teal */}
+              <div className="bg-teal rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 0)}>
+                <p className="font-['Lato'] text-xs text-white/60 uppercase tracking-wider">Wallet Balance</p>
+                {statsLoading
+                  ? <div className="h-9 w-32 bg-white/20 rounded animate-pulse" />
+                  : <p className="font-['Lato'] font-bold text-[28px] text-white leading-none">{fmt(investorStats?.walletBalance)}</p>
+                }
+                <Link to="/wallet" className="inline-flex items-center gap-2 mt-auto bg-white text-teal font-['Lato'] font-semibold text-sm px-5 py-2 rounded-[22px] hover:opacity-90 transition-opacity w-fit">
+                  <img src={iconArrow} alt="" className="w-4 h-4" />
+                  Top up
+                </Link>
               </div>
-
-              {/* Quick actions */}
-              <div className="space-y-4" style={fadeUp(bodyInView, 80)}>
-                <div className="bg-cream rounded-[20px] p-7">
-                  <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider mb-4">Quick Actions</p>
-                  <div className="space-y-3">
-                    <Link
-                      to="/marketplace"
-                      className="flex items-center justify-between bg-teal text-[#fff8ec] rounded-[14px] px-5 py-4 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity"
-                    >
-                      <span className="flex items-center gap-2"><ShoppingCart size={16} /> Browse Marketplace</span>
-                      <ArrowRight size={16} />
-                    </Link>
-                    <Link
-                      to="/wallet"
-                      className="flex items-center justify-between bg-white border border-ink/10 rounded-[14px] px-5 py-4 font-['Lato'] font-medium text-sm text-ink hover:border-ink/30 transition-all"
-                    >
-                      <span className="flex items-center gap-2"><Wallet size={16} /> Top Up Wallet</span>
-                      <ArrowRight size={16} className="text-ink/40" />
-                    </Link>
-                    <Link
-                      to="/bids"
-                      className="flex items-center justify-between bg-white border border-ink/10 rounded-[14px] px-5 py-4 font-['Lato'] font-medium text-sm text-ink hover:border-ink/30 transition-all"
-                    >
-                      <span className="flex items-center gap-2"><BarChart2 size={16} /> My Bids</span>
-                      <ArrowRight size={16} className="text-ink/40" />
-                    </Link>
-                  </div>
-                </div>
+              <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 60)}>
+                <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Bids</p>
+                {statsLoading
+                  ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
+                  : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{investorStats?.activeBids ?? 0}</p>
+                }
+                <Link to="/bids" className="inline-flex items-center gap-2 mt-auto bg-teal text-white font-['Lato'] font-semibold text-sm px-5 py-2 rounded-[22px] hover:opacity-90 transition-opacity w-fit">
+                  <img src={iconArrow} alt="" className="w-4 h-4 brightness-0 invert" />
+                  View bids
+                </Link>
+              </div>
+              <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 120)}>
+                <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Total Invested</p>
+                {statsLoading
+                  ? <div className="h-9 w-32 bg-ink/8 rounded animate-pulse" />
+                  : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{fmt(investorStats?.totalInvested)}</p>
+                }
+                <p className="font-['Lato'] text-xs text-ink/40 mt-auto">across won auctions</p>
+              </div>
+              <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 180)}>
+                <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Returns</p>
+                {statsLoading
+                  ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
+                  : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{investorStats?.activeReturns ?? 0}</p>
+                }
+                <p className="font-['Lato'] text-xs text-ink/40 mt-auto">pending repayment</p>
               </div>
             </>
           )}
         </div>
+
+        {/* ── Table section ── */}
+        <div ref={bodyRef}>
+          {isSeller ? (
+            <div style={fadeUp(bodyInView, 0)}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-['Lato'] font-semibold text-base text-ink">Recent Invoices</h2>
+                <Link to="/invoices" className="font-['Lato'] text-sm text-ink/40 hover:text-ink transition-colors flex items-center gap-1">
+                  View all <ArrowRight size={13} />
+                </Link>
+              </div>
+              {invoicesLoading ? (
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-ink/5 rounded-lg animate-pulse" />)}
+                </div>
+              ) : recentInvoices.length === 0 ? (
+                <div className="text-center py-16 border border-ink/8 rounded-[16px]">
+                  <FileText size={36} className="text-ink/15 mx-auto mb-3" />
+                  <p className="font-['Lato'] text-sm text-ink/40 mb-4">No invoices yet</p>
+                  <Link
+                    to="/invoices/new"
+                    className="inline-flex items-center gap-2 bg-teal text-white rounded-[22px] px-5 py-2 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity"
+                  >
+                    <PlusCircle size={15} /> List your first invoice
+                  </Link>
+                </div>
+              ) : (
+                <table className="w-full text-sm font-['Lato']">
+                  <thead>
+                    <tr className="border-b border-ink/10">
+                      <th className="text-left py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Token</th>
+                      <th className="text-left py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Debtor</th>
+                      <th className="text-right py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Face Value</th>
+                      <th className="text-center py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentInvoices.map((inv) => (
+                      <tr key={inv.id} className="border-b border-ink/5 hover:bg-ink/[0.02] transition-colors">
+                        <td className="py-4 text-ink font-medium">{inv.invoice_token || inv.id}</td>
+                        <td className="py-4 text-ink/60">{inv.debtor_name || '—'}</td>
+                        <td className="py-4 text-right text-ink font-medium">{fmt(inv.face_value)}</td>
+                        <td className="py-4 text-center"><Badge status={inv.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          ) : (
+            <div style={fadeUp(bodyInView, 0)}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-['Lato'] font-semibold text-base text-ink">Recent Bids</h2>
+                <Link to="/bids" className="font-['Lato'] text-sm text-ink/40 hover:text-ink transition-colors flex items-center gap-1">
+                  View all <ArrowRight size={13} />
+                </Link>
+              </div>
+              {bidsLoading ? (
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-ink/5 rounded-lg animate-pulse" />)}
+                </div>
+              ) : recentBids.length === 0 ? (
+                <div className="text-center py-16 border border-ink/8 rounded-[16px]">
+                  <ShoppingCart size={36} className="text-ink/15 mx-auto mb-3" />
+                  <p className="font-['Lato'] text-sm text-ink/40 mb-4">No bids placed yet</p>
+                  <Link
+                    to="/marketplace"
+                    className="inline-flex items-center gap-2 bg-teal text-white rounded-[22px] px-5 py-2 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity"
+                  >
+                    <ShoppingCart size={15} /> Browse the marketplace
+                  </Link>
+                </div>
+              ) : (
+                <table className="w-full text-sm font-['Lato']">
+                  <thead>
+                    <tr className="border-b border-ink/10">
+                      <th className="text-left py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Invoice</th>
+                      <th className="text-right py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Bid Amount</th>
+                      <th className="text-center py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentBids.map((bid) => (
+                      <tr key={bid.id} className="border-b border-ink/5 hover:bg-ink/[0.02] transition-colors">
+                        <td className="py-4 text-ink font-medium">{bid.invoice_token || bid.invoice_id || bid.id}</td>
+                        <td className="py-4 text-right text-ink font-semibold">{fmt(bid.amount)}</td>
+                        <td className="py-4 text-center"><Badge status={bid.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </AppLayout>
+    </DashboardLayout>
   )
 }
