@@ -6,6 +6,8 @@ See BUILD_INSTRUCTIONS_V2.md Section 8 — Orchestration Flow
 
 from datetime import datetime, timedelta
 
+from fastapi import HTTPException
+
 from app.services.http_client import HTTPClient
 from app.services.rabbitmq_publisher import RabbitMQPublisher
 from app.temporal.client import TemporalClient
@@ -54,22 +56,80 @@ class InvoiceOrchestrator:
 
     async def list_invoice(self, seller_id: int, debtor_uen: str, amount: float,
                            due_date: str, bid_period_hours: int, pdf_file) -> dict:
-        """
-        Full Scenario 1 orchestration.
+        """Full Scenario 1 orchestration — 8-step flow."""
 
-        Steps:
-        1. GET User Service /users/{seller_id} — check account_status is ACTIVE
-           → If DEFAULTED, raise 403
-        2. POST Invoice Service /invoices — create invoice + upload PDF (multipart)
-           → Returns invoice with invoice_token and extracted_data
-        3. POST ACRA Wrapper /validate-uen — validate debtor UEN
-           → If invalid, PATCH invoice status to REJECTED, publish invoice.rejected, raise 400
-        4. POST Marketplace Service /listings — create listing with urgency + deadline
-        5. PATCH Invoice Service /invoices/{token}/status — set to LISTED
-        6. Start AuctionCloseWorkflow via Temporal (workflow_id: auction-{invoice_token})
-        7. Publish invoice.listed to RabbitMQ
+        # Step 1: Check seller account is ACTIVE
+        user = await self.http_client.get(f"{config.USER_SERVICE_URL}/users/{seller_id}")
+        if user["account_status"] != "ACTIVE":
+            raise HTTPException(status_code=403, detail="Seller account is defaulted")
 
-        See BUILD_INSTRUCTIONS_V2.md Section 8 — Orchestration Flow
-        """
-        # TODO: Implement the 8-step orchestration
-        pass
+        # Step 2: Create invoice + upload PDF
+        invoice = await self.http_client.post(
+            f"{config.INVOICE_SERVICE_URL}/invoices",
+            files={"pdf": (pdf_file.filename, await pdf_file.read(), pdf_file.content_type)},
+            data={
+                "seller_id": str(seller_id),
+                "debtor_uen": debtor_uen,
+                "amount": str(amount),
+                "due_date": due_date,
+            },
+        )
+
+        # Step 3: Validate debtor UEN via ACRA Wrapper
+        uen_result = await self.http_client.post(
+            f"{config.ACRA_WRAPPER_URL}/validate-uen",
+            json={"uen": debtor_uen},
+        )
+
+        # Step 4: If UEN invalid → reject invoice, publish event, raise 400
+        if not uen_result["valid"]:
+            await self.http_client.patch(
+                f"{config.INVOICE_SERVICE_URL}/invoices/{invoice['invoice_token']}/status",
+                json={"status": "REJECTED"},
+            )
+            await self.publisher.publish("invoice.rejected", {
+                "invoice_token": invoice["invoice_token"],
+                "seller_id": seller_id,
+                "reason": "Invalid debtor UEN",
+            })
+            raise HTTPException(status_code=400, detail="Invalid debtor UEN")
+
+        # Step 5: Create marketplace listing
+        listing = await self.http_client.post(
+            f"{config.MARKETPLACE_SERVICE_URL}/listings",
+            json={
+                "invoice_token": invoice["invoice_token"],
+                "seller_id": seller_id,
+                "debtor_uen": debtor_uen,
+                "amount": amount,
+                "urgency_level": calculate_urgency(invoice["due_date"]),
+                "deadline": calculate_deadline(bid_period_hours),
+            },
+        )
+
+        # Step 6: Update invoice status to LISTED
+        await self.http_client.patch(
+            f"{config.INVOICE_SERVICE_URL}/invoices/{invoice['invoice_token']}/status",
+            json={"status": "LISTED"},
+        )
+
+        # Step 7: Start AuctionCloseWorkflow via Temporal
+        await self.temporal_client.start_workflow(
+            "AuctionCloseWorkflow",
+            workflow_id=f"auction-{invoice['invoice_token']}",
+            args={"invoice_token": invoice["invoice_token"], "bid_period_hours": bid_period_hours},
+            task_queue="invoiceflow-queue",
+        )
+
+        # Step 8: Publish invoice.listed event
+        await self.publisher.publish("invoice.listed", {
+            "invoice_token": invoice["invoice_token"],
+            "seller_id": seller_id,
+        })
+
+        return {
+            "invoice_token": invoice["invoice_token"],
+            "listing_id": listing["id"],
+            "status": "LISTED",
+            "message": "Invoice listed successfully",
+        }

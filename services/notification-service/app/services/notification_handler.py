@@ -1,9 +1,9 @@
 import uuid
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
 from app.services.email_service import EmailService
-from app.services.websocket_manager import ws_manager
+from app.services.websocket_manager import ws_manager, WebSocketManager
 
 # ---------------------------------------------------------------------------
 # In-memory notification store (list of dicts matching NotificationResponse)
@@ -14,8 +14,8 @@ notification_store: List[dict] = []
 # Event-to-action mapping
 # Each event type maps to a handler config that specifies:
 #   - template: email template file name
-#   - subject_fn: callable that returns the email subject from the payload
-#   - recipients_fn: callable that returns (email_targets, ws_targets) from payload
+#   - subject: email subject string
+#   - get_recipients: callable that returns (email_targets, ws_targets) from payload
 #     email_targets = list of {"email": str, "user_id": int}
 #     ws_targets = list of user_id (int or str)
 # ---------------------------------------------------------------------------
@@ -53,9 +53,17 @@ EVENT_MAPPING = {
             [str(p.get("previous_bidder_id"))],
         ),
     },
+    "auction.closing.warning": {
+        "template": "auction_closing_warning.html",
+        "subject": "Auction closing soon",
+        "get_recipients": lambda p: (
+            [{"email": b.get("email"), "user_id": b.get("user_id")} for b in p.get("bidders", [])],
+            [str(b.get("user_id")) for b in p.get("bidders", [])],
+        ),
+    },
     "auction.extended": {
-        "template": "auction_winner.html",
-        "subject": "Auction has been extended",
+        "template": "auction_closing_warning.html",
+        "subject": "Auction deadline has been extended",
         "get_recipients": lambda p: (
             [{"email": b.get("email"), "user_id": b.get("user_id")} for b in p.get("bidders", [])],
             [str(b.get("user_id")) for b in p.get("bidders", [])],
@@ -133,8 +141,10 @@ class NotificationHandler:
     """Routes incoming events to the appropriate email and WebSocket channels
     based on the EVENT_MAPPING configuration."""
 
-    def __init__(self):
+    def __init__(self, websocket_manager: Optional[WebSocketManager] = None):
         self.email_service = EmailService()
+        # Use injected manager if provided, else fall back to module-level singleton
+        self._ws_manager = websocket_manager if websocket_manager is not None else ws_manager
 
     async def handle_event(self, event_type: str, payload: dict) -> None:
         """Process an incoming event by sending emails and WebSocket pushes.
@@ -143,13 +153,6 @@ class NotificationHandler:
             event_type: The dot-notation event type (e.g. 'invoice.listed').
             payload: Event payload containing relevant data and recipient info.
         """
-        # TODO: Implement full event handling logic
-        # 1. Look up event in EVENT_MAPPING
-        # 2. Determine recipients via get_recipients
-        # 3. Render email template and send emails
-        # 4. Push notification via WebSocket
-        # 5. Store notification in notification_store
-
         mapping = EVENT_MAPPING.get(event_type)
         if not mapping:
             return
@@ -172,7 +175,7 @@ class NotificationHandler:
             "message": subject,
             "payload": payload,
         }
-        await ws_manager.broadcast_to_users(ws_targets, ws_message)
+        await self._ws_manager.broadcast_to_users(ws_targets, ws_message)
 
         # Store notification for each unique user
         seen_user_ids = set()
@@ -190,7 +193,3 @@ class NotificationHandler:
                         "created_at": datetime.now(timezone.utc),
                     }
                 )
-
-
-# Singleton instance
-notification_handler = NotificationHandler()

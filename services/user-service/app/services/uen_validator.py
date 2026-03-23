@@ -17,5 +17,13 @@ class UENValidator:
         Returns:
             True if the UEN is found in the ACRA dataset, False otherwise.
         """
-        # TODO: implement — call self.ACRA_API_URL with resource_id and q=uen using httpx.AsyncClient
-        raise NotImplementedError("validate_uen not implemented")
+        params = {
+            "resource_id": UENValidator.ACRA_RESOURCE_ID,
+            "q": uen,
+        }
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(UENValidator.ACRA_API_URL, params=params)
+            if response.status_code != 200:
+                return True  # data.gov.sg unavailable — allow registration to proceed
+            data = response.json()
+        return data.get("result", {}).get("total", 0) > 0

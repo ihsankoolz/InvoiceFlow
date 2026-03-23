@@ -30,5 +30,34 @@ class StripeService:
 
         See BUILD_INSTRUCTIONS_V2.md Section 12 — StripeService
         """
-        # TODO: Implement
-        pass
+        import stripe
+
+        stripe.api_key = config.STRIPE_SECRET_KEY
+
+        product_name = "Wallet Top-Up" if data.type == "wallet_topup" else "Loan Repayment"
+
+        metadata = {
+            "user_id": str(data.user_id),
+            "type": data.type,
+        }
+        if data.loan_id:
+            metadata["loan_id"] = data.loan_id
+
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            line_items=[
+                {
+                    "price_data": {
+                        "currency": "sgd",
+                        "unit_amount": int(data.amount * 100),
+                        "product_data": {"name": product_name},
+                    },
+                    "quantity": 1,
+                }
+            ],
+            success_url=config.STRIPE_SUCCESS_URL,
+            cancel_url=config.STRIPE_CANCEL_URL,
+            metadata=metadata,
+        )
+
+        return CheckoutResponse(url=session.url, session_id=session.id)

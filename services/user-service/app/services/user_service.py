@@ -19,7 +19,7 @@ class UserService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_user(self, data: UserCreate) -> User:
+    async def create_user(self, data: UserCreate) -> User:
         """Hash the password, validate UEN if the user is a SELLER, and persist to the database.
 
         Steps:
@@ -31,8 +31,30 @@ class UserService:
         Returns:
             The newly created User ORM instance.
         """
-        # TODO: implement
-        raise HTTPException(status_code=501, detail="create_user not implemented")
+        existing = self.db.query(User).filter(User.email == data.email).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Email already registered")
+
+        if data.role == "SELLER":
+            if not data.uen:
+                raise HTTPException(status_code=422, detail="UEN is required for SELLER role")
+            is_valid = await UENValidator.validate_uen(data.uen)
+            if not is_valid:
+                raise HTTPException(status_code=422, detail="Invalid UEN: not found in ACRA registry")
+
+        password_hash = pwd_context.hash(data.password)
+
+        user = User(
+            email=data.email,
+            password_hash=password_hash,
+            full_name=data.full_name,
+            role=data.role,
+            uen=data.uen,
+        )
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
 
     def authenticate(self, email: str, password: str) -> TokenResponse:
         """Verify the user's credentials and return a signed JWT.
@@ -46,8 +68,21 @@ class UserService:
         Returns:
             TokenResponse containing the access_token.
         """
-        # TODO: implement
-        raise HTTPException(status_code=501, detail="authenticate not implemented")
+        user = self.db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        if not pwd_context.verify(password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        expire = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS)
+        payload = {
+            "sub": str(user.id),
+            "role": user.role,
+            "exp": expire,
+        }
+        token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        return TokenResponse(access_token=token)
 
     def get_user(self, user_id: int) -> User:
         """Fetch a user by primary key.
@@ -58,8 +93,10 @@ class UserService:
         Returns:
             The User ORM instance.
         """
-        # TODO: implement
-        raise HTTPException(status_code=501, detail="get_user not implemented")
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
 
     def update_status(self, user_id: int, status: str) -> User:
         """Set a user's account_status to ACTIVE or DEFAULTED.
@@ -72,5 +109,10 @@ class UserService:
         Returns:
             The updated User ORM instance.
         """
-        # TODO: implement
-        raise HTTPException(status_code=501, detail="update_status not implemented")
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user.account_status = status
+        self.db.commit()
+        self.db.refresh(user)
+        return user

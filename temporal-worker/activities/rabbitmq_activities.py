@@ -1,8 +1,6 @@
 """
 RabbitMQ publishing activity for Temporal workflows.
 Publishes events to the invoiceflow_events topic exchange.
-
-See BUILD_INSTRUCTIONS_V2.md Section 13 — publish_event
 """
 
 import json
@@ -15,19 +13,17 @@ import config
 
 @activity.defn
 async def publish_event(routing_key: str, payload: dict):
-    """
-    Publish an event to RabbitMQ invoiceflow_events topic exchange.
-
-    Used by all workflows to publish events like:
-    - auction.closing.warning
-    - auction.expired
-    - auction.closed.winner
-    - auction.closed.loser
-    - loan.due
-    - loan.overdue
-    - wallet.credited
-
-    See BUILD_INSTRUCTIONS_V2.md Section 13 — publish_event activity
-    """
-    # TODO: Implement
-    pass
+    """Publish an event to RabbitMQ invoiceflow_events topic exchange."""
+    connection = await aio_pika.connect_robust(config.RABBITMQ_URL)
+    async with connection:
+        channel = await connection.channel()
+        exchange = await channel.declare_exchange(
+            "invoiceflow_events", aio_pika.ExchangeType.TOPIC, durable=True
+        )
+        await exchange.publish(
+            aio_pika.Message(
+                body=json.dumps(payload).encode(),
+                content_type="application/json",
+            ),
+            routing_key=routing_key,
+        )
