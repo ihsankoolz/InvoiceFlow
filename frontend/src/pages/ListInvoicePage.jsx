@@ -114,7 +114,7 @@ export default function ListInvoicePage() {
         <div className="flex items-center justify-center min-h-full px-6 py-16">
           <div className="text-center">
             <CheckCircle size={56} className="text-[#3e9b00] mx-auto mb-4" />
-            <h2 className="font-display font-semibold text-2xl text-ink mb-2">Invoice Listed!</h2>
+            <h2 className="font-['Lato'] font-semibold text-2xl text-ink mb-2">Invoice Listed!</h2>
             <p className="font-['Lato'] text-sm text-ink/60">Redirecting to your invoices…</p>
           </div>
         </div>
@@ -134,8 +134,8 @@ export default function ListInvoicePage() {
       {/* Header strip */}
       <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
         <div className="max-w-5xl mx-auto">
-          <h1 className="font-display font-semibold text-[42px] text-[#fff8ec] leading-tight">List an Invoice</h1>
-          <p className="font-['Lato'] text-[#fff8ec]/60 text-sm mt-1">Upload your invoice PDF and fill in the details</p>
+          <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight">List an Invoice</h1>
+          <p className="font-['Lato'] text-white/60 text-sm mt-1">Upload your invoice PDF and fill in the details</p>
         </div>
       </div>
 

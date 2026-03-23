@@ -112,8 +112,8 @@ export default function LoansPage() {
       {/* Header strip */}
       <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
         <div className="max-w-6xl mx-auto">
-          <h1 className="font-display font-semibold text-[42px] text-[#fff8ec] leading-tight">My Loans</h1>
-          <p className="font-['Lato'] text-[#fff8ec]/60 text-sm mt-1">Manage your active loans and repayments</p>
+          <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight">My Loans</h1>
+          <p className="font-['Lato'] text-white/60 text-sm mt-1">Manage your active loans and repayments</p>
         </div>
       </div>
 

@@ -141,19 +141,16 @@ export default function WalletPage() {
       <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
         <div className="max-w-4xl mx-auto flex items-end justify-between">
           <div>
-            <p className="font-['Lato'] text-[#fff8ec]/50 text-sm mb-1">Available Balance</p>
+            <p className="font-['Lato'] text-white/50 text-sm mb-1">Available Balance</p>
             {balanceLoading ? (
               <div className="h-14 w-56 bg-white/20 rounded-lg animate-pulse" />
             ) : (
-              <p className="font-display font-semibold text-[52px] text-[#fff8ec] leading-none">
-                <span className="text-[#fff8ec]/50 text-2xl font-['Lato'] font-medium mr-2">SGD</span>
+              <p className="font-['Lato'] font-semibold text-[52px] text-white leading-none">
+                <span className="text-white/50 text-2xl font-['Lato'] font-medium mr-2">SGD</span>
                 {fmt(balance)}
               </p>
             )}
-            <p className="font-['Lato'] text-[#fff8ec]/40 text-xs mt-2">InvoiceFlow Wallet</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Wallet size={32} className="text-[#fff8ec]/30" />
+            <p className="font-['Lato'] text-white/40 text-xs mt-2">InvoiceFlow Wallet</p>
           </div>
         </div>
       </div>

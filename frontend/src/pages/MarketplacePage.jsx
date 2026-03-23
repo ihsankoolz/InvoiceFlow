@@ -97,7 +97,7 @@ function ListingCard({ listing, onBid, delay, inView }) {
         <div className="flex items-end justify-between">
           <div>
             <p className="font-['Lato'] text-xs text-ink/40 mb-0.5">Current bid</p>
-            <p className="font-display font-semibold text-[28px] text-ink leading-none">
+            <p className="font-['Lato'] font-semibold text-[28px] text-ink leading-none">
               {fmt(listing.current_bid || listing.minimum_bid)}
             </p>
           </div>
@@ -208,8 +208,8 @@ export default function MarketplacePage() {
       {/* ── Header strip ── */}
       <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
         <div className="max-w-7xl mx-auto">
-          <h1 className="font-display font-semibold text-[42px] text-[#fff8ec] leading-tight">Marketplace</h1>
-          <p className="font-['Lato'] text-[#fff8ec]/60 text-sm mt-1">Browse and bid on live invoice listings</p>
+          <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight">Marketplace</h1>
+          <p className="font-['Lato'] text-white/60 text-sm mt-1">Browse and bid on live invoice listings</p>
         </div>
       </div>
 
@@ -279,7 +279,7 @@ export default function MarketplacePage() {
               ? (
                 <div className="col-span-full text-center py-24">
                   <Search size={40} className="text-ink/15 mx-auto mb-4" />
-                  <p className="font-display text-2xl text-ink/30">No listings found</p>
+                  <p className="font-['Lato'] text-2xl text-ink/30">No listings found</p>
                   <p className="font-['Lato'] text-sm text-ink/25 mt-1">Try adjusting your filters</p>
                 </div>
               )

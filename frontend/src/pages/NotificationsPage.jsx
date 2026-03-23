@@ -152,7 +152,7 @@ export default function NotificationsPage() {
       <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
         <div className="max-w-3xl mx-auto flex items-end justify-between">
           <div>
-            <h1 className="font-display font-semibold text-[42px] text-[#fff8ec] leading-tight flex items-center gap-3">
+            <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight flex items-center gap-3">
               Notifications
               {unreadCount > 0 && (
                 <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#ff9500] text-white font-['Lato'] text-xs font-bold">
@@ -160,7 +160,7 @@ export default function NotificationsPage() {
                 </span>
               )}
             </h1>
-            <p className="font-['Lato'] text-[#fff8ec]/60 text-sm mt-1">Your recent activity and alerts</p>
+            <p className="font-['Lato'] text-white/60 text-sm mt-1">Your recent activity and alerts</p>
           </div>
           {unreadCount > 0 && (
             <button

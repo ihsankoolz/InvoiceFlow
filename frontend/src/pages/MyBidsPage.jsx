@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart2, ExternalLink, TrendingUp, DollarSign, CheckCircle } from 'lucide-react'
+import { ShoppingCart, ExternalLink } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
 import Badge from '../components/ui/Badge'
 import api from '../api/axios'
@@ -96,52 +96,49 @@ export default function MyBidsPage() {
       {/* Header strip */}
       <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
         <div className="max-w-6xl mx-auto">
-          <h1 className="font-display font-semibold text-[42px] text-[#fff8ec] leading-tight">My Bids</h1>
-          <p className="font-['Lato'] text-[#fff8ec]/60 text-sm mt-1">Track your marketplace bids and returns</p>
+          <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight">My Bids</h1>
+          <p className="font-['Lato'] text-white/60 text-sm mt-1">Track your marketplace bids and returns</p>
         </div>
       </div>
 
       <div className="px-8 py-8 max-w-6xl mx-auto">
 
-        {/* Bento stats */}
-        <div ref={statsRef} className="grid grid-cols-12 gap-4 mb-8">
-          <div className="col-span-5 bg-cream rounded-[20px] p-7 flex flex-col justify-between" style={fadeUp(statsInView, 0)}>
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign size={16} className="text-ink/50" />
-              <p className="font-['Lato'] text-sm text-ink/50">Total Invested</p>
-            </div>
+        {/* Stat cards */}
+        <div ref={statsRef} className="grid grid-cols-4 gap-4 mb-8">
+          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 0)}>
+            <p className="font-['Lato'] text-xs text-ink/50 uppercase tracking-wider">Total Invested</p>
             {loading
-              ? <div className="h-14 w-40 bg-ink/10 rounded-lg animate-pulse" />
-              : <p className="font-display font-semibold text-[52px] text-ink leading-none">{fmt(totalInvested)}</p>
+              ? <div className="h-9 w-32 bg-ink/10 rounded animate-pulse" />
+              : <p className="font-['Lato'] font-bold text-[28px] text-ink leading-none">{fmt(totalInvested)}</p>
             }
-            <p className="font-['Lato'] text-sm text-ink/40 mt-4">{winningBids} winning bid{winningBids !== 1 ? 's' : ''}</p>
+            <p className="font-['Lato'] text-xs text-ink/40 mt-auto">{winningBids} winning bid{winningBids !== 1 ? 's' : ''}</p>
           </div>
 
-          <div className="col-span-3 bg-teal rounded-[20px] p-7 flex flex-col justify-between" style={fadeUp(statsInView, 60)}>
-            <div className="flex items-center gap-2 mb-2">
-              <BarChart2 size={16} className="text-[#fff8ec]/60" />
-              <p className="font-['Lato'] text-sm text-[#fff8ec]/60">Active Bids</p>
-            </div>
+          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 60)}>
+            <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Bids</p>
             {loading
-              ? <div className="h-14 w-16 bg-white/20 rounded-lg animate-pulse" />
-              : <p className="font-display font-semibold text-[52px] text-[#fff8ec] leading-none">{activeBids}</p>
+              ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
+              : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{activeBids}</p>
             }
-            <p className="font-['Lato'] text-sm text-[#fff8ec]/50 mt-4">of {totalBids} total</p>
+            <p className="font-['Lato'] text-xs text-ink/40 mt-auto">of {totalBids} total</p>
           </div>
 
-          <div className="col-span-4 bg-white border border-ink/10 rounded-[20px] p-7 flex flex-col justify-between" style={fadeUp(statsInView, 120)}>
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle size={16} className="text-ink/50" />
-              <p className="font-['Lato'] text-sm text-ink/50">Won Auctions</p>
-            </div>
+          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 120)}>
+            <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Won Auctions</p>
             {loading
-              ? <div className="h-14 w-16 bg-ink/5 rounded-lg animate-pulse" />
-              : <p className="font-display font-semibold text-[52px] text-ink leading-none">{winningBids}</p>
+              ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
+              : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{winningBids}</p>
             }
-            <div className="flex items-center gap-2 mt-4">
-              <TrendingUp size={14} className="text-[#3e9b00]" />
-              <span className="font-['Lato'] text-sm text-[#3e9b00]">Returns in wallet on repayment</span>
-            </div>
+            <p className="font-['Lato'] text-xs text-ink/40 mt-auto">Returns credited on repayment</p>
+          </div>
+
+          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 180)}>
+            <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Total Bids</p>
+            {loading
+              ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
+              : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{totalBids}</p>
+            }
+            <p className="font-['Lato'] text-xs text-ink/40 mt-auto">across all statuses</p>
           </div>
         </div>
 
@@ -180,7 +177,7 @@ export default function MyBidsPage() {
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-16 px-6">
-                <BarChart2 size={44} className="text-ink/15 mx-auto mb-3" />
+                <ShoppingCart size={44} className="text-ink/15 mx-auto mb-3" />
                 <p className="font-['Lato'] font-medium text-ink/40 mb-1">No bids found</p>
                 <p className="font-['Lato'] text-sm text-ink/30">
                   {activeTab === 'ALL' ? "You haven't placed any bids yet." : `No bids with status "${activeTab}".`}
@@ -199,13 +196,13 @@ export default function MyBidsPage() {
                 <table className="w-full text-sm font-['Lato']">
                   <thead>
                     <tr className="border-b border-ink/10 bg-cream/60">
-                      <th className="text-left px-6 py-3 font-medium text-ink/50">Invoice Token</th>
-                      <th className="text-right px-4 py-3 font-medium text-ink/50">Bid Amount</th>
-                      <th className="text-right px-4 py-3 font-medium text-ink/50">Face Value</th>
-                      <th className="text-right px-4 py-3 font-medium text-ink/50">Est. Return</th>
-                      <th className="text-center px-4 py-3 font-medium text-ink/50">Status</th>
-                      <th className="text-left px-4 py-3 font-medium text-ink/50">Deadline</th>
-                      <th className="text-center px-6 py-3 font-medium text-ink/50">Actions</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-ink/50 uppercase tracking-wider">Invoice Token</th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-ink/50 uppercase tracking-wider">Bid Amount</th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-ink/50 uppercase tracking-wider">Face Value</th>
+                      <th className="text-right px-4 py-3 text-xs font-medium text-ink/50 uppercase tracking-wider">Est. Return</th>
+                      <th className="text-center px-4 py-3 text-xs font-medium text-ink/50 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-medium text-ink/50 uppercase tracking-wider">Deadline</th>
+                      <th className="text-center px-6 py-3 text-xs font-medium text-ink/50 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>

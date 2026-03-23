@@ -64,7 +64,7 @@ function CountdownDisplay({ deadline }) {
       ].map(({ val, label }) => (
         <div key={label} className="text-center">
           <div className="bg-cream border border-ink/10 rounded-lg px-3 py-1.5 min-w-[44px]">
-            <span className="font-display font-semibold text-xl text-ink">{String(val).padStart(2, '0')}</span>
+            <span className="font-['Lato'] font-semibold text-xl text-ink">{String(val).padStart(2, '0')}</span>
           </div>
           <span className="font-['Lato'] text-[10px] text-ink/50 mt-0.5 block">{label}</span>
         </div>
@@ -181,7 +181,7 @@ export default function ListingDetailPage() {
         <div className="max-w-6xl mx-auto">
           <button
             onClick={() => navigate(-1)}
-            className="font-['Lato'] text-sm text-[#fff8ec]/60 hover:text-[#fff8ec] transition-colors flex items-center gap-1"
+            className="font-['Lato'] text-sm text-white/60 hover:text-white transition-colors flex items-center gap-1"
           >
             ← Back to Marketplace
           </button>
@@ -217,7 +217,7 @@ export default function ListingDetailPage() {
                 <div className="bg-cream px-8 py-6 flex items-start justify-between gap-4">
                   <div>
                     <p className="font-['Lato'] text-xs text-ink/40 mb-1">Invoice</p>
-                    <h1 className="font-display font-semibold text-[32px] text-ink leading-tight">{listing.invoice_token || listing.id}</h1>
+                    <h1 className="font-['Lato'] font-semibold text-[32px] text-ink leading-tight">{listing.invoice_token || listing.id}</h1>
                   </div>
                   <Badge status={listing.status} />
                 </div>
@@ -260,14 +260,14 @@ export default function ListingDetailPage() {
             {/* Right: bid placement */}
             <div className="lg:col-span-2" style={fadeUp(visible, 160)}>
               <div className="bg-white border border-ink/10 rounded-[20px] p-8 sticky top-6">
-                <h2 className="font-display font-semibold text-xl text-ink mb-5">
+                <h2 className="font-['Lato'] font-semibold text-xl text-ink mb-5">
                   {isInvestor ? 'Place a Bid' : 'Bid Information'}
                 </h2>
 
                 {/* Current highest bid */}
                 <div className="bg-cream rounded-[14px] p-4 mb-5">
                   <p className="font-['Lato'] text-xs text-ink/50 mb-1">Current highest bid</p>
-                  <p className="font-display font-semibold text-3xl text-ink">
+                  <p className="font-['Lato'] font-semibold text-3xl text-ink">
                     {fmt(listing.current_bid || listing.minimum_bid)}
                   </p>
                   {listing.current_bid && listing.face_value && (

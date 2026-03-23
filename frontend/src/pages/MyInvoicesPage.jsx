@@ -86,8 +86,8 @@ export default function MyInvoicesPage() {
       <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
         <div className="max-w-6xl mx-auto flex items-end justify-between">
           <div>
-            <h1 className="font-display font-semibold text-[42px] text-[#fff8ec] leading-tight">My Invoices</h1>
-            <p className="font-['Lato'] text-[#fff8ec]/60 text-sm mt-1">Track and manage all your listed invoices</p>
+            <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight">My Invoices</h1>
+            <p className="font-['Lato'] text-white/60 text-sm mt-1">Track and manage all your listed invoices</p>
           </div>
           <Link
             to="/invoices/new"
