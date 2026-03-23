@@ -59,3 +59,4 @@ temporal_data/
 htmlcov/
 .coverage
 coverage.xml
+docker-compose.override.yml
