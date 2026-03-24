@@ -21,6 +21,7 @@ with workflow.unsafe.imports_passed_through():
     from activities.marketplace_activities import delist_listing
     from activities.rabbitmq_activities import publish_event
     from workflows.loan_maturity import LoanMaturityWorkflow
+    import config
 
 
 @workflow.defn
@@ -73,7 +74,7 @@ class AuctionCloseWorkflow:
                 try:
                     await workflow.wait_condition(
                         lambda: self.extend_requested,
-                        timeout=timedelta(minutes=5),
+                        timeout=timedelta(seconds=config.ANTI_SNIPE_SECONDS),
                     )
                 except asyncio.TimeoutError:
                     # No signal in 5 minutes → auction closes
@@ -111,6 +112,7 @@ class AuctionCloseWorkflow:
             LoanMaturityWorkflow.run,
             args=[loan["loan_id"], loan["due_date"]],
             id=f"loan-{loan['loan_id']}",
+            parent_close_policy=workflow.ParentClosePolicy.ABANDON,
         )
         # Intentionally not awaiting child_handle.result()
 

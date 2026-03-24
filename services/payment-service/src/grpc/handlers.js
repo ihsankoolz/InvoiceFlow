@@ -65,6 +65,7 @@ async function createLoan(call, callback) {
       due_date: String(loan.due_date),
       investor_id: loan.investor_id,
       seller_id: loan.seller_id,
+      invoice_token: loan.invoice_token || '',
     });
   } catch (err) {
     callback({ code: 3, message: err.message });
@@ -111,6 +112,7 @@ async function getLoan(call, callback) {
       due_date: String(loan.due_date),
       investor_id: loan.investor_id,
       seller_id: loan.seller_id,
+      invoice_token: loan.invoice_token || '',
     });
   } catch (err) {
     callback({ code: 5, message: err.message });
@@ -131,6 +133,7 @@ async function updateLoanStatus(call, callback) {
       due_date: String(loan.due_date),
       investor_id: loan.investor_id,
       seller_id: loan.seller_id,
+      invoice_token: loan.invoice_token || '',
     });
   } catch (err) {
     callback({ code: 3, message: err.message });

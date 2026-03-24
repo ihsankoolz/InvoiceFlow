@@ -22,6 +22,22 @@ def bulk_delete_listings(seller_id: int = Query(...), db: Session = Depends(get_
     return {"deleted_count": deleted_count}
 
 
+@router.get("/by-token/{invoice_token}", response_model=ListingResponse)
+def get_listing_by_token(invoice_token: str, db: Session = Depends(get_db)):
+    service = ListingService(db)
+    listing = service.get_listing_by_token(invoice_token)
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return listing
+
+
+@router.delete("/by-token/{invoice_token}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_listing_by_token(invoice_token: str, db: Session = Depends(get_db)):
+    service = ListingService(db)
+    service.delete_listing_by_token(invoice_token)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/{listing_id}", response_model=ListingResponse)
 def get_listing(listing_id: int, db: Session = Depends(get_db)):
     service = ListingService(db)

@@ -440,7 +440,8 @@ services:
       MARKETPLACE_SERVICE_URL: http://marketplace-service:5002
       PAYMENT_SERVICE_GRPC: payment-service:50051
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      REPAYMENT_WINDOW_SECONDS: "120"
+      REPAYMENT_WINDOW_SECONDS: "86400"
+      ANTI_SNIPE_SECONDS: "300"
     depends_on:
       temporal:
         condition: service_healthy

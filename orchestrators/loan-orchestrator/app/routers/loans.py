@@ -18,7 +18,7 @@ router = APIRouter()
     summary="Initiate loan repayment via Stripe",
     description="Gets loan details via gRPC, creates Stripe checkout session via Stripe Wrapper.",
 )
-async def repay_loan(loan_id: int, data: RepayLoanRequest):
+async def repay_loan(loan_id: str, data: RepayLoanRequest):
     orchestrator = LoanOrchestrator()
     return await orchestrator.initiate_repayment(loan_id, data)
 
@@ -30,6 +30,6 @@ async def repay_loan(loan_id: int, data: RepayLoanRequest):
     summary="Confirm loan repayment after Stripe payment",
     description="Updates loan status to REPAID via gRPC, publishes loan.repaid event.",
 )
-async def confirm_repayment(loan_id: int, data: ConfirmRepaymentRequest):
+async def confirm_repayment(loan_id: str, data: ConfirmRepaymentRequest):
     orchestrator = LoanOrchestrator()
     return await orchestrator.confirm_repayment(loan_id, data.stripe_session_id)

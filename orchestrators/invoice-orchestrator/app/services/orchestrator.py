@@ -66,7 +66,7 @@ class InvoiceOrchestrator:
         # Step 2: Create invoice + upload PDF
         invoice = await self.http_client.post(
             f"{config.INVOICE_SERVICE_URL}/invoices",
-            files={"pdf": (pdf_file.filename, await pdf_file.read(), pdf_file.content_type)},
+            files={"pdf_file": (pdf_file.filename, await pdf_file.read(), pdf_file.content_type)},
             data={
                 "seller_id": str(seller_id),
                 "debtor_uen": debtor_uen,
@@ -96,7 +96,7 @@ class InvoiceOrchestrator:
 
         # Step 5: Create marketplace listing
         listing = await self.http_client.post(
-            f"{config.MARKETPLACE_SERVICE_URL}/listings",
+            f"{config.MARKETPLACE_SERVICE_URL}/listings/",
             json={
                 "invoice_token": invoice["invoice_token"],
                 "seller_id": seller_id,
