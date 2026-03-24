@@ -27,7 +27,7 @@ class PaymentGRPCClient:
             self._stub = payment_pb2_grpc.PaymentServiceStub(self._channel)
         return self._stub
 
-    async def get_loan(self, loan_id: int) -> dict:
+    async def get_loan(self, loan_id: str) -> dict:
         """Get loan details via gRPC GetLoan RPC."""
         from app.proto import payment_pb2  # noqa: PLC0415
 
@@ -41,9 +41,10 @@ class PaymentGRPCClient:
             "due_date": response.due_date,
             "investor_id": response.investor_id,
             "seller_id": response.seller_id,
+            "invoice_token": response.invoice_token,
         }
 
-    async def update_loan_status(self, loan_id: int, status: str) -> dict:
+    async def update_loan_status(self, loan_id: str, status: str) -> dict:
         """Update loan status via gRPC UpdateLoanStatus RPC."""
         from app.proto import payment_pb2  # noqa: PLC0415
 

@@ -88,6 +88,8 @@ class BidOrchestrator:
         # Marketplace returns deadline as ISO string; parse it
         deadline_str: str = listing["deadline"]
         deadline = datetime.fromisoformat(deadline_str.replace("Z", "+00:00"))
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
         now = datetime.now(tz=timezone.utc)
 
         if deadline - now <= ANTI_SNIPE_WINDOW:

@@ -11,7 +11,7 @@ class ConfirmRepaymentRequest(BaseModel):
 
 class RepaymentResponse(BaseModel):
     status: str
-    loan_id: int
+    loan_id: str
 
 
 class CheckoutUrlResponse(BaseModel):

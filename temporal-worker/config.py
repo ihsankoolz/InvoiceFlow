@@ -10,3 +10,4 @@ MARKETPLACE_SERVICE_URL = os.getenv("MARKETPLACE_SERVICE_URL", "http://marketpla
 PAYMENT_SERVICE_GRPC = os.getenv("PAYMENT_SERVICE_GRPC", "payment-service:50051")
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672")
 REPAYMENT_WINDOW_SECONDS = int(os.getenv("REPAYMENT_WINDOW_SECONDS", "86400"))
+ANTI_SNIPE_SECONDS = int(os.getenv("ANTI_SNIPE_SECONDS", "300"))
