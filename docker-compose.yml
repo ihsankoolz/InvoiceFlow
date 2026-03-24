@@ -93,8 +93,6 @@ services:
       depends_on:
         rabbitmq:
           condition: service_healthy
-      networks:
-        - invoiceflow_default 
 
   # ============================================================
   # DATABASES
