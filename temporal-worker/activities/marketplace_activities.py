@@ -13,10 +13,9 @@ http_client = HTTPClient()
 
 @activity.defn
 async def delist_listing(invoice_token: str) -> dict:
-    """Delist a single listing after auction close."""
-    return await http_client.patch(
-        f"{config.MARKETPLACE_SERVICE_URL}/listings/{invoice_token}",
-        json={"status": "DELISTED"},
+    """Delist a single listing after auction close (by invoice_token)."""
+    return await http_client.delete(
+        f"{config.MARKETPLACE_SERVICE_URL}/listings/by-token/{invoice_token}",
     )
 
 
@@ -24,5 +23,5 @@ async def delist_listing(invoice_token: str) -> dict:
 async def bulk_delist(seller_id: int) -> dict:
     """Bulk delist all listings for a defaulting seller. Called by LoanMaturityWorkflow on OVERDUE."""
     return await http_client.delete(
-        f"{config.MARKETPLACE_SERVICE_URL}/listings/bulk?seller_id={seller_id}",
+        f"{config.MARKETPLACE_SERVICE_URL}/listings/?seller_id={seller_id}",
     )

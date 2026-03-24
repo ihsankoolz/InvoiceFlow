@@ -21,8 +21,7 @@ async def get_offers(invoice_token: str) -> list:
 async def accept_offer(bid_id: int) -> dict:
     """Accept a winning bid."""
     return await http_client.patch(
-        f"{config.BIDDING_SERVICE_URL}/bids/{bid_id}",
-        json={"status": "ACCEPTED"},
+        f"{config.BIDDING_SERVICE_URL}/bids/{bid_id}/accept",
     )
 
 
@@ -30,6 +29,5 @@ async def accept_offer(bid_id: int) -> dict:
 async def reject_offer(bid_id: int) -> dict:
     """Reject a losing bid."""
     return await http_client.patch(
-        f"{config.BIDDING_SERVICE_URL}/bids/{bid_id}",
-        json={"status": "REJECTED"},
+        f"{config.BIDDING_SERVICE_URL}/bids/{bid_id}/reject",
     )

@@ -43,6 +43,15 @@ class ListingService:
             self.db.delete(listing)
             self.db.commit()
 
+    def get_listing_by_token(self, invoice_token: str) -> Listing:
+        return self.db.query(Listing).filter(Listing.invoice_token == invoice_token).first()
+
+    def delete_listing_by_token(self, invoice_token: str) -> None:
+        listing = self.db.query(Listing).filter(Listing.invoice_token == invoice_token).first()
+        if listing:
+            self.db.delete(listing)
+            self.db.commit()
+
     def bulk_delete_by_seller(self, seller_id: int) -> int:
         count = (
             self.db.query(Listing)

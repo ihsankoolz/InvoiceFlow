@@ -19,7 +19,7 @@ class LoanOrchestrator:
         self.http_client = HTTPClient()
         self.publisher = RabbitMQPublisher(config.RABBITMQ_URL)
 
-    async def initiate_repayment(self, loan_id: int, data: RepayLoanRequest) -> dict:
+    async def initiate_repayment(self, loan_id: str, data: RepayLoanRequest) -> dict:
         """
         Initiate loan repayment via Stripe.
 
@@ -53,7 +53,7 @@ class LoanOrchestrator:
         # ── Step 4: Return checkout URL ────────────────────────────────────
         return {"checkout_url": session["url"]}
 
-    async def confirm_repayment(self, loan_id: int, stripe_session_id: str) -> RepaymentResponse:
+    async def confirm_repayment(self, loan_id: str, stripe_session_id: str) -> RepaymentResponse:
         """
         Confirm repayment after Stripe payment succeeds.
 
@@ -75,6 +75,7 @@ class LoanOrchestrator:
             "loan.repaid",
             {
                 "loan_id": str(loan_id),
+                "invoice_token": loan["invoice_token"],
                 "seller_id": loan["seller_id"],
                 "investor_id": loan["investor_id"],
                 "principal": loan["principal"],
