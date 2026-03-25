@@ -59,7 +59,7 @@ export default function LoginPage() {
       : { opacity: 0, transform: 'translateY(20px)' }
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream">
+    <div className="min-h-screen flex flex-col bg-[#ffffff]">
       <style>{`
         @keyframes loginFadeUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -71,8 +71,8 @@ export default function LoginPage() {
 
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md" style={fadeUpStyle(100)}>
-          <div className="bg-white border border-ink/10 rounded-[20px] p-10">
-            <h1 className="font-display font-semibold text-[32px] text-ink mb-2 leading-tight">
+          <div className="bg-white rounded-[20px] p-10 border border-ink/10">
+            <h1 className="font-['Lato'] font-semibold text-[32px] text-ink mb-2 leading-tight">
               Welcome back
             </h1>
             <p className="font-['Lato'] text-sm text-ink/60 mb-8">
