@@ -9,6 +9,7 @@ const router = express.Router();
 const WalletService = require('../services/WalletService');
 const LoanService = require('../services/LoanService');
 const Escrow = require('../models/Escrow');
+const WalletTransaction = require('../models/WalletTransaction');
 
 /**
  * GET /wallets/:userId — Get wallet balance.
@@ -36,9 +37,14 @@ router.get('/loans/:loanId', async (req, res) => {
 
 /**
  * GET /loans?investor_id=:id — Get loans by investor.
+ * GET /loans?seller_id=:id  — Get loans by seller.
  */
 router.get('/loans', async (req, res) => {
   try {
+    if (req.query.seller_id) {
+      const loans = await LoanService.getLoansBySeller(parseInt(req.query.seller_id, 10));
+      return res.json(loans);
+    }
     const loans = await LoanService.getLoansByInvestor(parseInt(req.query.investor_id, 10));
     res.json(loans);
   } catch (err) {
@@ -55,6 +61,18 @@ router.get('/escrows', async (req, res) => {
       where: { investor_id: parseInt(req.query.investor_id, 10), status: 'LOCKED' },
     });
     res.json(escrows);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /transactions?user_id=:id — Get wallet transaction history for a user.
+ */
+router.get('/transactions', async (req, res) => {
+  try {
+    const transactions = await WalletService.getTransactions(parseInt(req.query.user_id, 10));
+    res.json(transactions);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

@@ -11,9 +11,9 @@ class HTTPClient:
     def __init__(self, timeout: float = 5.0):
         self.client = httpx.AsyncClient(timeout=timeout)
 
-    async def get(self, url: str) -> dict:
+    async def get(self, url: str, params: dict = None) -> dict:
         try:
-            response = await self.client.get(url)
+            response = await self.client.get(url, params=params)
             response.raise_for_status()
             return response.json()
         except httpx.TimeoutException:
