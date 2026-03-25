@@ -1,29 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
-import { Wallet, ArrowUpRight, ArrowDownLeft, RefreshCw } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ArrowUpRight, ArrowDownLeft, RefreshCw } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import { useInView } from '../hooks/useInView'
 
-/* ── Animation helpers ── */
-function useInView(threshold = 0.05) {
-  const ref = useRef(null)
-  const [inView, setInView] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect() } },
-      { threshold }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return [ref, inView]
-}
-
+/* ── Animation helper ── */
 function fadeUp(visible, delay = 0) {
-  if (visible) return { animation: 'walletFadeUp 600ms ease both', animationDelay: `${delay}ms` }
-  return { opacity: 0, transform: 'translateY(20px)' }
+  if (visible) return { animation: 'fadeUp 500ms cubic-bezier(0,0,0.2,1) both', animationDelay: `${delay}ms` }
+  return { opacity: 0, transform: 'translateY(12px)' }
 }
 
 function fmt(n, showCents = true) {
@@ -44,22 +29,21 @@ const QUICK_AMOUNTS = [100, 500, 1000, 5000]
 export default function WalletPage() {
   const { user } = useAuth()
 
-  const [balance, setBalance]         = useState(null)
+  const [balance, setBalance]               = useState(null)
   const [balanceLoading, setBalanceLoading] = useState(true)
 
-  const [transactions, setTransactions] = useState([])
-  const [txLoading, setTxLoading]     = useState(true)
-  const [txError, setTxError]         = useState('')
+  const [transactions, setTransactions]     = useState([])
+  const [txLoading, setTxLoading]           = useState(true)
+  const [txError, setTxError]               = useState('')
 
-  const [selectedAmt, setSelectedAmt] = useState(null)
-  const [customAmt, setCustomAmt]     = useState('')
-  const [topupLoading, setTopupLoading] = useState(false)
-  const [topupError, setTopupError]   = useState('')
+  const [selectedAmt, setSelectedAmt]       = useState(null)
+  const [customAmt, setCustomAmt]           = useState('')
+  const [topupLoading, setTopupLoading]     = useState(false)
+  const [topupError, setTopupError]         = useState('')
 
-  const [headerRef, headerInView]     = useInView(0.05)
-  const [balanceRef]                  = useInView(0.05)
-  const [topupRef, topupInView]       = useInView(0.05)
-  const [txRef, txInView]             = useInView(0.05)
+  const [headerRef, headerInView] = useInView(0.05)
+  const [topupRef, topupInView]   = useInView(0.05)
+  const [txRef, txInView]         = useInView(0.05)
 
   useEffect(() => {
     if (!user) return
@@ -130,13 +114,6 @@ export default function WalletPage() {
 
   return (
     <AppLayout>
-      <style>{`
-        @keyframes walletFadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-
       {/* Header strip with balance */}
       <div ref={headerRef} className="bg-teal px-8 py-10">
         <div className="max-w-4xl mx-auto flex items-end justify-between">
@@ -145,7 +122,7 @@ export default function WalletPage() {
             {balanceLoading ? (
               <div className="h-14 w-56 bg-white/20 rounded-lg animate-pulse" />
             ) : (
-              <p className="font-['Lato'] font-semibold text-[52px] text-white leading-none">
+              <p className="font-['Lato'] font-semibold text-[52px] text-white leading-none" style={fadeUp(headerInView, 100)}>
                 <span className="text-white/50 text-2xl font-['Lato'] font-medium mr-2">SGD</span>
                 {fmt(balance)}
               </p>
@@ -155,7 +132,7 @@ export default function WalletPage() {
         </div>
       </div>
 
-      <div ref={balanceRef} className="px-8 py-8 max-w-4xl mx-auto">
+      <div className="px-8 py-8 max-w-4xl mx-auto">
 
         {/* Top-up section */}
         <div ref={topupRef} style={fadeUp(topupInView, 0)} className="mb-6">
@@ -175,7 +152,7 @@ export default function WalletPage() {
                   key={amt}
                   type="button"
                   onClick={() => { setSelectedAmt(amt); setCustomAmt('') }}
-                  className={`px-5 py-2.5 rounded-lg font-['Lato'] font-medium text-sm transition-colors duration-150 ${
+                  className={`px-5 py-2.5 rounded-[22px] font-['Lato'] font-medium text-sm transition-colors duration-150 active:scale-[0.97] ${
                     selectedAmt === amt && !customAmt
                       ? 'bg-teal text-white'
                       : 'border border-ink/20 text-ink hover:border-ink/50'
@@ -200,7 +177,7 @@ export default function WalletPage() {
                   value={customAmt}
                   onChange={(e) => { setCustomAmt(e.target.value); setSelectedAmt(null) }}
                   placeholder="e.g. 250"
-                  className="w-full border border-ink/30 rounded-lg pl-7 pr-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors"
+                  className="w-full border border-ink/30 rounded-[12px] pl-7 pr-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors"
                 />
               </div>
             </div>
@@ -209,7 +186,7 @@ export default function WalletPage() {
               type="button"
               onClick={handleTopup}
               disabled={topupLoading || !getEffectiveAmount()}
-              className="bg-teal text-white rounded-lg px-6 py-2.5 font-['Lato'] font-semibold hover:opacity-90 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-teal text-white rounded-[12px] px-6 py-2.5 font-['Lato'] font-semibold hover:opacity-90 active:scale-[0.97] active:opacity-100 transition-[transform,opacity] duration-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {topupLoading ? 'Redirecting…' : 'Proceed to Stripe Checkout'}
             </button>
@@ -232,12 +209,12 @@ export default function WalletPage() {
             {txLoading ? (
               <div className="p-6 space-y-3">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-12 bg-ink/5 rounded-lg animate-pulse" />
+                  <div key={i} className="h-12 bg-ink/5 rounded-lg animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
                 ))}
               </div>
             ) : transactions.length === 0 ? (
               <div className="text-center py-12">
-                <RefreshCw size={36} className="text-ink/20 mx-auto mb-3" />
+                <ArrowDownLeft size={36} className="text-ink/20 mx-auto mb-3" />
                 <p className="font-['Lato'] text-sm text-ink/40">No transactions yet</p>
               </div>
             ) : (
@@ -245,7 +222,7 @@ export default function WalletPage() {
                 {transactions.map((tx, i) => (
                   <div
                     key={tx.id || i}
-                    className="flex items-center justify-between px-6 py-4 hover:bg-cream transition-colors"
+                    className="flex items-center justify-between px-6 py-4 hover:bg-cream transition-colors duration-100"
                     style={fadeUp(txInView, i * 40)}
                   >
                     <div className="flex items-center gap-3">
