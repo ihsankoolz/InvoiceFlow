@@ -72,7 +72,7 @@ export default function RegisterPage() {
       : { opacity: 0, transform: 'translateY(20px)' }
 
   return (
-    <div className="relative min-h-screen bg-cream overflow-x-clip flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#ffffff]">
       <style>{`
         @keyframes regFadeUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -83,10 +83,10 @@ export default function RegisterPage() {
       <PublicNav />
 
       {/* Main content */}
-      <div className="relative flex-1 flex items-start justify-center px-4 pt-10 pb-16" style={{ zIndex: 1 }}>
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md" style={fadeUpStyle(100)}>
           <div className="bg-white border border-ink/10 rounded-[20px] p-10">
-            <h1 className="font-display font-semibold text-[32px] text-ink mb-2 leading-tight">
+            <h1 className="font-['Lato'] font-semibold text-[32px] text-ink mb-2 leading-tight">
               Join InvoiceFlow
             </h1>
             <p className="font-['Lato'] text-sm text-ink/60 mb-8">
@@ -116,7 +116,7 @@ export default function RegisterPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Jane Doe"
-                  className="w-full border border-ink/30 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors"
+                  className="w-full border border-ink/20 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink/60 focus:ring-2 focus:ring-ink/8 transition-all"
                 />
               </div>
 
@@ -131,7 +131,7 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
-                  className="w-full border border-ink/30 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors"
+                  className="w-full border border-ink/20 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink/60 focus:ring-2 focus:ring-ink/8 transition-all"
                 />
               </div>
 
@@ -197,7 +197,7 @@ export default function RegisterPage() {
                     value={uen}
                     onChange={(e) => setUen(e.target.value)}
                     placeholder="e.g. 202056789A"
-                    className="w-full border border-ink/30 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors"
+                    className="w-full border border-ink/20 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink/60 focus:ring-2 focus:ring-ink/8 transition-all"
                   />
                   <p className="mt-1 font-['Lato'] text-xs text-ink/50">
                     Your UEN will be validated against ACRA
@@ -209,7 +209,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-teal text-white rounded-lg px-6 py-2.5 font-['Lato'] font-semibold hover:opacity-90 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+                className="w-full bg-teal text-white rounded-lg px-6 py-3 font-['Lato'] font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               >
                 {loading ? 'Creating account…' : 'Create Account'}
               </button>

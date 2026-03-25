@@ -19,7 +19,7 @@ export default function PublicNav() {
         {!isLogin && (
           <Link
             to="/login"
-            className="font-['Lato'] font-medium text-sm text-black/60 hover:text-black transition-colors duration-150"
+            className="bg-teal text-white font-['Lato'] font-semibold text-sm px-4 py-2 rounded-[22px] hover:opacity-90 transition-opacity duration-200"
           >
             Log in
           </Link>
