@@ -1,31 +1,16 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ShoppingCart, ExternalLink } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
 import Badge from '../components/ui/Badge'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import { useInView } from '../hooks/useInView'
 
-/* ── Animation helpers ── */
-function useInView(threshold = 0.05) {
-  const ref = useRef(null)
-  const [inView, setInView] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect() } },
-      { threshold }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return [ref, inView]
-}
-
+/* ── Animation helper ── */
 function fadeUp(visible, delay = 0) {
-  if (visible) return { animation: 'bidsFadeUp 600ms ease both', animationDelay: `${delay}ms` }
-  return { opacity: 0, transform: 'translateY(20px)' }
+  if (visible) return { animation: 'fadeUp 500ms cubic-bezier(0,0,0.2,1) both', animationDelay: `${delay}ms` }
+  return { opacity: 0, transform: 'translateY(12px)' }
 }
 
 function fmt(n) {
@@ -43,6 +28,13 @@ function calcReturn(faceValue, bid) {
   const b = Number(bid)
   if (!b || !f || b <= 0 || b >= f) return null
   return `+${((f - b) / b * 100).toFixed(1)}%`
+}
+
+function actionLabel(bid) {
+  if (bid.status === 'PENDING' && bid.listing_id) return null // renders link
+  if (bid.status === 'ACCEPTED') return 'Settled'
+  if (bid.status === 'REJECTED') return 'Declined'
+  return null
 }
 
 const STATUS_TABS = ['ALL', 'PENDING', 'ACCEPTED', 'REJECTED']
@@ -86,15 +78,8 @@ export default function MyBidsPage() {
 
   return (
     <AppLayout>
-      <style>{`
-        @keyframes bidsFadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-
       {/* Header strip */}
-      <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
+      <div ref={headerRef} className="bg-teal px-8 py-10">
         <div className="max-w-6xl mx-auto">
           <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight">My Bids</h1>
           <p className="font-['Lato'] text-white/60 text-sm mt-1">Track your marketplace bids and returns</p>
@@ -105,7 +90,7 @@ export default function MyBidsPage() {
 
         {/* Stat cards */}
         <div ref={statsRef} className="grid grid-cols-4 gap-4 mb-8">
-          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 0)}>
+          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3 hover:border-ink/20 transition-colors duration-150" style={fadeUp(statsInView, 0)}>
             <p className="font-['Lato'] text-xs text-ink/50 uppercase tracking-wider">Total Invested</p>
             {loading
               ? <div className="h-9 w-32 bg-ink/10 rounded animate-pulse" />
@@ -114,7 +99,7 @@ export default function MyBidsPage() {
             <p className="font-['Lato'] text-xs text-ink/40 mt-auto">{winningBids} winning bid{winningBids !== 1 ? 's' : ''}</p>
           </div>
 
-          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 60)}>
+          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3 hover:border-ink/20 transition-colors duration-150" style={fadeUp(statsInView, 60)}>
             <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Bids</p>
             {loading
               ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
@@ -123,7 +108,7 @@ export default function MyBidsPage() {
             <p className="font-['Lato'] text-xs text-ink/40 mt-auto">of {totalBids} total</p>
           </div>
 
-          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 120)}>
+          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3 hover:border-ink/20 transition-colors duration-150" style={fadeUp(statsInView, 120)}>
             <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Won Auctions</p>
             {loading
               ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
@@ -132,7 +117,7 @@ export default function MyBidsPage() {
             <p className="font-['Lato'] text-xs text-ink/40 mt-auto">Returns credited on repayment</p>
           </div>
 
-          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 180)}>
+          <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3 hover:border-ink/20 transition-colors duration-150" style={fadeUp(statsInView, 180)}>
             <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Total Bids</p>
             {loading
               ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" />
@@ -148,7 +133,7 @@ export default function MyBidsPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-[22px] font-['Lato'] text-sm font-medium transition-colors duration-150 ${
+              className={`px-4 py-2 rounded-[22px] font-['Lato'] text-sm font-medium transition-colors duration-150 active:scale-[0.97] ${
                 activeTab === tab
                   ? 'bg-teal text-white'
                   : 'border border-ink/20 text-ink/70 hover:border-ink/50 hover:text-ink bg-white'
@@ -172,7 +157,7 @@ export default function MyBidsPage() {
             {loading ? (
               <div className="p-8 space-y-4">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="h-10 bg-ink/5 rounded-lg animate-pulse" />
+                  <div key={i} className="h-10 bg-ink/5 rounded-lg animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
                 ))}
               </div>
             ) : filtered.length === 0 ? (
@@ -185,7 +170,7 @@ export default function MyBidsPage() {
                 {activeTab === 'ALL' && (
                   <Link
                     to="/marketplace"
-                    className="inline-block mt-4 bg-teal text-white rounded-[22px] px-5 py-2.5 font-['Lato'] text-sm font-semibold hover:opacity-90 transition-opacity"
+                    className="inline-block mt-4 bg-teal text-white rounded-[22px] px-5 py-2.5 font-['Lato'] text-sm font-semibold hover:opacity-90 active:scale-[0.97] transition-[transform,opacity] duration-100"
                   >
                     Browse Marketplace
                   </Link>
@@ -209,7 +194,7 @@ export default function MyBidsPage() {
                     {filtered.map((bid, i) => (
                       <tr
                         key={bid.id}
-                        className="border-b border-ink/5 hover:bg-cream transition-colors"
+                        className="border-b border-ink/5 hover:bg-cream transition-colors duration-100"
                         style={fadeUp(tableInView, i * 40)}
                       >
                         <td className="px-6 py-3 font-medium text-ink">{bid.invoice_token || bid.listing_id || '—'}</td>
@@ -226,13 +211,13 @@ export default function MyBidsPage() {
                           {bid.status === 'PENDING' && bid.listing_id ? (
                             <Link
                               to={`/marketplace/${bid.listing_id}`}
-                              className="inline-flex items-center gap-1 font-['Lato'] text-xs font-medium text-ink hover:text-teal transition-colors"
+                              className="inline-flex items-center gap-1 font-['Lato'] text-xs font-medium text-ink hover:text-teal hover:underline transition-colors duration-100"
                             >
                               <ExternalLink size={13} />
                               View
                             </Link>
                           ) : (
-                            <span className="text-ink/30 text-xs">—</span>
+                            <span className="text-ink/30 text-xs">{actionLabel(bid) || '—'}</span>
                           )}
                         </td>
                       </tr>

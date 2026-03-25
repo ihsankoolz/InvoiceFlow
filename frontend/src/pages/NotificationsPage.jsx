@@ -3,27 +3,12 @@ import { Bell, AlertTriangle, CheckCircle, DollarSign, Info } from 'lucide-react
 import AppLayout from '../components/layout/AppLayout'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import { useInView } from '../hooks/useInView'
 
-/* ── Animation helpers ── */
-function useInView(threshold = 0.05) {
-  const ref = useRef(null)
-  const [inView, setInView] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect() } },
-      { threshold }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return [ref, inView]
-}
-
+/* ── Animation helper ── */
 function fadeUp(visible, delay = 0) {
-  if (visible) return { animation: 'notifFadeUp 600ms ease both', animationDelay: `${delay}ms` }
-  return { opacity: 0, transform: 'translateY(20px)' }
+  if (visible) return { animation: 'fadeUp 500ms cubic-bezier(0,0,0.2,1) both', animationDelay: `${delay}ms` }
+  return { opacity: 0, transform: 'translateY(12px)' }
 }
 
 function fmtDate(str) {
@@ -53,7 +38,6 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading]             = useState(true)
   const [error, setError]                 = useState('')
-  const [markingAll, setMarkingAll]       = useState(false)
 
   const wsRef = useRef(null)
 
@@ -91,7 +75,6 @@ export default function NotificationsPage() {
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data)
-          // Push new notification to top of list
           const newNotif = {
             id: msg.id || Date.now(),
             title: msg.title || msg.event_type || 'Notification',
@@ -99,6 +82,7 @@ export default function NotificationsPage() {
             event_type: msg.event_type || 'NOTIFICATION',
             created_at: msg.created_at || new Date().toISOString(),
             is_read: false,
+            isNew: true,
             ...msg,
           }
           setNotifications((prev) => [newNotif, ...prev])
@@ -115,25 +99,7 @@ export default function NotificationsPage() {
     }
   }
 
-  async function markAllRead() {
-    setMarkingAll(true)
-    try {
-      await api.post('/notifications/mark-all-read', { user_id: user.sub })
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
-    } catch {
-      // Optimistically mark as read even if request fails
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
-    } finally {
-      setMarkingAll(false)
-    }
-  }
-
-  async function markRead(id) {
-    try {
-      await api.post(`/notifications/${id}/read`)
-    } catch {
-      // ignore
-    }
+  function markRead(id) {
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n))
   }
 
@@ -141,15 +107,8 @@ export default function NotificationsPage() {
 
   return (
     <AppLayout>
-      <style>{`
-        @keyframes notifFadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-
       {/* Header strip */}
-      <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
+      <div ref={headerRef} className="bg-teal px-8 py-10">
         <div className="max-w-3xl mx-auto flex items-end justify-between">
           <div>
             <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight flex items-center gap-3">
@@ -162,15 +121,6 @@ export default function NotificationsPage() {
             </h1>
             <p className="font-['Lato'] text-white/60 text-sm mt-1">Your recent activity and alerts</p>
           </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllRead}
-              disabled={markingAll}
-              className="flex-shrink-0 bg-[#fff8ec] text-teal rounded-[22px] px-5 py-2.5 font-['Lato'] text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60"
-            >
-              {markingAll ? 'Marking…' : 'Mark all read'}
-            </button>
-          )}
         </div>
       </div>
 
@@ -188,7 +138,7 @@ export default function NotificationsPage() {
           {loading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-20 bg-white border border-ink/10 rounded-[14px] animate-pulse" />
+                <div key={i} className="h-20 bg-white border border-ink/10 rounded-[14px] animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
               ))}
             </div>
           ) : notifications.length === 0 ? (
@@ -203,10 +153,12 @@ export default function NotificationsPage() {
                 <div
                   key={notif.id || i}
                   onClick={() => !notif.is_read && markRead(notif.id)}
-                  className={`bg-white border border-ink/10 rounded-[14px] p-4 mb-2 flex items-start gap-3 cursor-pointer transition-all duration-150 hover:shadow-sm ${
-                    !notif.is_read ? 'border-l-4 border-l-[#ff9500]' : ''
-                  }`}
-                  style={fadeUp(listInView, i * 40)}
+                  className="bg-white border border-ink/10 border-l-4 rounded-[14px] p-4 flex items-start gap-3 cursor-pointer hover:bg-cream/60 transition-[background-color,box-shadow,border-color] duration-200 hover:shadow-sm"
+                  style={{
+                    ...fadeUp(listInView, i * 40),
+                    ...(notif.isNew ? { animation: 'fadeUp 300ms cubic-bezier(0,0,0.2,1) both' } : {}),
+                    borderLeftColor: notif.is_read ? 'transparent' : '#ff9500',
+                  }}
                 >
                   {/* Icon */}
                   <div className="w-8 h-8 rounded-full bg-cream flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -223,12 +175,13 @@ export default function NotificationsPage() {
                     )}
                   </div>
 
-                  {/* Timestamp */}
-                  <div className="flex-shrink-0 ml-2">
+                  {/* Timestamp + unread dot */}
+                  <div className="flex-shrink-0 ml-2 flex flex-col items-end gap-1">
                     <span className="font-['Lato'] text-xs text-ink/40">{fmtDate(notif.created_at)}</span>
-                    {!notif.is_read && (
-                      <div className="w-2 h-2 rounded-full bg-[#ff9500] ml-auto mt-1" />
-                    )}
+                    <div
+                      className="w-2 h-2 rounded-full bg-[#ff9500] transition-opacity duration-300"
+                      style={{ opacity: notif.is_read ? 0 : 1 }}
+                    />
                   </div>
                 </div>
               ))}

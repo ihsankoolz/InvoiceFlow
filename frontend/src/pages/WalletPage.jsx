@@ -138,7 +138,7 @@ export default function WalletPage() {
       `}</style>
 
       {/* Header strip with balance */}
-      <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
+      <div ref={headerRef} className="bg-teal px-8 py-10">
         <div className="max-w-4xl mx-auto flex items-end justify-between">
           <div>
             <p className="font-['Lato'] text-white/50 text-sm mb-1">Available Balance</p>

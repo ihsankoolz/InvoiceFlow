@@ -1,30 +1,15 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Clock, ChevronDown, ArrowRight } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
 import Badge from '../components/ui/Badge'
 import { fetchListings } from '../api/marketplace'
+import { useInView } from '../hooks/useInView'
 
-/* ── Animation helpers ── */
-function useInView(threshold = 0.05) {
-  const ref = useRef(null)
-  const [inView, setInView] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect() } },
-      { threshold }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [threshold])
-  return [ref, inView]
-}
-
+/* ── Animation helper ── */
 function fadeUp(visible, delay = 0) {
-  if (visible) return { animation: 'mktFadeUp 600ms ease both', animationDelay: `${delay}ms` }
-  return { opacity: 0, transform: 'translateY(20px)' }
+  if (visible) return { animation: 'fadeUp 500ms cubic-bezier(0,0,0.2,1) both', animationDelay: `${delay}ms` }
+  return { opacity: 0, transform: 'translateY(12px)' }
 }
 
 /* ── Format helpers ── */
@@ -77,7 +62,7 @@ function ListingCard({ listing, onBid, delay, inView }) {
   const ret = calcReturn(listing.face_value, listing.current_bid || listing.minimum_bid)
   return (
     <div
-      className="bg-white border border-ink/10 rounded-[20px] overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col"
+      className="bg-white border border-ink/10 rounded-[20px] overflow-hidden hover:shadow-sm hover:-translate-y-0.5 transition-[transform,box-shadow] duration-150 flex flex-col"
       style={fadeUp(inView, delay)}
     >
       {/* Top accent */}
@@ -133,7 +118,7 @@ function ListingCard({ listing, onBid, delay, inView }) {
         {/* CTA */}
         <button
           onClick={() => onBid(listing.id)}
-          className="mt-auto w-full bg-teal text-white rounded-[12px] px-4 py-3 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+          className="mt-auto w-full bg-teal text-white rounded-[12px] px-4 py-3 font-['Lato'] font-semibold text-sm hover:opacity-90 active:scale-[0.97] active:opacity-100 transition-[transform,opacity] duration-100 flex items-center justify-center gap-2"
         >
           Place Bid <ArrowRight size={14} />
         </button>
@@ -149,7 +134,7 @@ function SkeletonCard() {
       <div className="bg-cream px-5 py-4 h-14 animate-pulse" />
       <div className="p-5 space-y-4">
         {[60, 80, 40, 60, 80].map((w, i) => (
-          <div key={i} className="h-4 bg-ink/5 rounded" style={{ width: `${w}%` }} />
+          <div key={i} className="h-4 bg-ink/5 rounded animate-pulse" style={{ width: `${w}%`, animationDelay: `${i * 80}ms` }} />
         ))}
       </div>
     </div>
@@ -198,15 +183,8 @@ export default function MarketplacePage() {
 
   return (
     <AppLayout>
-      <style>{`
-        @keyframes mktFadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-
       {/* ── Header strip ── */}
-      <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
+      <div ref={headerRef} className="bg-teal px-8 py-10">
         <div className="max-w-7xl mx-auto">
           <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight">Marketplace</h1>
           <p className="font-['Lato'] text-white/60 text-sm mt-1">Browse and bid on live invoice listings</p>
@@ -223,7 +201,7 @@ export default function MarketplacePage() {
               <button
                 key={u}
                 onClick={() => setUrgency(u)}
-                className={`px-4 py-2 rounded-[22px] font-['Lato'] text-sm font-medium transition-colors duration-150 ${
+                className={`px-4 py-2 rounded-[22px] font-['Lato'] text-sm font-medium transition-colors duration-150 active:scale-[0.97] ${
                   urgency === u
                     ? 'bg-teal text-white'
                     : 'border border-ink/20 text-ink/70 hover:border-ink/50 hover:text-ink bg-white'
