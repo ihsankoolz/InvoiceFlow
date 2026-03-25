@@ -81,7 +81,7 @@ function SellerDashboard({ user }) {
     setInvoicesLoading(true)
     Promise.allSettled([
       api.get(`/invoices?seller_id=${user.sub}`),
-      api.get('/wallet/balance'),
+      api.get(`/wallet/balance?user_id=${user.sub}`),
       api.get(`/loans?seller_id=${user.sub}`),
     ]).then(([invoicesRes, walletRes, loansRes]) => {
       const invoices = invoicesRes.status === 'fulfilled' ? (invoicesRes.value.data?.invoices || invoicesRes.value.data || []) : []
@@ -196,13 +196,13 @@ function InvestorDashboard({ user }) {
     if (!user) return
 
     // Wallet balance
-    api.get('/wallet/balance')
+    api.get(`/wallet/balance?user_id=${user.sub}`)
       .then(r => setWalletBalance(r.data?.balance ?? r.data?.available_balance ?? null))
       .catch(() => setWalletBalance(null))
       .finally(() => setWalletLoading(false))
 
     // Transactions (activity feed)
-    api.get('/wallet/transactions')
+    api.get(`/wallet/transactions?user_id=${user.sub}`)
       .then(r => {
         const data = r.data?.transactions || r.data || []
         setTransactions(Array.isArray(data) ? data.slice(0, 5) : [])

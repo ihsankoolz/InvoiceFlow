@@ -54,7 +54,7 @@ export default function WalletPage() {
   async function loadBalance() {
     setBalanceLoading(true)
     try {
-      const res = await api.get('/wallet/balance')
+      const res = await api.get(`/wallet/balance?user_id=${user.sub}`)
       setBalance(res.data?.balance ?? res.data?.available_balance ?? null)
     } catch {
       setBalance(null)
@@ -67,7 +67,7 @@ export default function WalletPage() {
     setTxLoading(true)
     setTxError('')
     try {
-      const res = await api.get('/wallet/transactions')
+      const res = await api.get(`/wallet/transactions?user_id=${user.sub}`)
       const data = res.data?.transactions || res.data || []
       setTransactions(Array.isArray(data) ? data : [])
     } catch (e) {
