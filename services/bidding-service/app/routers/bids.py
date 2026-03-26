@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -17,9 +17,17 @@ def create_bid(data: BidCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=List[BidResponse])
-def get_bids_for_invoice(invoice_token: str, db: Session = Depends(get_db)):
+def get_bids(
+    invoice_token: Optional[str] = None,
+    investor_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
     service = BidService(db)
-    return service.get_bids_for_invoice(invoice_token)
+    if investor_id is not None:
+        return service.get_bids_for_investor(investor_id)
+    if invoice_token is not None:
+        return service.get_bids_for_invoice(invoice_token)
+    raise HTTPException(status_code=400, detail="Provide invoice_token or investor_id")
 
 
 @router.get("/{bid_id}", response_model=BidResponse)

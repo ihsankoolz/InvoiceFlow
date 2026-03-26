@@ -68,6 +68,15 @@ class BidService:
             .all()
         )
 
+    def get_bids_for_investor(self, investor_id: int) -> List[Bid]:
+        """Return all bids placed by a specific investor, newest first."""
+        return (
+            self.db.query(Bid)
+            .filter(Bid.investor_id == investor_id)
+            .order_by(Bid.id.desc())
+            .all()
+        )
+
     def get_bid(self, bid_id: int) -> Bid:
         """Return a single bid by ID."""
         bid = self.db.query(Bid).filter(Bid.id == bid_id).first()
