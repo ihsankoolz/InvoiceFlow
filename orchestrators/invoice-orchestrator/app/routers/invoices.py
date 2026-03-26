@@ -4,7 +4,9 @@ Invoice Orchestrator — API routes.
 See BUILD_INSTRUCTIONS_V2.md Section 8 — API Endpoint
 """
 
-from fastapi import APIRouter, File, Form, UploadFile
+from typing import List
+
+from fastapi import APIRouter, File, Form, Query, UploadFile
 
 from app.schemas.requests import ListInvoiceResponse
 from app.services.orchestrator import InvoiceOrchestrator
@@ -19,6 +21,20 @@ router = APIRouter()
 http_client = HTTPClient()
 publisher = RabbitMQPublisher(config.RABBITMQ_URL)
 temporal_client = TemporalClient()
+
+
+@router.get(
+    "/api/invoices",
+    tags=["Invoice Workflow"],
+    summary="List invoices for a seller",
+    description="Returns all invoices belonging to the given seller_id.",
+)
+async def list_invoices(seller_id: int = Query(..., description="Seller user ID")):
+    result = await http_client.get(
+        f"{config.INVOICE_SERVICE_URL}/invoices",
+        params={"seller_id": seller_id},
+    )
+    return result
 
 
 @router.post(

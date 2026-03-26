@@ -4,6 +4,7 @@
  */
 
 const Wallet = require('../models/Wallet');
+const WalletTransaction = require('../models/WalletTransaction');
 const { sequelize } = require('../database');
 
 class WalletService {
@@ -24,6 +25,12 @@ class WalletService {
 
       const newBalance = parseFloat(wallet.balance) + parseFloat(amount);
       await wallet.update({ balance: newBalance.toFixed(2) }, { transaction: t });
+      await WalletTransaction.create({
+        user_id: userId,
+        type: 'CREDIT',
+        amount: parseFloat(amount).toFixed(2),
+        description: 'WALLET_CREDIT',
+      }, { transaction: t });
       return wallet;
     });
   }
@@ -56,6 +63,12 @@ class WalletService {
 
       const newBalance = (current - debit).toFixed(2);
       await wallet.update({ balance: newBalance }, { transaction: t });
+      await WalletTransaction.create({
+        user_id: userId,
+        type: 'DEBIT',
+        amount: parseFloat(amount).toFixed(2),
+        description: 'WALLET_DEBIT',
+      }, { transaction: t });
       return wallet;
     });
   }
@@ -72,6 +85,13 @@ class WalletService {
       throw new Error(`Wallet not found for user ${userId}`);
     }
     return wallet;
+  }
+
+  async getTransactions(userId) {
+    return await WalletTransaction.findAll({
+      where: { user_id: userId },
+      order: [['created_at', 'DESC']],
+    });
   }
 }
 

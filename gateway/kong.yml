@@ -48,6 +48,12 @@ services:
         methods:
           - POST
         strip_path: false
+      - name: invoice-list
+        paths:
+          - /api/invoices
+        methods:
+          - GET
+        strip_path: false
 
   # --- Bidding Orchestrator (JWT required on bids + wallet) ---
   - name: bidding-orchestrator
@@ -65,11 +71,29 @@ services:
         methods:
           - POST
         strip_path: false
+      - name: bids-list
+        paths:
+          - /api/bids
+        methods:
+          - GET
+        strip_path: false
       - name: wallet-topup
         paths:
           - /api/wallet/topup
         methods:
           - POST
+        strip_path: false
+      - name: wallet-balance
+        paths:
+          - /api/wallet/balance
+        methods:
+          - GET
+        strip_path: false
+      - name: wallet-transactions
+        paths:
+          - /api/wallet/transactions
+        methods:
+          - GET
         strip_path: false
 
   # --- Stripe Webhook (no JWT — uses Stripe signature) ---
@@ -93,6 +117,12 @@ services:
           claims_to_verify:
             - exp
     routes:
+      - name: loans-list
+        paths:
+          - /api/loans
+        methods:
+          - GET
+        strip_path: false
       - name: loan-repay
         paths:
           - ~/api/loans/[^/]+/repay$
@@ -146,7 +176,7 @@ plugins:
   - name: cors
     config:
       origins:
-        - "http://localhost:8080"
+        - "http://localhost:3000"
       methods:
         - GET
         - POST

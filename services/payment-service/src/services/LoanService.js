@@ -101,6 +101,10 @@ class LoanService {
   async getLoansByInvestor(investorId) {
     return await Loan.findAll({ where: { investor_id: investorId } });
   }
+
+  async getLoansBySeller(sellerId) {
+    return await Loan.findAll({ where: { seller_id: sellerId } });
+  }
 }
 
 module.exports = new LoanService();

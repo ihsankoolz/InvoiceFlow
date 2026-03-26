@@ -355,6 +355,7 @@ services:
       MARKETPLACE_SERVICE_URL: http://marketplace-service:5002
       STRIPE_WRAPPER_URL: http://stripe-wrapper:5008
       PAYMENT_SERVICE_GRPC: payment-service:50051
+      PAYMENT_SERVICE_URL: http://payment-service:5004
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       TEMPORAL_HOST: temporal:7233
       STRIPE_WEBHOOK_SECRET: whsec_your_stripe_webhook_secret
