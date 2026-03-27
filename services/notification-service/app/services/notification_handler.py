@@ -30,7 +30,7 @@ EVENT_MAPPING = {
         ),
     },
     "invoice.rejected": {
-        "template": "invoice_listed.html",
+        "template": "invoice_rejected.html",
         "subject": "Your invoice has been rejected",
         "get_recipients": lambda p: (
             [{"email": p.get("seller_email"), "user_id": p.get("seller_id")}],
@@ -62,7 +62,7 @@ EVENT_MAPPING = {
         ),
     },
     "auction.extended": {
-        "template": "auction_closing_warning.html",
+        "template": "auction_closing_warning.html",  # same context as closing warning
         "subject": "Auction deadline has been extended",
         "get_recipients": lambda p: (
             [{"email": b.get("email"), "user_id": b.get("user_id")} for b in p.get("bidders", [])],
@@ -81,7 +81,7 @@ EVENT_MAPPING = {
         ),
     },
     "auction.closed.loser": {
-        "template": "auction_winner.html",
+        "template": "auction_loser.html",
         "subject": "Auction closed - better luck next time",
         "get_recipients": lambda p: (
             [{"email": p.get("loser_email"), "user_id": p.get("loser_id")}],
@@ -89,7 +89,7 @@ EVENT_MAPPING = {
         ),
     },
     "auction.expired": {
-        "template": "auction_winner.html",
+        "template": "auction_expired.html",
         "subject": "Your auction has expired with no bids",
         "get_recipients": lambda p: (
             [{"email": p.get("seller_email"), "user_id": p.get("seller_id")}],
@@ -97,7 +97,7 @@ EVENT_MAPPING = {
         ),
     },
     "wallet.credited": {
-        "template": "loan_due.html",
+        "template": "wallet_credited.html",
         "subject": "Your wallet has been credited",
         "get_recipients": lambda p: (
             [{"email": p.get("investor_email"), "user_id": p.get("investor_id")}],
@@ -113,7 +113,7 @@ EVENT_MAPPING = {
         ),
     },
     "loan.repaid": {
-        "template": "loan_due.html",
+        "template": "loan_repaid.html",
         "subject": "Loan has been repaid",
         "get_recipients": lambda p: (
             [
@@ -124,7 +124,7 @@ EVENT_MAPPING = {
         ),
     },
     "loan.overdue": {
-        "template": "loan_due.html",
+        "template": "loan_overdue.html",
         "subject": "Loan is overdue",
         "get_recipients": lambda p: (
             [
@@ -190,6 +190,7 @@ class NotificationHandler:
                         "event_type": event_type,
                         "message": subject,
                         "payload": payload,
+                        "is_read": False,
                         "created_at": datetime.now(timezone.utc),
                     }
                 )
