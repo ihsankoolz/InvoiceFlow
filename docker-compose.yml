@@ -201,7 +201,7 @@ services:
       - "5000:5000"
     environment:
       DB_URL: mysql+pymysql://root:password@user-db:3306/user_db
-      JWT_SECRET: your-jwt-secret-change-in-production
+      JWT_SECRET: ${JWT_SECRET}
       JWT_ALGORITHM: HS256
       JWT_EXPIRY_HOURS: "24"
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
@@ -303,8 +303,8 @@ services:
       - "5005:5005"
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      RESEND_API_KEY: re_your_resend_api_key
-      RESEND_FROM_EMAIL: notifications@invoiceflow.dev
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -358,7 +358,7 @@ services:
       PAYMENT_SERVICE_URL: http://payment-service:5004
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       TEMPORAL_HOST: temporal:7233
-      STRIPE_WEBHOOK_SECRET: whsec_your_stripe_webhook_secret
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
     depends_on:
       bidding-service:
         condition: service_healthy
