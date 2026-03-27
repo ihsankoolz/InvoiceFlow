@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BIDDING_SERVICE_URL = os.getenv("BIDDING_SERVICE_URL", "http://bidding-service:5003")
+USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:5000")
 MARKETPLACE_SERVICE_URL = os.getenv("MARKETPLACE_SERVICE_URL", "http://marketplace-service:5002")
 STRIPE_WRAPPER_URL = os.getenv("STRIPE_WRAPPER_URL", "http://stripe-wrapper:5008")
 PAYMENT_SERVICE_GRPC = os.getenv("PAYMENT_SERVICE_GRPC", "payment-service:50051")

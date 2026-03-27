@@ -13,6 +13,12 @@ http_client = HTTPClient()
 
 
 @activity.defn
+async def get_user(user_id: int) -> dict:
+    """Fetch user details (including email) from User Service."""
+    return await http_client.get(f"{config.USER_SERVICE_URL}/users/{user_id}")
+
+
+@activity.defn
 async def verify_invoice(invoice_token: str) -> dict:
     """Verify invoice exists and is in LISTED status."""
     response = await http_client.get(f"{config.INVOICE_SERVICE_URL}/invoices/{invoice_token}")

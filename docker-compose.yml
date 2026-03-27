@@ -201,7 +201,7 @@ services:
       - "5000:5000"
     environment:
       DB_URL: mysql+pymysql://root:password@user-db:3306/user_db
-      JWT_SECRET: your-jwt-secret-change-in-production
+      JWT_SECRET: ${JWT_SECRET}
       JWT_ALGORITHM: HS256
       JWT_EXPIRY_HOURS: "24"
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
@@ -303,8 +303,8 @@ services:
       - "5005:5005"
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      RESEND_API_KEY: re_your_resend_api_key
-      RESEND_FROM_EMAIL: notifications@invoiceflow.dev
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -358,7 +358,8 @@ services:
       PAYMENT_SERVICE_URL: http://payment-service:5004
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       TEMPORAL_HOST: temporal:7233
-      STRIPE_WEBHOOK_SECRET: whsec_your_stripe_webhook_secret
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      USER_SERVICE_URL: http://user-service:5000
     depends_on:
       bidding-service:
         condition: service_healthy
@@ -383,6 +384,7 @@ services:
       PAYMENT_SERVICE_GRPC: payment-service:50051
       STRIPE_WRAPPER_URL: http://stripe-wrapper:5008
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      USER_SERVICE_URL: http://user-service:5000
     depends_on:
       payment-service:
         condition: service_healthy
@@ -441,12 +443,27 @@ services:
       MARKETPLACE_SERVICE_URL: http://marketplace-service:5002
       PAYMENT_SERVICE_GRPC: payment-service:50051
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      USER_SERVICE_URL: http://user-service:5000
       REPAYMENT_WINDOW_SECONDS: "86400"
       ANTI_SNIPE_SECONDS: "300"
     depends_on:
       temporal:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  # ============================================================
+  # STRIPE CLI (local webhook forwarding)
+  # ============================================================
+
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    command: listen --forward-to http://host.docker.internal:8000/api/webhooks/stripe
+    volumes:
+      - ~/.config/stripe:/root/.config/stripe
+    depends_on:
+      kong:
         condition: service_healthy
     restart: on-failure
 

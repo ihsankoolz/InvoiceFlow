@@ -90,6 +90,7 @@ class InvoiceOrchestrator:
             await self.publisher.publish("invoice.rejected", {
                 "invoice_token": invoice["invoice_token"],
                 "seller_id": seller_id,
+                "seller_email": user["email"],
                 "reason": "Invalid debtor UEN",
             })
             raise HTTPException(status_code=400, detail="Invalid debtor UEN")
@@ -125,6 +126,9 @@ class InvoiceOrchestrator:
         await self.publisher.publish("invoice.listed", {
             "invoice_token": invoice["invoice_token"],
             "seller_id": seller_id,
+            "seller_email": user["email"],
+            "amount": amount,
+            "deadline": listing["deadline"],
         })
 
         return {

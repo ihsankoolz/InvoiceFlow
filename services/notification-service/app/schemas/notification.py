@@ -8,4 +8,5 @@ class NotificationResponse(BaseModel):
     event_type: str
     message: str
     payload: dict
+    is_read: bool
     created_at: datetime
