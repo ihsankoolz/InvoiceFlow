@@ -70,11 +70,15 @@ class BidOrchestrator:
 
         # ── Step 3: Outbid choreography ────────────────────────────────────
         if previous_highest:
+            outbid_user = await self.http_client.get(
+                f"{config.USER_SERVICE_URL}/users/{previous_highest['investor_id']}"
+            )
             await self.publisher.publish(
                 "bid.outbid",
                 {
                     "invoice_token": data.invoice_token,
-                    "outbid_investor_id": previous_highest["investor_id"],
+                    "previous_bidder_id": previous_highest["investor_id"],
+                    "previous_bidder_email": outbid_user["email"],
                     "outbid_amount": str(previous_highest["bid_amount"]),
                     "new_highest_investor_id": data.investor_id,
                     "new_highest_amount": str(data.bid_amount),
@@ -111,21 +115,34 @@ class BidOrchestrator:
                 json={"deadline": new_deadline_iso},
             )
 
+            current_offers = await self.http_client.get(
+                f"{config.BIDDING_SERVICE_URL}/bids?invoice_token={data.invoice_token}"
+            )
+            bidders = []
+            for o in current_offers:
+                u = await self.http_client.get(f"{config.USER_SERVICE_URL}/users/{o['investor_id']}")
+                bidders.append({"user_id": o["investor_id"], "email": u["email"]})
             await self.publisher.publish(
                 "auction.extended",
                 {
                     "invoice_token": data.invoice_token,
                     "new_deadline": new_deadline_iso,
+                    "bidders": bidders,
                 },
             )
 
         # ── Step 5: Publish bid.placed ─────────────────────────────────────
+        seller_user = await self.http_client.get(
+            f"{config.USER_SERVICE_URL}/users/{listing['seller_id']}"
+        )
         await self.publisher.publish(
             "bid.placed",
             {
                 "invoice_token": data.invoice_token,
                 "investor_id": data.investor_id,
                 "bid_amount": str(data.bid_amount),
+                "seller_id": listing["seller_id"],
+                "seller_email": seller_user["email"],
             },
         )
 
