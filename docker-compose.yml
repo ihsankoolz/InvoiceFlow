@@ -67,15 +67,17 @@ services:
 
   kong:
     image: kong:3.4
+    entrypoint: ["/bin/sh", "-c", "envsubst < /etc/kong/kong.yml.template > /etc/kong/kong.yml && kong docker-start"]
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
       KONG_PROXY_LISTEN: 0.0.0.0:8000
       KONG_LOG_LEVEL: info
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8000:8000"
     volumes:
-      - ./gateway/kong.yml:/etc/kong/kong.yml
+      - ./gateway/kong.yml:/etc/kong/kong.yml.template
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s
