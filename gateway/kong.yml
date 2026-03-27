@@ -152,6 +152,12 @@ services:
         methods:
           - GET
         strip_path: false
+      - name: notifications-mark-read
+        paths:
+          - /api/notifications
+        methods:
+          - PATCH
+        strip_path: false
 
 
 plugins:
