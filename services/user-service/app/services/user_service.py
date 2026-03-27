@@ -79,6 +79,9 @@ class UserService:
         payload = {
             "sub": str(user.id),
             "role": user.role,
+            "email": user.email,
+            "full_name": user.full_name,
+            "iss": "invoiceflow",
             "exp": expire,
         }
         token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)

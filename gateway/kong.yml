@@ -11,7 +11,7 @@ consumers:
   - username: invoiceflow-app
     jwt_secrets:
       - key: invoiceflow                          # must match `iss` claim in JWT
-        secret: your-jwt-secret-change-in-production   # must match JWT_SECRET env var
+        secret: ${JWT_SECRET}                          # must match JWT_SECRET env var
         algorithm: HS256
 
 services:
