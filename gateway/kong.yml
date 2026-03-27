@@ -19,18 +19,12 @@ services:
   - name: auth-service
     url: http://user-service:5000
     routes:
-      - name: auth-login
+      - name: auth-routes
         paths:
-          - /api/auth/login
+          - /api/auth
         methods:
           - POST
-        strip_path: false
-      - name: auth-register
-        paths:
-          - /api/auth/register
-        methods:
-          - POST
-        strip_path: false
+        strip_path: true
 
   # --- Invoice Orchestrator (JWT required) ---
   - name: invoice-orchestrator
