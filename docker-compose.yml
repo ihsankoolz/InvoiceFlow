@@ -451,6 +451,20 @@ services:
     restart: on-failure
 
   # ============================================================
+  # STRIPE CLI (local webhook forwarding)
+  # ============================================================
+
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    command: listen --forward-to http://host.docker.internal:8000/api/webhooks/stripe
+    volumes:
+      - ~/.config/stripe:/root/.config/stripe
+    depends_on:
+      kong:
+        condition: service_healthy
+    restart: on-failure
+
+  # ============================================================
   # FRONTEND (placeholder)
   # ============================================================
 
