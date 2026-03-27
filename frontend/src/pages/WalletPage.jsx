@@ -11,6 +11,20 @@ function fadeUp(visible, delay = 0) {
   return { opacity: 0, transform: 'translateY(12px)' }
 }
 
+const TX_LABELS = {
+  'WALLET_CREDIT':  'Wallet Top-Up',
+  'WALLET_DEBIT':   'Wallet Debit',
+  'BID_LOCK':       'Bid Placed',
+  'BID_UNLOCK':     'Bid Released',
+  'BID_DEDUCT':     'Bid Won',
+  'LOAN_REPAYMENT': 'Loan Repayment',
+  'LOAN_RETURN':    'Loan Return',
+}
+
+function txLabel(tx) {
+  return TX_LABELS[tx.description] || TX_LABELS[tx.type] || tx.description || tx.type || 'Transaction'
+}
+
 function fmt(n, showCents = true) {
   if (n == null) return '—'
   return Number(n).toLocaleString('en-SG', {
@@ -234,7 +248,7 @@ export default function WalletPage() {
                       </div>
                       <div>
                         <p className="font-['Lato'] text-sm font-medium text-ink">
-                          {tx.description || tx.type || 'Transaction'}
+                          {txLabel(tx)}
                         </p>
                         <p className="font-['Lato'] text-xs text-ink/50">{fmtDate(tx.created_at)}</p>
                       </div>

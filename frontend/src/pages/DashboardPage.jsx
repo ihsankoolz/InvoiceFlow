@@ -48,6 +48,20 @@ function timeAgo(str) {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
+const TX_LABELS = {
+  'WALLET_CREDIT':  'Wallet Top-Up',
+  'WALLET_DEBIT':   'Wallet Debit',
+  'BID_LOCK':       'Bid Placed',
+  'BID_UNLOCK':     'Bid Released',
+  'BID_DEDUCT':     'Bid Won',
+  'LOAN_REPAYMENT': 'Loan Repayment',
+  'LOAN_RETURN':    'Loan Return',
+}
+
+function txLabel(tx) {
+  return TX_LABELS[tx.description] || TX_LABELS[tx.type] || tx.description || tx.type || 'Transaction'
+}
+
 function txColor(type) {
   if (!type) return 'text-ink/40'
   const t = type.toUpperCase()
@@ -311,7 +325,7 @@ function InvestorDashboard({ user }) {
                 {transactions.map((tx, i) => (
                   <div key={i} className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-['Lato'] text-sm text-ink leading-snug">{tx.description || tx.type || 'Transaction'}</p>
+                      <p className="font-['Lato'] text-sm text-ink leading-snug">{txLabel(tx)}</p>
                       <p className="font-['Lato'] text-xs text-ink/40 mt-0.5">{timeAgo(tx.created_at || tx.timestamp)}</p>
                     </div>
                     <p className={`font-['Lato'] font-medium text-sm whitespace-nowrap ${txColor(tx.type)}`}>
