@@ -94,16 +94,14 @@ function SellerDashboard({ user }) {
     setInvoicesLoading(true)
     Promise.allSettled([
       api.get(`/invoices?seller_id=${user.sub}`),
-      api.get(`/wallet/balance?user_id=${user.sub}`),
       api.get(`/loans?seller_id=${user.sub}`),
-    ]).then(([invoicesRes, walletRes, loansRes]) => {
+    ]).then(([invoicesRes, loansRes]) => {
       const invoices = invoicesRes.status === 'fulfilled' ? (invoicesRes.value.data?.invoices || invoicesRes.value.data || []) : []
-      const wallet   = walletRes.status === 'fulfilled' ? walletRes.value.data : null
       const loans    = loansRes.status === 'fulfilled' ? (loansRes.value.data?.loans || loansRes.value.data || []) : []
       const activeListings = invoices.filter(i => i.status === 'LISTED').length
       const totalFinanced  = invoices.filter(i => ['FINANCED', 'ACCEPTED'].includes(i.status)).reduce((s, i) => s + Number(i.face_value || 0), 0)
       const activeLoans    = loans.filter(l => l.status === 'ACTIVE' || l.status === 'DUE').length
-      setSellerStats({ activeListings, totalFinanced, activeLoans, walletBalance: wallet?.balance ?? wallet?.available_balance ?? null })
+      setSellerStats({ activeListings, totalFinanced, activeLoans })
       setRecentInvoices(invoices.slice(0, 5))
     }).finally(() => {
       setStatsLoading(false)
@@ -116,7 +114,7 @@ function SellerDashboard({ user }) {
       {/* Greeting */}
       <div className="mb-10" style={fadeUp(true, 0)}>
         <h1 className="font-['Lato'] font-bold text-[28px] text-ink leading-tight">
-          Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.full_name?.split(' ')[0] || 'there'}
+          Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.full_name || 'there'}
         </h1>
         <p className="font-['Lato'] text-sm text-ink/40 mt-1">Here's an overview of your listings and loans.</p>
       </div>
@@ -124,9 +122,9 @@ function SellerDashboard({ user }) {
       {/* Stat cards */}
       <div ref={statsRef} className="grid grid-cols-4 gap-4 mb-10">
         <div className="bg-teal rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 0)}>
-          <p className="font-['Lato'] text-xs text-white/60 uppercase tracking-wider">Wallet Balance</p>
-          {statsLoading ? <div className="h-9 w-32 bg-white/20 rounded animate-pulse" /> : <p className="font-['Lato'] font-bold text-[28px] text-white leading-none">{fmt(sellerStats?.walletBalance)}</p>}
-          <Link to="/wallet" className="font-['Lato'] text-xs text-white/60 hover:text-white transition-colors flex items-center gap-1 mt-auto">Manage <ArrowRight size={11} /></Link>
+          <p className="font-['Lato'] text-xs text-white/60 uppercase tracking-wider">Total Financed</p>
+          {statsLoading ? <div className="h-9 w-32 bg-white/20 rounded animate-pulse" /> : <p className="font-['Lato'] font-bold text-[28px] text-white leading-none">{fmt(sellerStats?.totalFinanced)}</p>}
+          <p className="font-['Lato'] text-xs text-white/60 mt-auto">across all invoices</p>
         </div>
         <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 60)}>
           <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Listings</p>
@@ -134,14 +132,14 @@ function SellerDashboard({ user }) {
           <Link to="/invoices" className="font-['Lato'] text-xs text-ink/40 hover:text-ink transition-colors flex items-center gap-1 mt-auto">View all <ArrowRight size={11} /></Link>
         </div>
         <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 120)}>
-          <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Total Financed</p>
-          {statsLoading ? <div className="h-9 w-32 bg-ink/8 rounded animate-pulse" /> : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{fmt(sellerStats?.totalFinanced)}</p>}
-          <p className="font-['Lato'] text-xs text-ink/40 mt-auto">across financed invoices</p>
+          <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Pending Repayments</p>
+          {statsLoading ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" /> : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{sellerStats?.activeLoans ?? 0}</p>}
+          <Link to="/loans" className="font-['Lato'] text-xs text-ink/40 hover:text-ink transition-colors flex items-center gap-1 mt-auto">View loans <ArrowRight size={11} /></Link>
         </div>
         <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 180)}>
           <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Loans</p>
           {statsLoading ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" /> : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{sellerStats?.activeLoans ?? 0}</p>}
-          <Link to="/loans" className="font-['Lato'] text-xs text-ink/40 hover:text-ink transition-colors flex items-center gap-1 mt-auto">View loans <ArrowRight size={11} /></Link>
+          <p className="font-['Lato'] text-xs text-ink/40 mt-auto">outstanding loans</p>
         </div>
       </div>
 
@@ -259,7 +257,7 @@ function InvestorDashboard({ user }) {
   }
 
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'
-  const firstName = user?.full_name?.split(' ')[0] || 'there'
+  const firstName = user?.full_name || 'there'
 
   return (
     <>
