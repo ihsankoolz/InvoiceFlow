@@ -29,8 +29,7 @@ function fadeUp(visible, delay = 0) {
 }
 
 function fmt(n) {
-  if (n == null) return '—'
-  return `$${Number(n).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return `$${Number(n ?? 0).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function fmtDate(str) {
