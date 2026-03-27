@@ -359,6 +359,7 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       TEMPORAL_HOST: temporal:7233
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      USER_SERVICE_URL: http://user-service:5000
     depends_on:
       bidding-service:
         condition: service_healthy
@@ -383,6 +384,7 @@ services:
       PAYMENT_SERVICE_GRPC: payment-service:50051
       STRIPE_WRAPPER_URL: http://stripe-wrapper:5008
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      USER_SERVICE_URL: http://user-service:5000
     depends_on:
       payment-service:
         condition: service_healthy
@@ -441,6 +443,7 @@ services:
       MARKETPLACE_SERVICE_URL: http://marketplace-service:5002
       PAYMENT_SERVICE_GRPC: payment-service:50051
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      USER_SERVICE_URL: http://user-service:5000
       REPAYMENT_WINDOW_SECONDS: "86400"
       ANTI_SNIPE_SECONDS: "300"
     depends_on:

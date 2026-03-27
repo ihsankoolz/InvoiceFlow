@@ -13,6 +13,7 @@ with workflow.unsafe.imports_passed_through():
     from activities.payment_activities import get_loan_grpc, update_loan_status_grpc
     from activities.marketplace_activities import bulk_delist
     from activities.rabbitmq_activities import publish_event
+    from activities.invoice_activities import get_user
     import config
 
 
@@ -32,9 +33,15 @@ class LoanMaturityWorkflow:
 
         # Step 2: Mark loan DUE
         await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "DUE"], **act_opts)
+        loan_due = await workflow.execute_activity(get_loan_grpc, args=[loan_id], **act_opts)
+        seller_due = await workflow.execute_activity(get_user, args=[loan_due["seller_id"]], **act_opts)
         await workflow.execute_activity(
             publish_event,
-            args=["loan.due", {"loan_id": loan_id}],
+            args=["loan.due", {
+                "loan_id": loan_id,
+                "seller_id": loan_due["seller_id"],
+                "seller_email": seller_due["email"],
+            }],
             **act_opts,
         )
 
@@ -49,13 +56,17 @@ class LoanMaturityWorkflow:
 
         # Step 5: Mark OVERDUE + publish event + bulk delist
         await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "OVERDUE"], **act_opts)
+        seller_over = await workflow.execute_activity(get_user, args=[loan["seller_id"]], **act_opts)
+        investor_over = await workflow.execute_activity(get_user, args=[loan["investor_id"]], **act_opts)
         await workflow.execute_activity(
             publish_event,
             args=["loan.overdue", {
                 "loan_id": loan_id,
                 "invoice_token": loan.get("invoice_token", ""),
-                "investor_id": loan["investor_id"],
                 "seller_id": loan["seller_id"],
+                "seller_email": seller_over["email"],
+                "investor_id": loan["investor_id"],
+                "investor_email": investor_over["email"],
             }],
             **act_opts,
         )

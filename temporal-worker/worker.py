@@ -12,7 +12,7 @@ import config
 from workflows.auction_close import AuctionCloseWorkflow
 from workflows.loan_maturity import LoanMaturityWorkflow
 from workflows.wallet_topup import WalletTopUpWorkflow
-from activities.invoice_activities import verify_invoice, update_invoice_status
+from activities.invoice_activities import verify_invoice, update_invoice_status, get_user
 from activities.bidding_activities import get_offers, accept_offer, reject_offer
 from activities.payment_activities import (
     convert_escrow_to_loan,
@@ -36,7 +36,7 @@ async def main():
         task_queue="invoiceflow-queue",
         workflows=[AuctionCloseWorkflow, LoanMaturityWorkflow, WalletTopUpWorkflow],
         activities=[
-            verify_invoice, update_invoice_status,
+            verify_invoice, update_invoice_status, get_user,
             get_offers, accept_offer, reject_offer,
             convert_escrow_to_loan, create_loan, release_funds_to_seller,
             get_loan_grpc, update_loan_status_grpc, credit_wallet,
