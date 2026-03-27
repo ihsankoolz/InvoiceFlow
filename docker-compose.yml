@@ -67,7 +67,7 @@ services:
 
   kong:
     image: kong:3.4
-    entrypoint: ["/bin/sh", "-c", "envsubst < /etc/kong/kong.yml.template > /etc/kong/kong.yml && kong docker-start"]
+    entrypoint: ["/bin/sh", "-c", "sed \"s|\\$${JWT_SECRET}|$$JWT_SECRET|g\" /etc/kong/kong.yml.template > /etc/kong/kong.yml && /docker-entrypoint.sh kong docker-start"]
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
