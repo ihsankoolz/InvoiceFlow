@@ -424,8 +424,8 @@ services:
       - "5008:5008"
     environment:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_SUCCESS_URL: http://localhost:8080/payment/success
-      STRIPE_CANCEL_URL: http://localhost:8080/payment/cancel
+      STRIPE_SUCCESS_URL: http://localhost:3000/payment/success
+      STRIPE_CANCEL_URL: http://localhost:3000/payment/cancel
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5008/health')\""]
       interval: 10s

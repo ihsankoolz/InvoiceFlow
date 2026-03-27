@@ -63,6 +63,10 @@ function AppRoutes() {
         <ProtectedRoute><NotificationsPage /></ProtectedRoute>
       } />
 
+      {/* Stripe payment return routes */}
+      <Route path="/payment/success" element={<Navigate to="/wallet" replace />} />
+      <Route path="/payment/cancel"  element={<Navigate to="/wallet" replace />} />
+
       {/* Catch-all: redirect to landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

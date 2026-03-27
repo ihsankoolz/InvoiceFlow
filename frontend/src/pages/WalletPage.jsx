@@ -55,9 +55,9 @@ export default function WalletPage() {
     setBalanceLoading(true)
     try {
       const res = await api.get(`/wallet/balance?user_id=${user.sub}`)
-      setBalance(res.data?.balance ?? res.data?.available_balance ?? null)
+      setBalance(res.data?.balance ?? res.data?.available_balance ?? 0)
     } catch {
-      setBalance(null)
+      setBalance(0)
     } finally {
       setBalanceLoading(false)
     }
@@ -90,7 +90,7 @@ export default function WalletPage() {
 
     setTopupLoading(true)
     try {
-      const res = await api.post('/wallet/topup', { amount })
+      const res = await api.post('/wallet/topup', { investor_id: user.sub, amount })
       const url = res.data?.checkout_url || res.data?.url
       if (url) {
         window.location.href = url
@@ -98,7 +98,10 @@ export default function WalletPage() {
         setTopupError('No checkout URL returned from server.')
       }
     } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || e.message || 'Top-up failed.'
+      const detail = e.response?.data?.detail
+      const msg = Array.isArray(detail)
+        ? detail.map(d => d.msg).join(', ')
+        : detail || e.response?.data?.message || e.message || 'Top-up failed.'
       setTopupError(msg)
     } finally {
       setTopupLoading(false)
