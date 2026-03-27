@@ -74,7 +74,7 @@ export default function NotificationsPage() {
 
   const wsRef = useRef(null)
 
-  const [headerRef, headerInView] = useInView(0.05)
+  const [headerRef] = useInView(0.05)
   const [listRef, listInView]     = useInView(0.05)
 
   useEffect(() => {
@@ -187,11 +187,11 @@ export default function NotificationsPage() {
                 <div
                   key={notif.id || i}
                   onClick={() => { markRead(notif.id); const link = getNotifLink(notif.event_type); if (link) navigate(link) }}
-                  className="bg-white border border-ink/10 border-l-4 rounded-[14px] p-4 flex items-start gap-3 cursor-pointer hover:bg-cream/60 transition-[background-color,box-shadow,border-color] duration-200 hover:shadow-sm"
+                  className={`bg-white border border-ink/10 rounded-[14px] p-4 flex items-start gap-3 cursor-pointer hover:bg-cream/60 transition-[background-color,box-shadow,border-left-width,border-color] duration-200 hover:shadow-sm ${!notif.is_read ? 'border-l-4' : ''}`}
                   style={{
                     ...fadeUp(listInView, i * 40),
                     ...(notif.isNew ? { animation: 'fadeUp 300ms cubic-bezier(0,0,0.2,1) both' } : {}),
-                    borderLeftColor: notif.is_read ? 'transparent' : '#ff9500',
+                    ...(!notif.is_read ? { borderLeftColor: '#ff9500' } : {}),
                   }}
                 >
                   {/* Icon */}
