@@ -10,6 +10,7 @@ class Listing(Base):
     seller_id = Column(Integer, nullable=False)
     debtor_uen = Column(String(20), nullable=False)
     amount = Column(DECIMAL(12, 2), nullable=False)
+    minimum_bid = Column(DECIMAL(12, 2), nullable=False)
     urgency_level = Column(
         Enum("LOW", "MEDIUM", "HIGH", "CRITICAL", name="urgency_level_enum"),
         nullable=False,

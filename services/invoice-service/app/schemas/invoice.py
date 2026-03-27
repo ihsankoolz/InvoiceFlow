@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 class InvoiceCreate(BaseModel):
     seller_id: int
+    debtor_name: Optional[str] = None
     debtor_uen: str
     amount: float
     due_date: date

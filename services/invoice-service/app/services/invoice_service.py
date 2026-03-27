@@ -28,11 +28,11 @@ class InvoiceService:
         # 2. Extract fields from PDF
         extracted_data = self.pdf_extractor.extract_fields(pdf_bytes)
         
-        # 3. Create DB record
+        # 3. Create DB record — seller-provided debtor_name takes precedence over PDF extraction
         invoice = Invoice(
             invoice_token=invoice_token,
             seller_id=data.seller_id,
-            debtor_name=extracted_data.get("debtor_name"),
+            debtor_name=data.debtor_name or extracted_data.get("debtor_name"),
             debtor_uen=data.debtor_uen,
             amount=data.amount,
             due_date=data.due_date,
