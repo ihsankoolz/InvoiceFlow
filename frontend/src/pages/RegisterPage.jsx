@@ -30,7 +30,7 @@ export default function RegisterPage() {
   }, [])
 
   function validate() {
-    if (!fullName.trim()) return 'Full name is required.'
+    if (!fullName.trim()) return role === 'SELLER' ? 'Business name is required.' : 'Full name is required.'
     if (!email.trim()) return 'Email is required.'
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email.'
     if (password.length < 8) return 'Password must be at least 8 characters.'
@@ -105,17 +105,17 @@ export default function RegisterPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-              {/* Full name */}
+              {/* Full name / Business name */}
               <div>
                 <label className="block font-['Lato'] text-sm font-medium text-ink mb-1">
-                  Full name
+                  {role === 'SELLER' ? 'Business name' : 'Full name'}
                 </label>
                 <input
                   type="text"
                   autoComplete="name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Jane Doe"
+                  placeholder={role === 'SELLER' ? 'Acme Pte. Ltd.' : 'Jane Doe'}
                   className="w-full border border-ink/20 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink/60 focus:ring-2 focus:ring-ink/8 transition-all"
                 />
               </div>

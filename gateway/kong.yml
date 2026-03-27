@@ -89,6 +89,12 @@ services:
         methods:
           - GET
         strip_path: false
+      - name: listings
+        paths:
+          - /api/listings
+        methods:
+          - GET
+        strip_path: false
 
   # --- Stripe Webhook (no JWT — uses Stripe signature) ---
   - name: stripe-webhook
@@ -146,24 +152,13 @@ services:
         methods:
           - GET
         strip_path: false
-
-  # --- Marketplace GraphQL (JWT required) ---
-  - name: marketplace-graphql
-    url: http://marketplace-service:5002
-    plugins:
-      - name: jwt
-        config:
-          key_claim_name: iss
-          claims_to_verify:
-            - exp
-    routes:
-      - name: graphql-query
+      - name: notifications-mark-read
         paths:
-          - /graphql
+          - /api/notifications
         methods:
-          - POST
-          - GET
+          - PATCH
         strip_path: false
+
 
 plugins:
   # CORS — global

@@ -56,8 +56,10 @@ Full Scenario 1 orchestration:
 )
 async def list_invoice(
     seller_id: int = Form(...),
+    debtor_name: str = Form(None),
     debtor_uen: str = Form(...),
-    amount: float = Form(...),
+    face_value: float = Form(...),
+    minimum_bid: float = Form(...),
     due_date: str = Form(...),
     bid_period_hours: int = Form(48),
     pdf: UploadFile = File(...),
@@ -69,8 +71,10 @@ async def list_invoice(
     )
     result = await orchestrator.list_invoice(
         seller_id=seller_id,
+        debtor_name=debtor_name,
         debtor_uen=debtor_uen,
-        amount=amount,
+        face_value=face_value,
+        minimum_bid=minimum_bid,
         due_date=due_date,
         bid_period_hours=bid_period_hours,
         pdf_file=pdf,

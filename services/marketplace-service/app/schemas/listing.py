@@ -9,6 +9,7 @@ class ListingCreate(BaseModel):
     seller_id: int
     debtor_uen: str
     amount: float
+    minimum_bid: float
     urgency_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     deadline: datetime
 
@@ -19,6 +20,7 @@ class ListingResponse(BaseModel):
     seller_id: int
     debtor_uen: str
     amount: float
+    minimum_bid: float
     urgency_level: str
     deadline: datetime
     status: str

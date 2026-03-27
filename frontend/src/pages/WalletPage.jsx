@@ -11,6 +11,20 @@ function fadeUp(visible, delay = 0) {
   return { opacity: 0, transform: 'translateY(12px)' }
 }
 
+const TX_LABELS = {
+  'WALLET_CREDIT':  'Wallet Top-Up',
+  'WALLET_DEBIT':   'Wallet Debit',
+  'BID_LOCK':       'Bid Placed',
+  'BID_UNLOCK':     'Bid Released',
+  'BID_DEDUCT':     'Bid Won',
+  'LOAN_REPAYMENT': 'Loan Repayment',
+  'LOAN_RETURN':    'Loan Return',
+}
+
+function txLabel(tx) {
+  return TX_LABELS[tx.description] || TX_LABELS[tx.type] || tx.description || tx.type || 'Transaction'
+}
+
 function fmt(n, showCents = true) {
   if (n == null) return '—'
   return Number(n).toLocaleString('en-SG', {
@@ -55,9 +69,9 @@ export default function WalletPage() {
     setBalanceLoading(true)
     try {
       const res = await api.get(`/wallet/balance?user_id=${user.sub}`)
-      setBalance(res.data?.balance ?? res.data?.available_balance ?? null)
+      setBalance(res.data?.balance ?? res.data?.available_balance ?? 0)
     } catch {
-      setBalance(null)
+      setBalance(0)
     } finally {
       setBalanceLoading(false)
     }
@@ -90,7 +104,7 @@ export default function WalletPage() {
 
     setTopupLoading(true)
     try {
-      const res = await api.post('/wallet/topup', { amount })
+      const res = await api.post('/wallet/topup', { investor_id: user.sub, amount })
       const url = res.data?.checkout_url || res.data?.url
       if (url) {
         window.location.href = url
@@ -98,7 +112,10 @@ export default function WalletPage() {
         setTopupError('No checkout URL returned from server.')
       }
     } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || e.message || 'Top-up failed.'
+      const detail = e.response?.data?.detail
+      const msg = Array.isArray(detail)
+        ? detail.map(d => d.msg).join(', ')
+        : detail || e.response?.data?.message || e.message || 'Top-up failed.'
       setTopupError(msg)
     } finally {
       setTopupLoading(false)
@@ -231,7 +248,7 @@ export default function WalletPage() {
                       </div>
                       <div>
                         <p className="font-['Lato'] text-sm font-medium text-ink">
-                          {tx.description || tx.type || 'Transaction'}
+                          {txLabel(tx)}
                         </p>
                         <p className="font-['Lato'] text-xs text-ink/50">{fmtDate(tx.created_at)}</p>
                       </div>

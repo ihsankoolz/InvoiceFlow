@@ -17,7 +17,10 @@ _http = HTTPClient()
     description="Returns the current wallet balance for the given user_id.",
 )
 async def get_wallet_balance(user_id: int = Query(..., description="User ID")):
-    return await _http.get(f"{config.PAYMENT_SERVICE_URL}/wallets/{user_id}")
+    try:
+        return await _http.get(f"{config.PAYMENT_SERVICE_URL}/wallets/{user_id}")
+    except Exception:
+        return {"user_id": user_id, "balance": "0.00", "currency": "SGD"}
 
 
 @router.get(

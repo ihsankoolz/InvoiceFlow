@@ -48,6 +48,20 @@ function timeAgo(str) {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
+const TX_LABELS = {
+  'WALLET_CREDIT':  'Wallet Top-Up',
+  'WALLET_DEBIT':   'Wallet Debit',
+  'BID_LOCK':       'Bid Placed',
+  'BID_UNLOCK':     'Bid Released',
+  'BID_DEDUCT':     'Bid Won',
+  'LOAN_REPAYMENT': 'Loan Repayment',
+  'LOAN_RETURN':    'Loan Return',
+}
+
+function txLabel(tx) {
+  return TX_LABELS[tx.description] || TX_LABELS[tx.type] || tx.description || tx.type || 'Transaction'
+}
+
 function txColor(type) {
   if (!type) return 'text-ink/40'
   const t = type.toUpperCase()
@@ -66,111 +80,216 @@ function txSign(type, amount) {
 
 /* ── Seller Dashboard ── */
 function SellerDashboard({ user }) {
-  const [statsRef, statsInView] = useInView(0.05)
-  const [bodyRef, bodyInView]   = useInView(0.05)
+  const [pageRef, pageInView] = useInView(0.01)
 
-  const [sellerStats, setSellerStats]       = useState(null)
-  const [recentInvoices, setRecentInvoices] = useState([])
-  const [statsLoading, setStatsLoading]     = useState(true)
-  const [invoicesLoading, setInvoicesLoading] = useState(false)
+  const [invoices, setInvoices]           = useState([])
+  const [activeListings, setActiveListings] = useState([])
+  const [upcomingLoans, setUpcomingLoans] = useState([])
+  const [loansCount, setLoansCount]       = useState(0)
+  const [loading, setLoading]             = useState(true)
 
   useEffect(() => {
     if (!user) return
-    setStatsLoading(true)
-    setInvoicesLoading(true)
     Promise.allSettled([
       api.get(`/invoices?seller_id=${user.sub}`),
-      api.get(`/wallet/balance?user_id=${user.sub}`),
       api.get(`/loans?seller_id=${user.sub}`),
-    ]).then(([invoicesRes, walletRes, loansRes]) => {
-      const invoices = invoicesRes.status === 'fulfilled' ? (invoicesRes.value.data?.invoices || invoicesRes.value.data || []) : []
-      const wallet   = walletRes.status === 'fulfilled' ? walletRes.value.data : null
-      const loans    = loansRes.status === 'fulfilled' ? (loansRes.value.data?.loans || loansRes.value.data || []) : []
-      const activeListings = invoices.filter(i => i.status === 'LISTED').length
-      const totalFinanced  = invoices.filter(i => ['FINANCED', 'ACCEPTED'].includes(i.status)).reduce((s, i) => s + Number(i.face_value || 0), 0)
-      const activeLoans    = loans.filter(l => l.status === 'ACTIVE' || l.status === 'DUE').length
-      setSellerStats({ activeListings, totalFinanced, activeLoans, walletBalance: wallet?.balance ?? wallet?.available_balance ?? null })
-      setRecentInvoices(invoices.slice(0, 5))
-    }).finally(() => {
-      setStatsLoading(false)
-      setInvoicesLoading(false)
-    })
+    ]).then(([invoicesRes, loansRes]) => {
+      const allInvoices = invoicesRes.status === 'fulfilled' ? (invoicesRes.value.data?.invoices || invoicesRes.value.data || []) : []
+      const loans       = loansRes.status === 'fulfilled' ? (loansRes.value.data?.loans || loansRes.value.data || []) : []
+      const active      = loans.filter(l => l.status === 'ACTIVE' || l.status === 'DUE')
+      setInvoices(allInvoices)
+      setActiveListings(allInvoices.filter(i => i.status === 'LISTED').slice(0, 5))
+      setLoansCount(active.length)
+      setUpcomingLoans(active.slice(0, 3))
+    }).finally(() => setLoading(false))
   }, [user])
 
+  // Derived performance stats
+  const totalSubmitted  = invoices.length
+  const totalFinanced   = invoices.filter(i => ['FINANCED', 'ACCEPTED'].includes(i.status))
+  const totalRaised     = totalFinanced.reduce((s, i) => s + Number(i.face_value || 0), 0)
+  const financingRate   = totalSubmitted > 0 ? Math.round((totalFinanced.length / totalSubmitted) * 100) : 0
+  const avgFaceValue    = totalSubmitted > 0 ? invoices.reduce((s, i) => s + Number(i.face_value || 0), 0) / totalSubmitted : 0
+
+  function daysProgress(loan) {
+    if (!loan.created_at || !loan.due_date) return { pct: 50, days: null }
+    const total     = new Date(loan.due_date) - new Date(loan.created_at)
+    const remaining = new Date(loan.due_date) - Date.now()
+    const pct  = Math.max(0, Math.min(100, (remaining / total) * 100))
+    const days = Math.max(0, Math.ceil(remaining / 86400000))
+    return { pct, days }
+  }
+
+  const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'
+
   return (
-    <div className="px-10 py-10 max-w-6xl mx-auto">
-      {/* Greeting */}
-      <div className="mb-10" style={fadeUp(true, 0)}>
-        <h1 className="font-['Lato'] font-bold text-[28px] text-ink leading-tight">
-          Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.full_name?.split(' ')[0] || 'there'}
-        </h1>
-        <p className="font-['Lato'] text-sm text-ink/40 mt-1">Here's an overview of your listings and loans.</p>
+    <>
+      {/* Teal greeting strip */}
+      <div className="bg-teal px-10 py-10">
+        <h1 className="font-['Lato'] font-bold text-[32px] text-white leading-tight">{greeting}, {user?.full_name || 'there'}</h1>
+        <p className="font-['Lato'] text-white/60 text-base mt-1">Here is an overview of your listings and loans.</p>
       </div>
 
-      {/* Stat cards */}
-      <div ref={statsRef} className="grid grid-cols-4 gap-4 mb-10">
-        <div className="bg-teal rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 0)}>
-          <p className="font-['Lato'] text-xs text-white/60 uppercase tracking-wider">Wallet Balance</p>
-          {statsLoading ? <div className="h-9 w-32 bg-white/20 rounded animate-pulse" /> : <p className="font-['Lato'] font-bold text-[28px] text-white leading-none">{fmt(sellerStats?.walletBalance)}</p>}
-          <Link to="/wallet" className="font-['Lato'] text-xs text-white/60 hover:text-white transition-colors flex items-center gap-1 mt-auto">Manage <ArrowRight size={11} /></Link>
-        </div>
-        <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 60)}>
-          <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Listings</p>
-          {statsLoading ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" /> : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{sellerStats?.activeListings ?? 0}</p>}
-          <Link to="/invoices" className="font-['Lato'] text-xs text-ink/40 hover:text-ink transition-colors flex items-center gap-1 mt-auto">View all <ArrowRight size={11} /></Link>
-        </div>
-        <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 120)}>
-          <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Total Financed</p>
-          {statsLoading ? <div className="h-9 w-32 bg-ink/8 rounded animate-pulse" /> : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{fmt(sellerStats?.totalFinanced)}</p>}
-          <p className="font-['Lato'] text-xs text-ink/40 mt-auto">across financed invoices</p>
-        </div>
-        <div className="border border-ink/10 rounded-[16px] p-6 flex flex-col gap-3" style={fadeUp(statsInView, 180)}>
-          <p className="font-['Lato'] text-xs text-ink/40 uppercase tracking-wider">Active Loans</p>
-          {statsLoading ? <div className="h-9 w-16 bg-ink/8 rounded animate-pulse" /> : <p className="font-['Lato'] font-bold text-[28px] text-teal leading-none">{sellerStats?.activeLoans ?? 0}</p>}
-          <Link to="/loans" className="font-['Lato'] text-xs text-ink/40 hover:text-ink transition-colors flex items-center gap-1 mt-auto">View loans <ArrowRight size={11} /></Link>
-        </div>
-      </div>
+      {/* 3-column layout */}
+      <div ref={pageRef} className="px-10 py-8 grid grid-cols-3 gap-6 max-w-[1400px] mx-auto">
 
-      {/* Recent invoices table */}
-      <div ref={bodyRef} style={fadeUp(bodyInView, 0)}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-['Lato'] font-semibold text-base text-ink">Recent Invoices</h2>
-          <Link to="/invoices" className="font-['Lato'] text-sm text-ink/40 hover:text-ink transition-colors flex items-center gap-1">View all <ArrowRight size={13} /></Link>
-        </div>
-        {invoicesLoading ? (
-          <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-10 bg-ink/5 rounded-lg animate-pulse" />)}</div>
-        ) : recentInvoices.length === 0 ? (
-          <div className="text-center py-16 border border-ink/8 rounded-[16px]">
-            <FileText size={36} className="text-ink/15 mx-auto mb-3" />
-            <p className="font-['Lato'] text-sm text-ink/40 mb-4">No invoices yet</p>
-            <Link to="/invoices/new" className="inline-flex items-center gap-2 bg-teal text-white rounded-[22px] px-5 py-2 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity">
-              <PlusCircle size={15} /> List your first invoice
+        {/* ── Col 1: Performance ── */}
+        <div className="flex flex-col gap-6">
+          {/* Total Raised */}
+          <div className="bg-cream rounded-[16px] p-6 flex flex-col gap-4" style={fadeUp(pageInView, 0)}>
+            <p className="font-['Lato'] font-semibold text-xs text-ink uppercase tracking-wider">Total Raised</p>
+            {loading
+              ? <div className="h-10 w-36 bg-ink/10 rounded animate-pulse" />
+              : <p className="font-['Lato'] font-bold text-[32px] text-ink leading-none">{fmt(totalRaised)}</p>
+            }
+            <p className="font-['Lato'] text-sm text-ink/60">across {totalFinanced.length} financed invoices</p>
+            <Link
+              to="/invoices/new"
+              className="self-start bg-teal text-white font-['Lato'] font-semibold text-sm px-5 py-2 rounded-[22px] hover:opacity-90 transition-opacity"
+            >
+              List Invoice
             </Link>
           </div>
-        ) : (
-          <table className="w-full text-sm font-['Lato']">
-            <thead>
-              <tr className="border-b border-ink/10">
-                <th className="text-left py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Token</th>
-                <th className="text-left py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Debtor</th>
-                <th className="text-right py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Face Value</th>
-                <th className="text-center py-3 font-medium text-ink/40 text-xs uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentInvoices.map(inv => (
-                <tr key={inv.id} className="border-b border-ink/5 hover:bg-ink/[0.02] transition-colors">
-                  <td className="py-4 text-ink font-medium">{inv.invoice_token || inv.id}</td>
-                  <td className="py-4 text-ink/60">{inv.debtor_name || '—'}</td>
-                  <td className="py-4 text-right text-ink font-medium">{fmt(inv.face_value)}</td>
-                  <td className="py-4 text-center"><Badge status={inv.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+
+          {/* Performance stats */}
+          <div className="bg-white border border-black/8 rounded-[16px] p-6 flex flex-col gap-5" style={fadeUp(pageInView, 60)}>
+            <p className="font-['Lato'] font-semibold text-xs text-ink uppercase tracking-wider">Performance</p>
+            {loading ? (
+              <div className="space-y-4">{[...Array(3)].map((_, i) => <div key={i} className="h-8 bg-ink/5 rounded animate-pulse" />)}</div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {/* Financing rate */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="font-['Lato'] text-xs text-ink/50">Financing Rate</p>
+                    <p className="font-['Lato'] font-semibold text-sm text-ink">{financingRate}%</p>
+                  </div>
+                  <div className="h-1.5 bg-[#e0eae8] rounded-full">
+                    <div className="h-1.5 bg-teal rounded-full transition-all duration-700" style={{ width: `${financingRate}%` }} />
+                  </div>
+                </div>
+                {/* Total submitted */}
+                <div className="flex items-center justify-between">
+                  <p className="font-['Lato'] text-xs text-ink/50">Invoices Submitted</p>
+                  <p className="font-['Lato'] font-semibold text-sm text-ink">{totalSubmitted}</p>
+                </div>
+                {/* Avg face value */}
+                <div className="flex items-center justify-between">
+                  <p className="font-['Lato'] text-xs text-ink/50">Avg Face Value</p>
+                  <p className="font-['Lato'] font-semibold text-sm text-ink">{fmt(avgFaceValue)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Col 2: Active Listings ── */}
+        <div className="bg-white border border-black/8 rounded-[16px] overflow-hidden flex flex-col" style={fadeUp(pageInView, 80)}>
+          <div className="bg-teal px-6 pt-6 pb-5 flex flex-col gap-4">
+            <p className="font-['Lato'] font-semibold text-xs text-white uppercase tracking-wider">Active Listings</p>
+            {loading
+              ? <div className="h-10 w-16 bg-white/20 rounded animate-pulse" />
+              : (
+                <div className="flex items-end justify-between">
+                  <p className="font-['Lato'] font-medium text-[36px] text-white leading-none">{activeListings.length}</p>
+                  <p className="font-['Lato'] text-sm text-white/70">currently on market</p>
+                </div>
+              )
+            }
+          </div>
+
+          <div className="flex-1 px-6 pt-5 pb-4 flex flex-col gap-4">
+            {loading ? (
+              <div className="space-y-4">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-ink/5 rounded-lg animate-pulse" />)}</div>
+            ) : activeListings.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-10">
+                <FileText size={32} className="text-ink/15 mb-3" />
+                <p className="font-['Lato'] text-sm text-ink/40 mb-4">No active listings</p>
+                <Link to="/invoices/new" className="inline-flex items-center gap-2 bg-teal text-white rounded-[22px] px-5 py-2 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity">
+                  <PlusCircle size={15} /> List an invoice
+                </Link>
+              </div>
+            ) : (
+              activeListings.map((inv, i) => (
+                <div key={inv.id || i} className="border-b border-black/5 pb-4 last:border-0 flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <p className="font-['Lato'] font-medium text-sm text-ink">{inv.invoice_token || inv.id}</p>
+                    <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(inv.face_value)}</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="font-['Lato'] text-xs text-ink/40">{inv.debtor_name || '—'}</p>
+                    {inv.deadline && (
+                      <p className="font-['Lato'] text-xs text-ink/40">Due {fmtDate(inv.deadline)}</p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {!loading && activeListings.length > 0 && (
+            <div className="px-6 pb-5">
+              <Link to="/invoices" className="bg-teal text-white font-['Lato'] font-semibold text-sm px-5 py-2 rounded-[22px] hover:opacity-90 transition-opacity">
+                View all
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* ── Col 3: Upcoming Repayments ── */}
+        <div className="bg-white border border-black/8 rounded-[16px] p-6 flex flex-col gap-5" style={fadeUp(pageInView, 160)}>
+          <p className="font-['Lato'] font-semibold text-xs text-ink uppercase tracking-wider">Upcoming Repayments</p>
+          {loading ? (
+            <div className="h-10 w-16 bg-ink/5 rounded animate-pulse" />
+          ) : (
+            <div className="flex items-end gap-2">
+              <p className="font-['Lato'] font-medium text-[36px] text-ink leading-none">{loansCount}</p>
+              <p className="font-['Lato'] text-sm text-ink pb-1">active loans</p>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="space-y-4">{[...Array(2)].map((_, i) => <div key={i} className="h-20 bg-ink/5 rounded-lg animate-pulse" />)}</div>
+          ) : upcomingLoans.length === 0 ? (
+            <p className="font-['Lato'] text-sm text-ink/40 py-6 text-center">No upcoming repayments</p>
+          ) : (
+            <div className="flex flex-col gap-6">
+              {upcomingLoans.map((loan, i) => {
+                const { pct, days } = daysProgress(loan)
+                const isUrgent   = days != null && days <= 7
+                const barColor   = isUrgent ? 'bg-[#eeb300]' : 'bg-teal'
+                const trackColor = isUrgent ? 'bg-[#ffe8a4]' : 'bg-[#e0eae8]'
+                const daysColor  = isUrgent ? 'text-[#eeb300]' : 'text-teal'
+                return (
+                  <div key={loan.id || i} className="flex flex-col gap-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-['Lato'] font-medium text-sm text-ink">{loan.invoice_token || `LOAN-${loan.id}`}</p>
+                        <p className="font-['Lato'] text-xs text-ink/40 mt-0.5">Due {fmtDate(loan.due_date)}</p>
+                      </div>
+                      <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(loan.amount || loan.face_value)}</p>
+                    </div>
+                    <div className={`h-1.5 ${trackColor} rounded-full w-full`}>
+                      <div className={`h-1.5 ${barColor} rounded-full`} style={{ width: `${100 - pct}%` }} />
+                    </div>
+                    {days != null && (
+                      <p className={`font-['Lato'] text-xs ${daysColor}`}>{days} days left</p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {!loading && loansCount > 0 && (
+            <Link to="/loans" className="self-start font-['Lato'] text-sm text-ink/40 hover:text-ink transition-colors flex items-center gap-1 mt-auto">
+              View all loans <ArrowRight size={13} />
+            </Link>
+          )}
+        </div>
+
       </div>
-    </div>
+    </>
   )
 }
 
@@ -245,7 +364,7 @@ function InvestorDashboard({ user }) {
   }
 
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'
-  const firstName = user?.full_name?.split(' ')[0] || 'there'
+  const firstName = user?.full_name || 'there'
 
   return (
     <>
@@ -311,7 +430,7 @@ function InvestorDashboard({ user }) {
                 {transactions.map((tx, i) => (
                   <div key={i} className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-['Lato'] text-sm text-ink leading-snug">{tx.description || tx.type || 'Transaction'}</p>
+                      <p className="font-['Lato'] text-sm text-ink leading-snug">{txLabel(tx)}</p>
                       <p className="font-['Lato'] text-xs text-ink/40 mt-0.5">{timeAgo(tx.created_at || tx.timestamp)}</p>
                     </div>
                     <p className={`font-['Lato'] font-medium text-sm whitespace-nowrap ${txColor(tx.type)}`}>

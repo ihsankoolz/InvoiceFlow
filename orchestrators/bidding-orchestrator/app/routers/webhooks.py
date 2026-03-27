@@ -87,7 +87,7 @@ async def handle_stripe_webhook(request: Request):
                 workflow_id=workflow_id,
                 args={
                     "user_id": int(metadata["user_id"]),
-                    "amount": session["amount_total"],  # in cents from Stripe
+                    "amount": session["amount_total"] / 100,  # convert cents to SGD
                 },
                 task_queue="invoiceflow-queue",
             )

@@ -9,13 +9,14 @@ from fastapi import HTTPException
 
 class HTTPClient:
     def __init__(self, timeout: float = 5.0):
-        self.client = httpx.AsyncClient(timeout=timeout)
+        self.timeout = timeout
 
     async def get(self, url: str, params: dict = None) -> dict:
         try:
-            response = await self.client.get(url, params=params)
-            response.raise_for_status()
-            return response.json()
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                return response.json()
         except httpx.TimeoutException:
             raise HTTPException(504, f"Timeout calling {url}")
         except httpx.HTTPStatusError as e:
@@ -23,9 +24,10 @@ class HTTPClient:
 
     async def post(self, url: str, **kwargs) -> dict:
         try:
-            response = await self.client.post(url, **kwargs)
-            response.raise_for_status()
-            return response.json()
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(url, **kwargs)
+                response.raise_for_status()
+                return response.json()
         except httpx.TimeoutException:
             raise HTTPException(504, f"Timeout calling {url}")
         except httpx.HTTPStatusError as e:
@@ -33,9 +35,10 @@ class HTTPClient:
 
     async def patch(self, url: str, **kwargs) -> dict:
         try:
-            response = await self.client.patch(url, **kwargs)
-            response.raise_for_status()
-            return response.json()
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.patch(url, **kwargs)
+                response.raise_for_status()
+                return response.json()
         except httpx.TimeoutException:
             raise HTTPException(504, f"Timeout calling {url}")
         except httpx.HTTPStatusError as e:
@@ -43,9 +46,10 @@ class HTTPClient:
 
     async def delete(self, url: str) -> dict:
         try:
-            response = await self.client.delete(url)
-            response.raise_for_status()
-            return response.json() if response.content else {}
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.delete(url)
+                response.raise_for_status()
+                return response.json() if response.content else {}
         except httpx.TimeoutException:
             raise HTTPException(504, f"Timeout calling {url}")
         except httpx.HTTPStatusError as e:

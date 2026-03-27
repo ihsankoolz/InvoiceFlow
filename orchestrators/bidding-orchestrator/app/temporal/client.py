@@ -41,7 +41,7 @@ class TemporalClient:
         client = await self._get_client()
         await client.start_workflow(
             workflow_name,
-            args=[args],
+            args=list(args.values()),
             id=workflow_id,
             task_queue=task_queue,
         )

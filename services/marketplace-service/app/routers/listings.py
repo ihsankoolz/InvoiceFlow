@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
@@ -6,6 +8,16 @@ from app.schemas.listing import ListingCreate, ListingResponse, ListingUpdate
 from app.services.listing_service import ListingService
 
 router = APIRouter(prefix="/listings", tags=["Listings"])
+
+
+@router.get("/", response_model=List[ListingResponse])
+def get_all_listings(
+    urgency_level: Optional[str] = Query(None),
+    status_filter: Optional[str] = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+):
+    service = ListingService(db)
+    return service.get_all_listings(urgency_level=urgency_level, status=status_filter or "ACTIVE")
 
 
 @router.post("/", response_model=ListingResponse, status_code=status.HTTP_201_CREATED)

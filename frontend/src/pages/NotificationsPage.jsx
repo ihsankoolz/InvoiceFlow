@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bell, AlertTriangle, CheckCircle, DollarSign, Info } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
 import api from '../api/axios'
@@ -32,8 +33,40 @@ function NotifIcon({ eventType }) {
   return <Info size={18} className="text-ink/50" />
 }
 
+const EVENT_TITLES = {
+  'wallet.credited':          'Wallet Credited',
+  'wallet.topup':             'Wallet Top-Up',
+  'bid.placed':               'New Bid on Your Invoice',
+  'bid.outbid':               "You've Been Outbid",
+  'auction.closing.warning':  'Auction Closing Soon',
+  'auction.extended':         'Auction Deadline Extended',
+  'auction.closed.winner':    'You Won the Auction!',
+  'auction.closed.loser':     'Auction Ended',
+  'auction.expired':          'Auction Expired',
+  'invoice.listed':           'Invoice Listed',
+  'invoice.rejected':         'Invoice Rejected',
+  'loan.created':             'Loan Created',
+  'loan.repaid':              'Loan Repaid',
+  'loan.due':                 'Loan Repayment Due',
+  'loan.overdue':             'Loan Overdue',
+}
+
+function getNotifTitle(notif) {
+  return notif.title || EVENT_TITLES[notif.event_type] || notif.event_type || 'Notification'
+}
+
+function getNotifLink(eventType) {
+  const t = (eventType || '').toUpperCase()
+  if (t.includes('WALLET') || t.includes('TOPUP') || t.includes('CREDITED')) return '/wallet'
+  if (t.includes('BID') || t.includes('OUTBID')) return '/bids'
+  if (t.includes('LOAN') || t.includes('REPAID') || t.includes('FINANCED')) return '/loans'
+  if (t.includes('INVOICE') || t.includes('LISTING')) return '/marketplace'
+  return null
+}
+
 export default function NotificationsPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading]             = useState(true)
@@ -41,7 +74,7 @@ export default function NotificationsPage() {
 
   const wsRef = useRef(null)
 
-  const [headerRef, headerInView] = useInView(0.05)
+  const [headerRef] = useInView(0.05)
   const [listRef, listInView]     = useInView(0.05)
 
   useEffect(() => {
@@ -99,8 +132,9 @@ export default function NotificationsPage() {
     }
   }
 
-  function markRead(id) {
+  async function markRead(id) {
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n))
+    try { await api.patch(`/notifications/${id}/read`) } catch { /* best effort */ }
   }
 
   const unreadCount = notifications.filter((n) => !n.is_read).length
@@ -152,12 +186,12 @@ export default function NotificationsPage() {
               {notifications.map((notif, i) => (
                 <div
                   key={notif.id || i}
-                  onClick={() => !notif.is_read && markRead(notif.id)}
-                  className="bg-white border border-ink/10 border-l-4 rounded-[14px] p-4 flex items-start gap-3 cursor-pointer hover:bg-cream/60 transition-[background-color,box-shadow,border-color] duration-200 hover:shadow-sm"
+                  onClick={() => { markRead(notif.id); const link = getNotifLink(notif.event_type); if (link) navigate(link) }}
+                  className={`bg-white border border-ink/10 rounded-[14px] p-4 flex items-start gap-3 cursor-pointer hover:bg-cream/60 transition-[background-color,box-shadow,border-left-width,border-color] duration-200 hover:shadow-sm ${!notif.is_read ? 'border-l-4' : ''}`}
                   style={{
                     ...fadeUp(listInView, i * 40),
                     ...(notif.isNew ? { animation: 'fadeUp 300ms cubic-bezier(0,0,0.2,1) both' } : {}),
-                    borderLeftColor: notif.is_read ? 'transparent' : '#ff9500',
+                    ...(!notif.is_read ? { borderLeftColor: '#ff9500' } : {}),
                   }}
                 >
                   {/* Icon */}
@@ -168,7 +202,7 @@ export default function NotificationsPage() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <p className={`font-['Lato'] text-sm ${!notif.is_read ? 'font-semibold text-ink' : 'font-medium text-ink'}`}>
-                      {notif.title || notif.event_type || 'Notification'}
+                      {getNotifTitle(notif)}
                     </p>
                     {notif.message && (
                       <p className="font-['Lato'] text-sm text-ink/60 mt-0.5 leading-snug">{notif.message}</p>
