@@ -1,89 +1,25 @@
-import axios from 'axios'
-
-const TOKEN_KEY = 'invoiceflow_token'
-
-const LISTING_FIELDS = `
-  id
-  invoice_token
-  invoice_id
-  seller_id
-  face_value
-  minimum_bid
-  current_bid
-  bid_count
-  urgency_level
-  deadline
-  debtor_name
-  debtor_uen
-  status
-  created_at
-`
+import api from './axios'
 
 /**
- * Fetch marketplace listings via GraphQL.
- * Uses plain axios (not the api instance) to POST directly to /graphql.
+ * Fetch marketplace listings via REST /api/listings (Bidding Orchestrator).
  * @param {object} filters - { urgency, search, sortBy }
  */
 export async function fetchListings(filters = {}) {
-  const { urgency, search, sortBy } = filters
+  const { urgency, search } = filters
 
-  // Build a dynamic GraphQL query with optional filter arguments
-  const args = []
-  if (urgency && urgency !== 'ALL') args.push(`urgency_level: "${urgency}"`)
-  if (search) args.push(`search: "${search}"`)
-  if (sortBy) args.push(`sort_by: "${sortBy}"`)
+  const params = {}
+  if (urgency && urgency !== 'ALL') params.urgency_level = urgency
+  if (search) params.search = search
 
-  const argString = args.length ? `(${args.join(', ')})` : ''
-
-  const query = `
-    query {
-      listings${argString} {
-        ${LISTING_FIELDS}
-      }
-    }
-  `
-
-  const token = localStorage.getItem(TOKEN_KEY)
-  const headers = token ? { Authorization: `Bearer ${token}` } : {}
-
-  const response = await axios.post(
-    '/graphql',
-    { query },
-    { headers }
-  )
-
-  if (response.data.errors) {
-    throw new Error(response.data.errors[0]?.message || 'GraphQL error')
-  }
-
-  return response.data.data.listings
+  const response = await api.get('/listings', { params })
+  return Array.isArray(response.data) ? response.data : []
 }
 
 /**
- * Fetch a single listing by id.
+ * Fetch a single listing by id via the marketplace service.
  * @param {string|number} id
  */
 export async function fetchListing(id) {
-  const query = `
-    query {
-      listing(id: ${id}) {
-        ${LISTING_FIELDS}
-      }
-    }
-  `
-
-  const token = localStorage.getItem(TOKEN_KEY)
-  const headers = token ? { Authorization: `Bearer ${token}` } : {}
-
-  const response = await axios.post(
-    '/graphql',
-    { query },
-    { headers }
-  )
-
-  if (response.data.errors) {
-    throw new Error(response.data.errors[0]?.message || 'GraphQL error')
-  }
-
-  return response.data.data.listing
+  const response = await api.get(`/listings/${id}`)
+  return response.data
 }

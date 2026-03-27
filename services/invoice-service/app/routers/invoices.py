@@ -13,6 +13,7 @@ router = APIRouter()
 @router.post("/invoices", response_model=InvoiceResponse, tags=["Invoices"])
 async def create_invoice(
     seller_id: int = Form(...),
+    debtor_name: str = Form(None),
     debtor_uen: str = Form(...),
     amount: float = Form(...),
     due_date: str = Form(...),
@@ -27,6 +28,7 @@ async def create_invoice(
 
     data = InvoiceCreate(
         seller_id=seller_id,
+        debtor_name=debtor_name or None,
         debtor_uen=debtor_uen,
         amount=amount,
         due_date=date_type.fromisoformat(due_date),

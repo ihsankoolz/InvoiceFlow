@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import bids, wallet, webhooks
+from app.routers import bids, wallet, webhooks, listings
 
 app = FastAPI(title="Bidding Orchestrator")
 
@@ -22,3 +22,4 @@ async def health():
 app.include_router(bids.router)
 app.include_router(wallet.router)
 app.include_router(webhooks.router)
+app.include_router(listings.router)

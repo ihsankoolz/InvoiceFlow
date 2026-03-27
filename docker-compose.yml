@@ -67,7 +67,7 @@ services:
 
   kong:
     image: kong:3.4
-    entrypoint: ["/bin/sh", "-c", "envsubst < /etc/kong/kong.yml.template > /etc/kong/kong.yml && kong docker-start"]
+    entrypoint: ["/bin/sh", "-c", "sed \"s|\\$${JWT_SECRET}|$$JWT_SECRET|g\" /etc/kong/kong.yml.template > /etc/kong/kong.yml && /docker-entrypoint.sh kong docker-start"]
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
@@ -355,6 +355,7 @@ services:
     environment:
       BIDDING_SERVICE_URL: http://bidding-service:5003
       MARKETPLACE_SERVICE_URL: http://marketplace-service:5002
+      INVOICE_SERVICE_URL: http://invoice-service:5001
       STRIPE_WRAPPER_URL: http://stripe-wrapper:5008
       PAYMENT_SERVICE_GRPC: payment-service:50051
       PAYMENT_SERVICE_URL: http://payment-service:5004
@@ -423,8 +424,8 @@ services:
       - "5008:5008"
     environment:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_SUCCESS_URL: http://localhost:8080/payment/success
-      STRIPE_CANCEL_URL: http://localhost:8080/payment/cancel
+      STRIPE_SUCCESS_URL: http://localhost:3000/payment/success
+      STRIPE_CANCEL_URL: http://localhost:3000/payment/cancel
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5008/health')\""]
       interval: 10s

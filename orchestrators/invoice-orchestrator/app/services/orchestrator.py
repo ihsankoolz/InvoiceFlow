@@ -54,8 +54,9 @@ class InvoiceOrchestrator:
         self.publisher = publisher
         self.temporal_client = temporal_client
 
-    async def list_invoice(self, seller_id: int, debtor_uen: str, amount: float,
-                           due_date: str, bid_period_hours: int, pdf_file) -> dict:
+    async def list_invoice(self, seller_id: int, debtor_uen: str, face_value: float,
+                           minimum_bid: float, due_date: str, bid_period_hours: int,
+                           pdf_file, debtor_name: str = None) -> dict:
         """Full Scenario 1 orchestration — 8-step flow."""
 
         # Step 1: Check seller account is ACTIVE
@@ -69,8 +70,9 @@ class InvoiceOrchestrator:
             files={"pdf_file": (pdf_file.filename, await pdf_file.read(), pdf_file.content_type)},
             data={
                 "seller_id": str(seller_id),
+                "debtor_name": debtor_name or "",
                 "debtor_uen": debtor_uen,
-                "amount": str(amount),
+                "amount": str(face_value),
                 "due_date": due_date,
             },
         )
@@ -102,7 +104,8 @@ class InvoiceOrchestrator:
                 "invoice_token": invoice["invoice_token"],
                 "seller_id": seller_id,
                 "debtor_uen": debtor_uen,
-                "amount": amount,
+                "amount": face_value,
+                "minimum_bid": minimum_bid,
                 "urgency_level": calculate_urgency(invoice["due_date"]),
                 "deadline": calculate_deadline(bid_period_hours),
             },

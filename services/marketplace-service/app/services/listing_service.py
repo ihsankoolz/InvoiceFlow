@@ -8,12 +8,21 @@ class ListingService:
     def __init__(self, db: Session):
         self.db = db
 
+    def get_all_listings(self, urgency_level: str = None, status: str = "ACTIVE") -> list:
+        query = self.db.query(Listing)
+        if status:
+            query = query.filter(Listing.status == status)
+        if urgency_level:
+            query = query.filter(Listing.urgency_level == urgency_level)
+        return query.order_by(Listing.deadline.asc()).all()
+
     def create_listing(self, data: ListingCreate) -> Listing:
         listing = Listing(
             invoice_token=data.invoice_token,
             seller_id=data.seller_id,
             debtor_uen=data.debtor_uen,
             amount=data.amount,
+            minimum_bid=data.minimum_bid,
             urgency_level=data.urgency_level,
             deadline=data.deadline,
         )

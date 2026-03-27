@@ -41,6 +41,7 @@ export default function ListInvoicePage() {
   const [debtorUen, setDebtorUen]       = useState('')
   const [faceValue, setFaceValue]       = useState('')
   const [minimumBid, setMinimumBid]     = useState('')
+  const [dueDate, setDueDate]           = useState('')
   const [urgency, setUrgency]           = useState('MEDIUM')
   const [bidPeriod, setBidPeriod]       = useState('24')
 
@@ -72,6 +73,8 @@ export default function ListInvoicePage() {
     if (!faceValue || Number(faceValue) <= 0) return 'Face value must be a positive number.'
     if (!minimumBid || Number(minimumBid) <= 0) return 'Minimum bid must be a positive number.'
     if (Number(minimumBid) > Number(faceValue)) return 'Minimum bid cannot exceed face value.'
+    if (!dueDate) return 'Invoice due date is required.'
+    if (new Date(dueDate) <= new Date()) return 'Due date must be in the future.'
     if (!bidPeriod || Number(bidPeriod) < 1) return 'Bid period must be at least 1 hour.'
     return null
   }
@@ -86,13 +89,13 @@ export default function ListInvoicePage() {
     try {
       const formData = new FormData()
       formData.append('pdf', file)
+      formData.append('seller_id', user.sub)
       formData.append('debtor_name', debtorName.trim())
       formData.append('debtor_uen', debtorUen.trim())
       formData.append('face_value', faceValue)
       formData.append('minimum_bid', minimumBid)
-      formData.append('urgency_level', urgency)
+      formData.append('due_date', dueDate)
       formData.append('bid_period_hours', bidPeriod)
-      if (user?.sub) formData.append('seller_id', user.sub)
 
       await api.post('/invoices', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -280,6 +283,20 @@ export default function ListInvoicePage() {
                         className="w-full border border-ink/30 rounded-lg pl-7 pr-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors"
                       />
                     </div>
+                  </div>
+
+                  {/* Invoice due date */}
+                  <div>
+                    <label className="block font-['Lato'] text-sm font-medium text-ink mb-1">
+                      Invoice due date
+                    </label>
+                    <input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full border border-ink/30 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors"
+                    />
                   </div>
 
                   {/* Urgency level */}

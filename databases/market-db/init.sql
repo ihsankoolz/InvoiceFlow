@@ -7,6 +7,7 @@ CREATE TABLE listings (
     seller_id       INT NOT NULL,
     debtor_uen      VARCHAR(20) NOT NULL,
     amount          DECIMAL(12,2) NOT NULL,
+    minimum_bid     DECIMAL(12,2) NOT NULL,
     urgency_level   ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') NOT NULL,
     deadline        DATETIME NOT NULL,
     status          ENUM('ACTIVE', 'CLOSED', 'EXPIRED') DEFAULT 'ACTIVE',
