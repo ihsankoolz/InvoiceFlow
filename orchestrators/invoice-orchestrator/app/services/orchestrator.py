@@ -130,7 +130,7 @@ class InvoiceOrchestrator:
             "invoice_token": invoice["invoice_token"],
             "seller_id": seller_id,
             "seller_email": user["email"],
-            "amount": amount,
+            "amount": face_value,
             "deadline": listing["deadline"],
         })
 

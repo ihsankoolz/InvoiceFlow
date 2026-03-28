@@ -411,6 +411,8 @@ services:
     environment:
       DATA_GOV_API_URL: https://data.gov.sg/api/action/datastore_search
       ACRA_DATASET_RESOURCE_ID: d_3f960c10fed6145404ca7b821f263b87
+      DATA_GOV_API_KEY: ${DATA_GOV_API_KEY}
+      MOCK_UEN_VALIDATION: ${MOCK_UEN_VALIDATION:-false}
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5007/health')\""]
       interval: 10s
