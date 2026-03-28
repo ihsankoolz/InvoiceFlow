@@ -12,6 +12,7 @@ import MyBidsPage from './pages/MyBidsPage'
 import WalletPage from './pages/WalletPage'
 import LoansPage from './pages/LoansPage'
 import NotificationsPage from './pages/NotificationsPage'
+import PaymentSuccessPage from './pages/PaymentSuccessPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -64,7 +65,7 @@ function AppRoutes() {
       } />
 
       {/* Stripe payment return routes */}
-      <Route path="/payment/success" element={<Navigate to="/wallet" replace />} />
+      <Route path="/payment/success" element={<PaymentSuccessPage />} />
       <Route path="/payment/cancel"  element={<Navigate to="/wallet" replace />} />
 
       {/* Catch-all: redirect to landing */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ArrowUpRight, ArrowDownLeft, RefreshCw } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
 import api from '../api/axios'
@@ -58,11 +58,32 @@ export default function WalletPage() {
   const [headerRef, headerInView] = useInView(0.05)
   const [topupRef, topupInView]   = useInView(0.05)
   const [txRef, txInView]         = useInView(0.05)
+  const wsRef = useRef(null)
 
   useEffect(() => {
     if (!user) return
     loadBalance()
     loadTransactions()
+
+    // Connect to notification service WebSocket for live balance updates
+    try {
+      const ws = new WebSocket(`ws://localhost:5005/ws/${user.sub}`)
+      wsRef.current = ws
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data)
+          if (msg.event_type === 'wallet.credited') {
+            loadBalance()
+            loadTransactions()
+          }
+        } catch { /* ignore */ }
+      }
+      ws.onerror = () => { /* silently ignore */ }
+    } catch { /* ignore if WS unavailable */ }
+
+    return () => {
+      if (wsRef.current) wsRef.current.close()
+    }
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadBalance() {
