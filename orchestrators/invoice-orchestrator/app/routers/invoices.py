@@ -38,6 +38,21 @@ async def list_invoices(seller_id: int = Query(..., description="Seller user ID"
 
 
 @router.post(
+    "/api/invoices/extract",
+    tags=["Invoice Workflow"],
+    summary="Extract fields from an invoice PDF",
+    description="Upload a PDF and get extracted debtor_name and amount back to prepopulate the form.",
+)
+async def extract_invoice(pdf: UploadFile = File(...)):
+    pdf_bytes = await pdf.read()
+    result = await http_client.post(
+        f"{config.INVOICE_SERVICE_URL}/invoices/extract",
+        files={"pdf_file": (pdf.filename, pdf_bytes, pdf.content_type)},
+    )
+    return result
+
+
+@router.post(
     "/api/invoices",
     response_model=ListInvoiceResponse,
     tags=["Invoice Workflow"],

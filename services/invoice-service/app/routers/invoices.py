@@ -6,8 +6,21 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.invoice import InvoiceResponse, InvoiceStatusUpdate
 from app.services.invoice_service import InvoiceService
+from app.services.pdf_extractor import PDFExtractor
 
 router = APIRouter()
+
+
+@router.post("/invoices/extract", tags=["Invoices"])
+async def extract_invoice_fields(pdf_file: UploadFile = File(...)):
+    """Extract fields from an invoice PDF without creating an invoice."""
+    pdf_bytes = await pdf_file.read()
+    extractor = PDFExtractor()
+    extracted = extractor.extract_fields(pdf_bytes)
+    return {
+        "debtor_name": extracted.get("debtor_name"),
+        "amount": extracted.get("amount"),
+    }
 
 
 @router.post("/invoices", response_model=InvoiceResponse, tags=["Invoices"])
