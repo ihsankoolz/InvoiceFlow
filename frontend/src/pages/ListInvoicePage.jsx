@@ -62,7 +62,9 @@ export default function ListInvoicePage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       if (data.debtor_name) setDebtorName(data.debtor_name)
+      if (data.debtor_uen) setDebtorUen(data.debtor_uen)
       if (data.amount) setFaceValue(String(data.amount))
+      if (data.due_date) setDueDate(data.due_date)
     } catch {
       // extraction is best-effort; silent failure is fine
     } finally {

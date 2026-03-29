@@ -19,7 +19,9 @@ async def extract_invoice_fields(pdf_file: UploadFile = File(...)):
     extracted = extractor.extract_fields(pdf_bytes)
     return {
         "debtor_name": extracted.get("debtor_name"),
+        "debtor_uen": extracted.get("debtor_uen"),
         "amount": extracted.get("amount"),
+        "due_date": extracted.get("due_date"),
     }
 
 
