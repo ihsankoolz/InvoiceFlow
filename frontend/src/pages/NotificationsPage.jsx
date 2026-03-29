@@ -37,6 +37,7 @@ const EVENT_TITLES = {
   'wallet.credited':          'Wallet Credited',
   'wallet.topup':             'Wallet Top-Up',
   'bid.placed':               'New Bid on Your Invoice',
+  'bid.confirmed':            'Bid Placed Successfully',
   'bid.outbid':               "You've Been Outbid",
   'auction.closing.warning':  'Auction Closing Soon',
   'auction.extended':         'Auction Deadline Extended',

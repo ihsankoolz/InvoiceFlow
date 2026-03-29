@@ -122,6 +122,7 @@ export default function ListingDetailPage() {
   const [bidLoading, setBidLoading] = useState(false)
   const [bidError, setBidError]   = useState('')
   const [bidSuccess, setBidSuccess] = useState('')
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const [visible, setVisible]   = useState(false)
 
@@ -156,7 +157,7 @@ export default function ListingDetailPage() {
     return ((f - b) / b * 100).toFixed(1)
   })()
 
-  async function handleBid(e) {
+  function handleBid(e) {
     e.preventDefault()
     setBidError('')
     setBidSuccess('')
@@ -172,7 +173,13 @@ export default function ListingDetailPage() {
       return
     }
 
+    setShowConfirm(true)
+  }
+
+  async function confirmBid() {
+    setShowConfirm(false)
     setBidLoading(true)
+    const amount = Number(bidAmount)
     try {
       await api.post('/bids', {
         listing_id: listing.id,
@@ -181,7 +188,6 @@ export default function ListingDetailPage() {
         investor_id: user.sub,
       })
       setBidSuccess('Bid placed successfully!')
-      // Refresh listing
       const updated = await fetchListing(id)
       if (updated) setListing(updated)
     } catch (e) {
@@ -197,6 +203,11 @@ export default function ListingDetailPage() {
 
   const isInvestor = user?.role === 'INVESTOR'
 
+  const confirmAmount = Number(bidAmount)
+  const confirmReturn = listing && confirmAmount && Number(listing.face_value)
+    ? ((Number(listing.face_value) - confirmAmount) / confirmAmount * 100).toFixed(1)
+    : null
+
   return (
     <AppLayout>
       <style>{`
@@ -205,6 +216,49 @@ export default function ListingDetailPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
+
+      {/* ── Bid confirmation modal ── */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setShowConfirm(false)} />
+          <div className="relative bg-white rounded-[20px] shadow-xl w-full max-w-sm p-7" style={{ animation: 'detailFadeUp 200ms ease both' }}>
+            <h3 className="font-['Lato'] font-semibold text-xl text-ink mb-1">Confirm your bid</h3>
+            <p className="font-['Lato'] text-sm text-ink/50 mb-6">Please review before submitting — bids cannot be withdrawn.</p>
+
+            <div className="bg-cream rounded-[14px] p-4 space-y-2 mb-6">
+              <div className="flex justify-between">
+                <span className="font-['Lato'] text-sm text-ink/60">Bid amount</span>
+                <span className="font-['Lato'] font-semibold text-ink">{fmt(confirmAmount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-['Lato'] text-sm text-ink/60">Face value</span>
+                <span className="font-['Lato'] text-sm text-ink">{fmt(listing.face_value)}</span>
+              </div>
+              {confirmReturn && (
+                <div className="flex justify-between pt-2 border-t border-ink/10">
+                  <span className="font-['Lato'] text-sm text-ink/60">Estimated return</span>
+                  <span className="font-['Lato'] font-semibold text-[#3e9b00]">+{confirmReturn}%</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 border border-ink/20 text-ink rounded-lg px-4 py-2.5 font-['Lato'] font-medium text-sm hover:border-ink/40 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmBid}
+                className="flex-1 bg-teal text-white rounded-lg px-4 py-2.5 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                Confirm Bid
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header strip */}
       <div className="bg-teal px-8 py-6" style={fadeUp(visible, 0)}>
