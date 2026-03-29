@@ -40,6 +40,8 @@ function fmtDate(str) {
 
 const STATUS_TABS = ['ALL', 'DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED']
 
+const STATUS_ORDER = { LISTED: 0, FINANCED: 1, DEFAULTED: 2, DRAFT: 3, REPAID: 4, REJECTED: 5 }
+
 export default function MyInvoicesPage() {
   const { user } = useAuth()
 
@@ -69,9 +71,10 @@ export default function MyInvoicesPage() {
     load()
   }, [user])
 
-  const filtered = activeTab === 'ALL'
+  const filtered = (activeTab === 'ALL'
     ? invoices
     : invoices.filter((i) => i.status === activeTab)
+  ).slice().sort((a, b) => (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99))
 
   return (
     <AppLayout>
@@ -84,14 +87,14 @@ export default function MyInvoicesPage() {
 
       {/* Header strip */}
       <div ref={headerRef} className="bg-teal px-8 py-10" style={fadeUp(headerInView, 0)}>
-        <div className="max-w-6xl mx-auto flex items-end justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="font-['Lato'] font-semibold text-[42px] text-white leading-tight">My Invoices</h1>
             <p className="font-['Lato'] text-white/60 text-sm mt-1">Track and manage all your listed invoices</p>
           </div>
           <Link
             to="/invoices/new"
-            className="flex items-center gap-2 bg-[#fff8ec] text-teal rounded-[22px] px-6 py-3 font-['Lato'] font-semibold text-sm hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 border border-white text-white rounded-xl px-6 py-3 font-['Lato'] font-semibold text-sm hover:bg-white hover:text-teal transition-colors duration-150"
           >
             + List Invoice
           </Link>

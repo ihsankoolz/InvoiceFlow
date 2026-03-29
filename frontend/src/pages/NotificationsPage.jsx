@@ -55,12 +55,13 @@ function getNotifTitle(notif) {
   return notif.title || EVENT_TITLES[notif.event_type] || notif.event_type || 'Notification'
 }
 
-function getNotifLink(eventType) {
+function getNotifLink(eventType, role) {
   const t = (eventType || '').toUpperCase()
+  const isSeller = role !== 'INVESTOR'
   if (t.includes('WALLET') || t.includes('TOPUP') || t.includes('CREDITED')) return '/wallet'
-  if (t.includes('BID') || t.includes('OUTBID')) return '/bids'
+  if (t.includes('BID') || t.includes('OUTBID')) return isSeller ? null : '/bids'
   if (t.includes('LOAN') || t.includes('REPAID') || t.includes('FINANCED')) return '/loans'
-  if (t.includes('INVOICE') || t.includes('LISTING')) return '/marketplace'
+  if (t.includes('INVOICE') || t.includes('LISTING')) return isSeller ? '/invoices' : '/marketplace'
   return null
 }
 
@@ -186,7 +187,7 @@ export default function NotificationsPage() {
               {notifications.map((notif, i) => (
                 <div
                   key={notif.id || i}
-                  onClick={() => { markRead(notif.id); const link = getNotifLink(notif.event_type); if (link) navigate(link) }}
+                  onClick={() => { markRead(notif.id); const link = getNotifLink(notif.event_type, user?.role); if (link) navigate(link) }}
                   className={`bg-white border border-ink/10 rounded-[14px] p-4 flex items-start gap-3 cursor-pointer hover:bg-cream/60 transition-[background-color,box-shadow,border-left-width,border-color] duration-200 hover:shadow-sm ${!notif.is_read ? 'border-l-4' : ''}`}
                   style={{
                     ...fadeUp(listInView, i * 40),
