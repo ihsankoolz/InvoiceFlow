@@ -45,6 +45,14 @@ EVENT_MAPPING = {
             [str(p.get("seller_id"))],
         ),
     },
+    "bid.confirmed": {
+        "template": "bid_placed.html",
+        "subject": "Your bid has been placed",
+        "get_recipients": lambda p: (
+            [{"email": p.get("investor_email"), "user_id": p.get("investor_id")}],
+            [str(p.get("investor_id"))],
+        ),
+    },
     "bid.outbid": {
         "template": "bid_placed.html",
         "subject": "You have been outbid",

@@ -37,6 +37,7 @@ const EVENT_TITLES = {
   'wallet.credited':          'Wallet Credited',
   'wallet.topup':             'Wallet Top-Up',
   'bid.placed':               'New Bid on Your Invoice',
+  'bid.confirmed':            'Bid Placed Successfully',
   'bid.outbid':               "You've Been Outbid",
   'auction.closing.warning':  'Auction Closing Soon',
   'auction.extended':         'Auction Deadline Extended',
@@ -55,12 +56,13 @@ function getNotifTitle(notif) {
   return notif.title || EVENT_TITLES[notif.event_type] || notif.event_type || 'Notification'
 }
 
-function getNotifLink(eventType) {
+function getNotifLink(eventType, role) {
   const t = (eventType || '').toUpperCase()
+  const isSeller = role !== 'INVESTOR'
   if (t.includes('WALLET') || t.includes('TOPUP') || t.includes('CREDITED')) return '/wallet'
-  if (t.includes('BID') || t.includes('OUTBID')) return '/bids'
+  if (t.includes('BID') || t.includes('OUTBID')) return isSeller ? null : '/bids'
   if (t.includes('LOAN') || t.includes('REPAID') || t.includes('FINANCED')) return '/loans'
-  if (t.includes('INVOICE') || t.includes('LISTING')) return '/marketplace'
+  if (t.includes('INVOICE') || t.includes('LISTING')) return isSeller ? '/invoices' : '/marketplace'
   return null
 }
 
@@ -80,31 +82,15 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!user) return
     loadNotifications()
-    connectWS()
-    return () => {
-      if (wsRef.current) wsRef.current.close()
-    }
-  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function loadNotifications() {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await api.get(`/notifications?user_id=${user.sub}`)
-      const data = res.data?.notifications || res.data || []
-      setNotifications(Array.isArray(data) ? data : [])
-    } catch (e) {
-      setError(e.response?.data?.detail || e.message || 'Failed to load notifications.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function connectWS() {
+    let cancelled = false
     try {
       const ws = new WebSocket(`ws://localhost:5005/ws/${user.sub}`)
       wsRef.current = ws
 
+      ws.onopen = () => {
+        if (cancelled) ws.close()
+      }
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data)
@@ -123,14 +109,35 @@ export default function NotificationsPage() {
           // Ignore parse errors
         }
       }
-
       ws.onerror = () => {
         // Silently ignore WS errors — not all environments have WS running
       }
     } catch {
       // Silently ignore if WS is unavailable
     }
+
+    return () => {
+      cancelled = true
+      const ws = wsRef.current
+      wsRef.current = null
+      if (ws && ws.readyState === WebSocket.OPEN) ws.close()
+    }
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadNotifications() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api.get(`/notifications?user_id=${user.sub}`)
+      const data = res.data?.notifications || res.data || []
+      setNotifications(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setError(e.response?.data?.detail || e.message || 'Failed to load notifications.')
+    } finally {
+      setLoading(false)
+    }
   }
+
 
   async function markRead(id) {
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n))
@@ -186,7 +193,7 @@ export default function NotificationsPage() {
               {notifications.map((notif, i) => (
                 <div
                   key={notif.id || i}
-                  onClick={() => { markRead(notif.id); const link = getNotifLink(notif.event_type); if (link) navigate(link) }}
+                  onClick={() => { markRead(notif.id); const link = getNotifLink(notif.event_type, user?.role); if (link) navigate(link) }}
                   className={`bg-white border border-ink/10 rounded-[14px] p-4 flex items-start gap-3 cursor-pointer hover:bg-cream/60 transition-[background-color,box-shadow,border-left-width,border-color] duration-200 hover:shadow-sm ${!notif.is_read ? 'border-l-4' : ''}`}
                   style={{
                     ...fadeUp(listInView, i * 40),

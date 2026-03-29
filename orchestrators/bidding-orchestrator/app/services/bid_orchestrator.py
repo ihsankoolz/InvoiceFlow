@@ -131,9 +131,12 @@ class BidOrchestrator:
                 },
             )
 
-        # ── Step 5: Publish bid.placed ─────────────────────────────────────
+        # ── Step 5: Publish bid.placed + bid.confirmed ────────────────────
         seller_user = await self.http_client.get(
             f"{config.USER_SERVICE_URL}/users/{listing['seller_id']}"
+        )
+        investor_user = await self.http_client.get(
+            f"{config.USER_SERVICE_URL}/users/{data.investor_id}"
         )
         await self.publisher.publish(
             "bid.placed",
@@ -143,6 +146,15 @@ class BidOrchestrator:
                 "bid_amount": str(data.bid_amount),
                 "seller_id": listing["seller_id"],
                 "seller_email": seller_user["email"],
+            },
+        )
+        await self.publisher.publish(
+            "bid.confirmed",
+            {
+                "invoice_token": data.invoice_token,
+                "investor_id": data.investor_id,
+                "investor_email": investor_user["email"],
+                "bid_amount": str(data.bid_amount),
             },
         )
 

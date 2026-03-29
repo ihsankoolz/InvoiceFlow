@@ -87,3 +87,60 @@ async def get_listings(
         })
 
     return results
+
+
+@router.get("/api/listings/{listing_id}", tags=["Listings"], summary="Get a single listing with full details")
+async def get_listing(listing_id: int):
+    """
+    Aggregates single listing data from:
+    - Marketplace Service (listing details, minimum_bid)
+    - Invoice Service (face_value, debtor_name)
+    - Bidding Service (current_bid, bid_count)
+    """
+    listing = await _http.get(f"{config.MARKETPLACE_SERVICE_URL}/listings/{listing_id}")
+    if not listing or listing.get("detail") == "Listing not found":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    invoice_token = listing.get("invoice_token")
+
+    try:
+        invoice = await _http.get(f"{config.INVOICE_SERVICE_URL}/invoices/{invoice_token}")
+        face_value = float(invoice.get("amount", 0))
+        debtor_name = invoice.get("debtor_name")
+        invoice_id = invoice.get("id")
+    except Exception:
+        face_value = float(listing.get("amount", 0))
+        debtor_name = None
+        invoice_id = None
+
+    try:
+        bids = await _http.get(
+            f"{config.BIDDING_SERVICE_URL}/bids",
+            params={"invoice_token": invoice_token},
+        )
+        if not isinstance(bids, list):
+            bids = []
+        pending_bids = [b for b in bids if b.get("status") == "PENDING"]
+        bid_count = len(bids)
+        current_bid = max((float(b["bid_amount"]) for b in pending_bids), default=None)
+    except Exception:
+        bid_count = 0
+        current_bid = None
+
+    return {
+        "id": listing.get("id"),
+        "invoice_token": invoice_token,
+        "invoice_id": invoice_id,
+        "seller_id": listing.get("seller_id"),
+        "face_value": face_value,
+        "minimum_bid": float(listing.get("minimum_bid", 0)),
+        "current_bid": current_bid,
+        "bid_count": bid_count,
+        "urgency_level": listing.get("urgency_level"),
+        "deadline": listing.get("deadline"),
+        "debtor_name": debtor_name,
+        "debtor_uen": listing.get("debtor_uen"),
+        "status": listing.get("status"),
+        "created_at": listing.get("created_at"),
+    }

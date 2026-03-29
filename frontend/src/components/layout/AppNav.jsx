@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   FileSpreadsheet,
   Wallet,
+  Store,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
@@ -15,6 +16,7 @@ const SELLER_NAV = [
   { icon: Home,            label: 'Home',          path: '/dashboard' },
   { icon: PlusCircle,      label: 'List Invoice',  path: '/invoices/new' },
   { icon: FileText,        label: 'My Invoices',   path: '/invoices' },
+  { icon: Store,           label: 'Marketplace',   path: '/marketplace' },
   { icon: CreditCard,      label: 'Loans',         path: '/loans' },
   { icon: Bell,            label: 'Notifications', path: '/notifications' },
 ]
