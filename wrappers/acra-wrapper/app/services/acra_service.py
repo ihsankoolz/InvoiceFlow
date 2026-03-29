@@ -4,6 +4,7 @@ ACRAService — calls data.gov.sg ACRA dataset API to validate UENs.
 See BUILD_INSTRUCTIONS_V2.md Section 11 — Key Classes
 """
 
+import json
 import time
 import httpx
 
@@ -32,25 +33,22 @@ class ACRAService:
         if cached and time.monotonic() < expiry:
             return cached
 
-        url = (
-            f"{config.DATA_GOV_API_URL}"
-            f"?resource_id={config.ACRA_DATASET_RESOURCE_ID}"
-            f"&q={uen}"
-            f"&limit=10"
-        )
+        params = {
+            "resource_id": config.ACRA_DATASET_RESOURCE_ID,
+            "filters": json.dumps({"uen": uen.upper()}),
+            "limit": 1,
+        }
 
         headers = {"User-Agent": "InvoiceFlow/1.0"}
         if config.DATA_GOV_API_KEY:
-            headers["Authorization"] = config.DATA_GOV_API_KEY
+            headers["x-api-key"] = config.DATA_GOV_API_KEY
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, timeout=10.0, headers=headers)
+            response = await client.get(config.DATA_GOV_API_URL, params=params, timeout=10.0, headers=headers)
             response.raise_for_status()
             data = response.json()
 
         records = data.get("result", {}).get("records", [])
-
-        # Find exact UEN match
-        match = next((r for r in records if r.get("uen", "").upper() == uen.upper()), None)
+        match = records[0] if records else None
 
         if not match:
             result = UENValidateResponse(
