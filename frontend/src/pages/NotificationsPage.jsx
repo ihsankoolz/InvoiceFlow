@@ -81,31 +81,15 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!user) return
     loadNotifications()
-    connectWS()
-    return () => {
-      if (wsRef.current) wsRef.current.close()
-    }
-  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function loadNotifications() {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await api.get(`/notifications?user_id=${user.sub}`)
-      const data = res.data?.notifications || res.data || []
-      setNotifications(Array.isArray(data) ? data : [])
-    } catch (e) {
-      setError(e.response?.data?.detail || e.message || 'Failed to load notifications.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function connectWS() {
+    let cancelled = false
     try {
       const ws = new WebSocket(`ws://localhost:5005/ws/${user.sub}`)
       wsRef.current = ws
 
+      ws.onopen = () => {
+        if (cancelled) ws.close()
+      }
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data)
@@ -124,14 +108,35 @@ export default function NotificationsPage() {
           // Ignore parse errors
         }
       }
-
       ws.onerror = () => {
         // Silently ignore WS errors — not all environments have WS running
       }
     } catch {
       // Silently ignore if WS is unavailable
     }
+
+    return () => {
+      cancelled = true
+      const ws = wsRef.current
+      wsRef.current = null
+      if (ws && ws.readyState === WebSocket.OPEN) ws.close()
+    }
+  }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadNotifications() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api.get(`/notifications?user_id=${user.sub}`)
+      const data = res.data?.notifications || res.data || []
+      setNotifications(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setError(e.response?.data?.detail || e.message || 'Failed to load notifications.')
+    } finally {
+      setLoading(false)
+    }
   }
+
 
   async function markRead(id) {
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n))

@@ -66,9 +66,13 @@ export default function WalletPage() {
     loadTransactions()
 
     // Connect to notification service WebSocket for live balance updates
+    let cancelled = false
     try {
       const ws = new WebSocket(`ws://localhost:5005/ws/${user.sub}`)
       wsRef.current = ws
+      ws.onopen = () => {
+        if (cancelled) ws.close()
+      }
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data)
@@ -82,7 +86,10 @@ export default function WalletPage() {
     } catch { /* ignore if WS unavailable */ }
 
     return () => {
-      if (wsRef.current) wsRef.current.close()
+      cancelled = true
+      const ws = wsRef.current
+      wsRef.current = null
+      if (ws && ws.readyState === WebSocket.OPEN) ws.close()
     }
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 

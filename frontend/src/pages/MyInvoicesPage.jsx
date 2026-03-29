@@ -59,9 +59,36 @@ export default function MyInvoicesPage() {
       setLoading(true)
       setError('')
       try {
-        const res = await api.get(`/invoices?seller_id=${user.sub}`)
-        const data = res.data?.invoices || res.data || []
-        setInvoices(Array.isArray(data) ? data : [])
+        const [invoiceRes, listingsRes] = await Promise.allSettled([
+          api.get(`/invoices?seller_id=${user.sub}`),
+          api.get('/listings'),
+        ])
+
+        const data = invoiceRes.status === 'fulfilled'
+          ? (invoiceRes.value.data?.invoices || invoiceRes.value.data || [])
+          : []
+        const invoiceList = Array.isArray(data) ? data : []
+
+        // Build a map of invoice_token → listing for enrichment
+        const listingMap = {}
+        if (listingsRes.status === 'fulfilled') {
+          const listings = Array.isArray(listingsRes.value.data) ? listingsRes.value.data : []
+          listings.forEach((l) => { if (l.invoice_token) listingMap[l.invoice_token] = l })
+        }
+
+        // Merge listing data (current_bid, bid deadline, listing id) into invoice records
+        const enriched = invoiceList.map((inv) => {
+          const listing = listingMap[inv.invoice_token]
+          if (!listing) return inv
+          return {
+            ...inv,
+            current_bid: listing.current_bid ?? null,
+            bid_deadline: listing.deadline ?? null,
+            listing_id: listing.id ?? null,
+          }
+        })
+
+        setInvoices(enriched)
       } catch (e) {
         setError(e.response?.data?.detail || e.message || 'Failed to load invoices.')
       } finally {
@@ -162,7 +189,7 @@ export default function MyInvoicesPage() {
                       <th className="text-right px-4 py-3 font-medium text-ink/60">Current Bid</th>
                       <th className="text-center px-4 py-3 font-medium text-ink/60">Status</th>
                       <th className="text-left px-4 py-3 font-medium text-ink/60">Deadline</th>
-                      <th className="text-center px-6 py-3 font-medium text-ink/60">Actions</th>
+                      <th className="text-center px-6 py-3 font-medium text-ink/60">View Listing</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -174,16 +201,28 @@ export default function MyInvoicesPage() {
                       >
                         <td className="px-6 py-3 font-medium text-ink">{inv.invoice_token || inv.id}</td>
                         <td className="px-4 py-3 text-ink/70">{inv.debtor_name || '—'}</td>
-                        <td className="px-4 py-3 text-right text-ink">{fmt(inv.face_value)}</td>
+                        <td className="px-4 py-3 text-right text-ink">{fmt(inv.amount)}</td>
                         <td className="px-4 py-3 text-right text-ink">{fmt(inv.current_bid)}</td>
                         <td className="px-4 py-3 text-center">
                           <Badge status={inv.status} />
                         </td>
-                        <td className="px-4 py-3 text-ink/60">{fmtDate(inv.deadline)}</td>
+                        <td className="px-4 py-3 text-ink/60">
+                          {inv.status === 'LISTED' && inv.bid_deadline ? (
+                            <div>
+                              <p className="text-[10px] text-ink/35 uppercase tracking-wide leading-none mb-0.5">Bid closes</p>
+                              {fmtDate(inv.bid_deadline)}
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-[10px] text-ink/35 uppercase tracking-wide leading-none mb-0.5">Due date</p>
+                              {fmtDate(inv.due_date)}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-6 py-3 text-center">
-                          {inv.status === 'LISTED' && inv.invoice_id ? (
+                          {inv.listing_id ? (
                             <Link
-                              to={`/marketplace/${inv.invoice_id}`}
+                              to={`/marketplace/${inv.listing_id}`}
                               className="inline-flex items-center gap-1 font-['Lato'] text-xs font-medium text-ink hover:text-[#ff9500] transition-colors"
                             >
                               <ExternalLink size={13} />

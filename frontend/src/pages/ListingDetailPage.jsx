@@ -83,6 +83,32 @@ function DetailRow({ label, value }) {
   )
 }
 
+function parseBidError(raw) {
+  if (!raw || typeof raw !== 'string') return 'Failed to place bid. Please try again.'
+
+  // Insufficient wallet balance (gRPC escrow error)
+  const balanceMatch = raw.match(/have (\d+(?:\.\d+)?),\s*need (\d+(?:\.\d+)?)/i)
+  if (balanceMatch) {
+    const have = Number(balanceMatch[1])
+    const need = Number(balanceMatch[2])
+    return `Insufficient wallet balance. You have ${fmt(have)} but need ${fmt(need)} to place this bid. Please top up your wallet.`
+  }
+
+  // Auction already closed / outbid
+  if (/auction.*closed|listing.*closed|expired/i.test(raw)) return 'This auction has already closed.'
+  if (/already.*higher bid|outbid/i.test(raw)) return 'A higher bid already exists. Please increase your bid amount.'
+  if (/below.*minimum|minimum.*bid/i.test(raw)) return 'Your bid is below the minimum required amount.'
+
+  // Strip raw gRPC / AioRpcError noise
+  if (/<AioRpcError|StatusCode\.|debug_error_string/i.test(raw)) {
+    const details = raw.match(/details\s*=\s*"([^"]+)"/i)
+    if (details) return details[1]
+    return 'An error occurred while placing your bid. Please try again.'
+  }
+
+  return raw
+}
+
 export default function ListingDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -150,16 +176,20 @@ export default function ListingDetailPage() {
     try {
       await api.post('/bids', {
         listing_id: listing.id,
-        amount,
+        bid_amount: amount,
         invoice_token: listing.invoice_token,
+        investor_id: user.sub,
       })
       setBidSuccess('Bid placed successfully!')
       // Refresh listing
       const updated = await fetchListing(id)
       if (updated) setListing(updated)
     } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || e.message || 'Failed to place bid.'
-      setBidError(msg)
+      const detail = e.response?.data?.detail
+      const raw = Array.isArray(detail)
+        ? detail.map((d) => d.msg).join(', ')
+        : (detail || e.response?.data?.message || e.message || '')
+      setBidError(parseBidError(raw))
     } finally {
       setBidLoading(false)
     }
