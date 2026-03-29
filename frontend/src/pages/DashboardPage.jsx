@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { PlusCircle, FileText, ShoppingCart, ArrowRight } from 'lucide-react'
 import DashboardLayout from '../components/layout/DashboardLayout'
-import Badge from '../components/ui/Badge'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 
@@ -105,11 +104,13 @@ function SellerDashboard({ user }) {
   }, [user])
 
   // Derived performance stats
-  const totalSubmitted  = invoices.length
   const totalFinanced   = invoices.filter(i => ['FINANCED', 'ACCEPTED'].includes(i.status))
-  const totalRaised     = totalFinanced.reduce((s, i) => s + Number(i.face_value || 0), 0)
+  const totalRaised     = totalFinanced.reduce((s, i) => s + Number(i.amount || 0), 0)
+  // Financing rate = financed / invoices that actually reached market (excludes DRAFT & REJECTED)
+  const listedOrBeyond  = invoices.filter(i => ['LISTED', 'FINANCED', 'ACCEPTED', 'REPAID', 'DEFAULTED'].includes(i.status))
+  const totalSubmitted  = listedOrBeyond.length
   const financingRate   = totalSubmitted > 0 ? Math.round((totalFinanced.length / totalSubmitted) * 100) : 0
-  const avgFaceValue    = totalSubmitted > 0 ? invoices.reduce((s, i) => s + Number(i.face_value || 0), 0) / totalSubmitted : 0
+  const totalOutstanding = invoices.filter(i => i.status === 'LISTED').reduce((s, i) => s + Number(i.amount || 0), 0)
 
   function daysProgress(loan) {
     if (!loan.created_at || !loan.due_date) return { pct: 50, days: null }
@@ -175,8 +176,8 @@ function SellerDashboard({ user }) {
                 </div>
                 {/* Avg face value */}
                 <div className="flex items-center justify-between">
-                  <p className="font-['Lato'] text-xs text-ink/50">Avg Face Value</p>
-                  <p className="font-['Lato'] font-semibold text-sm text-ink">{fmt(avgFaceValue)}</p>
+                  <p className="font-['Lato'] text-xs text-ink/50">Total Outstanding</p>
+                  <p className="font-['Lato'] font-semibold text-sm text-ink">{fmt(totalOutstanding)}</p>
                 </div>
               </div>
             )}

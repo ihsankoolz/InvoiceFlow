@@ -45,6 +45,7 @@ export default function ListInvoicePage() {
   const [urgency, setUrgency]           = useState('MEDIUM')
   const [bidPeriod, setBidPeriod]       = useState('24')
 
+  const [extracting, setExtracting]     = useState(false)
   const [loading, setLoading]           = useState(false)
   const [error, setError]               = useState('')
   const [success, setSuccess]           = useState(false)
@@ -52,9 +53,28 @@ export default function ListInvoicePage() {
   const [headerRef, headerInView]       = useInView(0.05)
   const [formRef, formInView]           = useInView(0.05)
 
+  async function extractFromPdf(f) {
+    setExtracting(true)
+    try {
+      const fd = new FormData()
+      fd.append('pdf', f)
+      const { data } = await api.post('/invoices/extract', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      if (data.debtor_name) setDebtorName(data.debtor_name)
+      if (data.debtor_uen) setDebtorUen(data.debtor_uen)
+      if (data.amount) setFaceValue(String(data.amount))
+      if (data.due_date) setDueDate(data.due_date)
+    } catch {
+      // extraction is best-effort; silent failure is fine
+    } finally {
+      setExtracting(false)
+    }
+  }
+
   function handleFileChange(e) {
     const f = e.target.files?.[0]
-    if (f && f.type === 'application/pdf') setFile(f)
+    if (f && f.type === 'application/pdf') { setFile(f); extractFromPdf(f) }
     else if (f) setError('Please upload a PDF file.')
   }
 
@@ -62,7 +82,7 @@ export default function ListInvoicePage() {
     e.preventDefault()
     setDragOver(false)
     const f = e.dataTransfer.files?.[0]
-    if (f && f.type === 'application/pdf') { setFile(f); setError('') }
+    if (f && f.type === 'application/pdf') { setFile(f); setError(''); extractFromPdf(f) }
     else setError('Please drop a PDF file.')
   }
 
@@ -207,7 +227,7 @@ export default function ListInvoicePage() {
                 </div>
 
                 <p className="font-['Lato'] text-xs text-ink/40 mt-3 text-center">
-                  PDF fields will be extracted automatically
+                  {extracting ? 'Extracting fields…' : 'Fields will be extracted automatically on upload'}
                 </p>
               </div>
             </div>

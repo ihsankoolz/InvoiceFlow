@@ -30,7 +30,12 @@ class BidService:
             .first()
         )
         if existing:
-            raise HTTPException(status_code=409, detail="Investor already has a bid for this invoice")
+            if existing.status == "PENDING":
+                raise HTTPException(status_code=409, detail="Investor already has a bid for this invoice")
+            # Stale CANCELLED record (from a previous failed escrow) — remove it
+            # so the unique constraint doesn't block the retry.
+            self.db.delete(existing)
+            self.db.flush()
 
         current_highest: Optional[Bid] = (
             self.db.query(Bid)
@@ -105,9 +110,13 @@ class BidService:
         return bid
 
     def delete_bid(self, bid_id: int) -> None:
-        """Cancel/rollback a bid (for escrow failure)."""
+        """Hard-delete a bid row (rollback after escrow failure).
+
+        Must be a hard delete — the unique constraint on (invoice_token, investor_id)
+        means a soft-delete (CANCELLED) would block the investor from retrying.
+        """
         bid = self.db.query(Bid).filter(Bid.id == bid_id).first()
         if not bid:
             raise HTTPException(status_code=404, detail="Bid not found")
-        bid.status = "CANCELLED"
+        self.db.delete(bid)
         self.db.commit()

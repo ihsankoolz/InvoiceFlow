@@ -5,6 +5,7 @@ import AppLayout from '../components/layout/AppLayout'
 import Badge from '../components/ui/Badge'
 import { fetchListings } from '../api/marketplace'
 import { useInView } from '../hooks/useInView'
+import { useAuth } from '../context/AuthContext'
 
 /* ── Animation helper ── */
 function fadeUp(visible, delay = 0) {
@@ -58,7 +59,7 @@ function CountdownBadge({ deadline }) {
 }
 
 /* ── Listing card ── */
-function ListingCard({ listing, onBid, delay, inView }) {
+function ListingCard({ listing, onBid, delay, inView, isInvestor }) {
   const ret = calcReturn(listing.face_value, listing.current_bid || listing.minimum_bid)
   return (
     <div
@@ -116,12 +117,14 @@ function ListingCard({ listing, onBid, delay, inView }) {
         </div>
 
         {/* CTA */}
-        <button
-          onClick={() => onBid(listing.id)}
-          className="mt-auto w-full bg-teal text-white rounded-[12px] px-4 py-3 font-['Lato'] font-semibold text-sm hover:opacity-90 active:scale-[0.97] active:opacity-100 transition-[transform,opacity] duration-100 flex items-center justify-center gap-2"
-        >
-          Place Bid <ArrowRight size={14} />
-        </button>
+        {isInvestor && (
+          <button
+            onClick={() => onBid(listing.id)}
+            className="mt-auto w-full bg-teal text-white rounded-[12px] px-4 py-3 font-['Lato'] font-semibold text-sm hover:opacity-90 active:scale-[0.97] active:opacity-100 transition-[transform,opacity] duration-100 flex items-center justify-center gap-2"
+          >
+            Place Bid <ArrowRight size={14} />
+          </button>
+        )}
       </div>
     </div>
   )
@@ -150,6 +153,8 @@ const SORT_OPTIONS = [
 
 export default function MarketplacePage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isInvestor = user?.role === 'INVESTOR'
 
   const [listings, setListings] = useState([])
   const [loading, setLoading]   = useState(true)
@@ -268,6 +273,7 @@ export default function MarketplacePage() {
                   onBid={(id) => navigate(`/marketplace/${id}`)}
                   delay={i * 50}
                   inView={gridInView}
+                  isInvestor={isInvestor}
                 />
               ))
           }
