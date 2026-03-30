@@ -7,3 +7,4 @@ temporalio==1.7.1
 grpcio==1.66.0
 grpcio-tools==1.66.0
 python-dotenv==1.0.1
+strawberry-graphql[fastapi]==0.243.1

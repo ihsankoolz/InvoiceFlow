@@ -3,7 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Clock, ChevronDown, ArrowRight } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
 import Badge from '../components/ui/Badge'
-import { fetchListings } from '../api/marketplace'
+import { gqlQuery } from '../api/graphql'
+
+const LISTINGS_QUERY = `
+  query GetListings($urgencyLevel: String, $search: String) {
+    listings(urgencyLevel: $urgencyLevel, search: $search) {
+      id
+      invoiceToken
+      sellerId
+      faceValue
+      minimumBid
+      currentBid
+      bidCount
+      urgencyLevel
+      deadline
+      debtorName
+      debtorUen
+      status
+    }
+  }
+`
 import { useInView } from '../hooks/useInView'
 import { useAuth } from '../context/AuthContext'
 
@@ -171,8 +190,27 @@ export default function MarketplacePage() {
     setLoading(true)
     setError('')
     try {
-      const data = await fetchListings({ urgency, search, sortBy })
-      setListings(Array.isArray(data) ? data : [])
+      const data = await gqlQuery(LISTINGS_QUERY, {
+        urgencyLevel: urgency !== 'ALL' ? urgency : null,
+        search: search || null,
+      })
+      const raw = Array.isArray(data?.listings) ? data.listings : []
+      // Map GraphQL camelCase fields back to the snake_case the listing cards expect
+      const listings = raw.map((l) => ({
+        id:            l.id,
+        invoice_token: l.invoiceToken,
+        seller_id:     l.sellerId,
+        face_value:    l.faceValue,
+        minimum_bid:   l.minimumBid,
+        current_bid:   l.currentBid,
+        bid_count:     l.bidCount,
+        urgency_level: l.urgencyLevel,
+        deadline:      l.deadline,
+        debtor_name:   l.debtorName,
+        debtor_uen:    l.debtorUen,
+        status:        l.status,
+      }))
+      setListings(listings)
     } catch (e) {
       setError(e.message || 'Failed to load listings.')
     } finally {

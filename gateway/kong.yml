@@ -107,6 +107,13 @@ services:
         methods:
           - GET
         strip_path: false
+      - name: graphql
+        paths:
+          - /api/graphql
+        methods:
+          - GET
+          - POST
+        strip_path: false
 
   # --- Stripe Webhook (no JWT — uses Stripe signature) ---
   - name: stripe-webhook

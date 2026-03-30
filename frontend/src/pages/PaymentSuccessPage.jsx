@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { CheckCircle, Loader } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
-const WS_URL = (userId) => `ws://localhost:5005/ws/${userId}`
+const WS_URL = (userId) => {
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${proto}//${window.location.host}/ws/${userId}`
+}
 const TIMEOUT_MS = 30000
 
 export default function PaymentSuccessPage() {

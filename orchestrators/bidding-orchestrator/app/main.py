@@ -1,9 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from strawberry.fastapi import GraphQLRouter
 
 from app.routers import bids, wallet, webhooks, listings
+from app.graphql.schema import schema
 
 app = FastAPI(title="Bidding Orchestrator")
+
+graphql_app = GraphQLRouter(schema)
+app.include_router(graphql_app, prefix="/api/graphql")
 
 app.add_middleware(
     CORSMiddleware,

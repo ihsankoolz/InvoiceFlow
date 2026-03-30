@@ -85,7 +85,8 @@ export default function NotificationsPage() {
 
     let cancelled = false
     try {
-      const ws = new WebSocket(`ws://localhost:5005/ws/${user.sub}`)
+      const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const ws = new WebSocket(`${wsProto}//${window.location.host}/ws/${user.sub}`)
       wsRef.current = ws
 
       ws.onopen = () => {

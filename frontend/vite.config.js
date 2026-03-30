@@ -10,8 +10,9 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
-      '/graphql': {
-        target: 'http://localhost:8000',
+      '/ws': {
+        target: 'ws://localhost:5005',
+        ws: true,
         changeOrigin: true,
       },
     },

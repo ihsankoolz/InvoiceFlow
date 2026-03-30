@@ -4,7 +4,48 @@ import { Clock, AlertTriangle, TrendingUp, Shield } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
 import Badge from '../components/ui/Badge'
 import api from '../api/axios'
-import { fetchListing } from '../api/marketplace'
+import { gqlQuery } from '../api/graphql'
+
+const LISTING_QUERY = `
+  query GetListing($id: Int!) {
+    listing(id: $id) {
+      id
+      invoiceToken
+      sellerId
+      faceValue
+      minimumBid
+      currentBid
+      bidCount
+      urgencyLevel
+      deadline
+      debtorName
+      debtorUen
+      status
+      createdAt
+    }
+  }
+`
+
+async function fetchListing(id) {
+  const data = await gqlQuery(LISTING_QUERY, { id: Number(id) })
+  const l = data?.listing
+  if (!l) return null
+  return {
+    id:            l.id,
+    invoice_token: l.invoiceToken,
+    seller_id:     l.sellerId,
+    face_value:    l.faceValue,
+    minimum_bid:   l.minimumBid,
+    current_bid:   l.currentBid,
+    bid_count:     l.bidCount,
+    urgency_level: l.urgencyLevel,
+    deadline:      l.deadline,
+    debtor_name:   l.debtorName,
+    debtor_uen:    l.debtorUen,
+    status:        l.status,
+    created_at:    l.createdAt,
+  }
+}
 import { useAuth } from '../context/AuthContext'
 
 /* ── Animation ── */
