@@ -14,13 +14,14 @@ function fadeUp(visible, delay = 0) {
 
 function fmtDate(str) {
   if (!str) return ''
-  const d = new Date(str)
+  const utc = /Z|[+-]\d{2}:\d{2}$/.test(str) ? str : str + 'Z'
+  const d = new Date(utc)
   const now = new Date()
   const diff = now - d
   if (diff < 60000) return 'Just now'
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
-  return d.toLocaleDateString('en-SG', { day: '2-digit', month: 'short' })
+  return d.toLocaleDateString('en-SG', { day: '2-digit', month: 'short', timeZone: 'Asia/Singapore' })
 }
 
 function NotifIcon({ eventType }) {

@@ -7,6 +7,13 @@ import httpx
 from fastapi import HTTPException
 
 
+def _extract_detail(e: httpx.HTTPStatusError) -> str:
+    try:
+        return e.response.json().get("detail", e.response.text)
+    except Exception:
+        return e.response.text
+
+
 class HTTPClient:
     def __init__(self, timeout: float = 5.0):
         self.timeout = timeout
@@ -20,7 +27,7 @@ class HTTPClient:
         except httpx.TimeoutException:
             raise HTTPException(504, f"Timeout calling {url}")
         except httpx.HTTPStatusError as e:
-            raise HTTPException(e.response.status_code, e.response.text)
+            raise HTTPException(e.response.status_code, _extract_detail(e))
 
     async def post(self, url: str, **kwargs) -> dict:
         try:
@@ -31,7 +38,7 @@ class HTTPClient:
         except httpx.TimeoutException:
             raise HTTPException(504, f"Timeout calling {url}")
         except httpx.HTTPStatusError as e:
-            raise HTTPException(e.response.status_code, e.response.text)
+            raise HTTPException(e.response.status_code, _extract_detail(e))
 
     async def patch(self, url: str, **kwargs) -> dict:
         try:
@@ -42,7 +49,7 @@ class HTTPClient:
         except httpx.TimeoutException:
             raise HTTPException(504, f"Timeout calling {url}")
         except httpx.HTTPStatusError as e:
-            raise HTTPException(e.response.status_code, e.response.text)
+            raise HTTPException(e.response.status_code, _extract_detail(e))
 
     async def delete(self, url: str) -> dict:
         try:
@@ -53,4 +60,4 @@ class HTTPClient:
         except httpx.TimeoutException:
             raise HTTPException(504, f"Timeout calling {url}")
         except httpx.HTTPStatusError as e:
-            raise HTTPException(e.response.status_code, e.response.text)
+            raise HTTPException(e.response.status_code, _extract_detail(e))

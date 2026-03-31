@@ -28,6 +28,7 @@ async def extract_invoice_fields(pdf_file: UploadFile = File(...)):
 @router.post("/invoices", response_model=InvoiceResponse, tags=["Invoices"])
 async def create_invoice(
     seller_id: int = Form(...),
+    seller_name: str = Form(None),
     debtor_name: str = Form(None),
     debtor_uen: str = Form(...),
     amount: float = Form(...),
@@ -43,6 +44,7 @@ async def create_invoice(
 
     data = InvoiceCreate(
         seller_id=seller_id,
+        seller_name=seller_name or None,
         debtor_name=debtor_name or None,
         debtor_uen=debtor_uen,
         amount=amount,
