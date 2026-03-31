@@ -31,7 +31,7 @@ class BidService:
         )
         if existing:
             if existing.status == "PENDING":
-                raise HTTPException(status_code=409, detail="Investor already has a bid for this invoice")
+                raise HTTPException(status_code=409, detail="You already have an active bid on this invoice. Only one bid per investor is allowed.")
             # Stale CANCELLED record (from a previous failed escrow) — remove it
             # so the unique constraint doesn't block the retry.
             self.db.delete(existing)

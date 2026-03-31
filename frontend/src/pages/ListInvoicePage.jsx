@@ -116,6 +116,7 @@ export default function ListInvoicePage() {
       formData.append('minimum_bid', minimumBid)
       formData.append('due_date', dueDate)
       formData.append('bid_period_hours', bidPeriod)
+      formData.append('urgency_level', urgency)
 
       await api.post('/invoices', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

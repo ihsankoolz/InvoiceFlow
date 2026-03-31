@@ -20,7 +20,8 @@ function fmt(n) {
 
 function fmtDate(str) {
   if (!str) return '—'
-  return new Date(str).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' })
+  const utc = /Z|[+-]\d{2}:\d{2}$/.test(str) ? str : str + 'Z'
+  return new Date(utc).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
 }
 
 function calcReturn(faceValue, bid) {
