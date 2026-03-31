@@ -300,6 +300,7 @@ function InvestorDashboard({ user }) {
   const [pageRef, pageInView] = useInView(0.01)
 
   const [walletBalance, setWalletBalance]   = useState(null)
+  const [lockedBalance, setLockedBalance]   = useState(0)
   const [walletLoading, setWalletLoading]   = useState(true)
   const [transactions, setTransactions]     = useState([])
   const [txLoading, setTxLoading]           = useState(true)
@@ -315,9 +316,12 @@ function InvestorDashboard({ user }) {
   useEffect(() => {
     if (!user) return
 
-    // Wallet balance
+    // Wallet balance + locked escrow (both returned by the same endpoint)
     api.get(`/wallet/balance?user_id=${user.sub}`)
-      .then(r => setWalletBalance(r.data?.balance ?? r.data?.available_balance ?? null))
+      .then(r => {
+        setWalletBalance(Number(r.data?.balance ?? r.data?.available_balance ?? 0))
+        setLockedBalance(Number(r.data?.locked_balance ?? 0))
+      })
       .catch(() => setWalletBalance(null))
       .finally(() => setWalletLoading(false))
 
@@ -382,26 +386,49 @@ function InvestorDashboard({ user }) {
         {/* ── Col 1: Wallet + Activity ── */}
         <div className="flex flex-col gap-6">
 
-          {/* Wallet Balance card */}
+          {/* Total Assets card */}
           <div className="bg-cream rounded-[16px] p-6 flex flex-col gap-4" style={fadeUp(pageInView, 0)}>
-            <p className="font-['Lato'] font-semibold text-xs text-ink uppercase tracking-wider">Wallet Balance</p>
+            <p className="font-['Lato'] font-semibold text-xs text-ink uppercase tracking-wider">Total Assets</p>
             {walletLoading
               ? <div className="h-10 w-36 bg-ink/10 rounded animate-pulse" />
-              : <p className="font-['Lato'] font-bold text-[32px] text-ink leading-none">{fmt(walletBalance)}</p>
+              : <p className="font-['Lato'] font-bold text-[32px] text-ink leading-none">{fmt((walletBalance ?? 0) + lockedBalance)}</p>
             }
             {/* Progress bar */}
             <div>
-              <div className="h-1.5 bg-[#e0eae8] rounded-full w-full">
-                <div className="h-1.5 bg-teal rounded-full w-full" />
-              </div>
+              {(() => {
+                const total = (walletBalance ?? 0) + lockedBalance
+                const walletPct = total > 0 ? (walletBalance ?? 0) / total * 100 : 100
+                return (
+                  <div className="relative h-1.5 bg-[#e0eae8] rounded-full w-full group/bar">
+                    {/* Green segment — wallet available */}
+                    <div
+                      className="absolute left-0 top-0 h-1.5 bg-teal rounded-full group/green peer"
+                      style={{ width: `${walletPct}%` }}
+                    >
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-ink text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/green:opacity-100 transition-opacity pointer-events-none">
+                        {fmt(walletBalance)} available
+                      </div>
+                    </div>
+                    {/* Grey segment — locked in bids (hover target) */}
+                    <div
+                      className="absolute top-0 h-1.5 rounded-r-full group/grey"
+                      style={{ left: `${walletPct}%`, right: 0 }}
+                    >
+                      <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-ink text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/grey:opacity-100 transition-opacity pointer-events-none">
+                        {fmt(lockedBalance)} locked
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-teal" />
-                  <span className="font-['Lato'] text-xs text-ink">Available</span>
+                  <span className="font-['Lato'] text-xs text-ink">Wallet Balance</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-[#e0eae8]" />
-                  <span className="font-['Lato'] text-xs text-ink">Locked in bids</span>
+                  <span className="font-['Lato'] text-xs text-ink">Locked in Bids</span>
                 </div>
               </div>
             </div>
@@ -494,9 +521,9 @@ function InvestorDashboard({ user }) {
                         {isLeading ? 'Leading' : 'Outbid'}
                       </span>
                     </div>
-                    {isLeading && bid.expected_return != null && (
+                    {isLeading && bid.face_value != null && (
                       <p className="font-['Lato'] text-xs">
-                        <span className="text-teal">+{fmt(bid.expected_return)}</span>
+                        <span className="text-teal">+{fmt(Number(bid.face_value) - Number(bid.amount))}</span>
                         <span className="text-ink/40"> expected</span>
                       </p>
                     )}
@@ -516,7 +543,7 @@ function InvestorDashboard({ user }) {
                 View Bids
               </Link>
               <p className="font-['Lato'] text-xs text-ink/40">
-                Total expected: +{fmt(activeBids.filter(b => b.is_leading || b.leading).reduce((s, b) => s + Number(b.expected_return || 0), 0))}
+                Total expected: +{fmt(activeBids.filter(b => b.is_leading || b.leading).reduce((s, b) => s + (b.face_value != null ? Number(b.face_value) - Number(b.amount) : 0), 0))}
               </p>
             </div>
           )}

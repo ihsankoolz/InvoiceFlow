@@ -95,6 +95,12 @@ services:
         methods:
           - GET
         strip_path: false
+      - name: wallet-locked
+        paths:
+          - /api/wallet/locked
+        methods:
+          - GET
+        strip_path: false
       - name: listing-detail
         paths:
           - ~/api/listings/[^/]+$
