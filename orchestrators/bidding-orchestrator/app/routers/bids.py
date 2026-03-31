@@ -28,6 +28,22 @@ async def _fetch_listing_by_token(token: str) -> dict | None:
     return None
 
 
+async def _fetch_all_bids_for_invoice(token: str) -> list:
+    """Fetch all PENDING bids for an invoice to determine highest bidder."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(
+                f"{config.BIDDING_SERVICE_URL}/bids",
+                params={"invoice_token": token},
+            )
+            if r.status_code == 200:
+                data = r.json()
+                return data if isinstance(data, list) else data.get("bids", [])
+    except Exception:
+        pass
+    return []
+
+
 @router.get(
     "/api/bids",
     tags=["Bidding"],
@@ -49,20 +65,35 @@ async def list_bids(
     raw = await _http.get(f"{config.BIDDING_SERVICE_URL}/bids", params=params)
     bids: list = raw if isinstance(raw, list) else raw.get("bids", [])
 
-    # Deduplicate tokens and fetch all listings concurrently
+    # Deduplicate tokens and fetch listings + all bids per invoice concurrently
     tokens = list({b["invoice_token"] for b in bids if b.get("invoice_token")})
-    listings_list = await asyncio.gather(*[_fetch_listing_by_token(t) for t in tokens])
+    listings_list, all_bids_list = await asyncio.gather(
+        asyncio.gather(*[_fetch_listing_by_token(t) for t in tokens]),
+        asyncio.gather(*[_fetch_all_bids_for_invoice(t) for t in tokens]),
+    )
     listing_map: dict = {t: l for t, l in zip(tokens, listings_list) if l}
+
+    # Build a map of invoice_token → highest bid_amount among all PENDING bids
+    highest_map: dict = {}
+    for token, invoice_bids in zip(tokens, all_bids_list):
+        pending = [b for b in invoice_bids if b.get("status") == "PENDING"]
+        if pending:
+            highest_map[token] = max(float(b.get("bid_amount", 0)) for b in pending)
 
     enriched = []
     for bid in bids:
-        listing = listing_map.get(bid.get("invoice_token"))
+        token = bid.get("invoice_token")
+        listing = listing_map.get(token)
+        my_amount = float(bid.get("bid_amount") or 0)
+        highest = highest_map.get(token, my_amount)
+        is_leading = bid.get("status") == "PENDING" and my_amount >= highest
         enriched.append({
             **bid,
-            "amount": bid.get("bid_amount"),          # frontend reads bid.amount
+            "amount": bid.get("bid_amount"),
             "face_value": listing["amount"] if listing else None,
             "deadline": listing["deadline"] if listing else None,
             "listing_id": listing["id"] if listing else None,
+            "is_leading": is_leading,
         })
 
     return enriched
