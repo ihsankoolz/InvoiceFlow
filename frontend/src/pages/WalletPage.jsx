@@ -35,7 +35,7 @@ function fmt(n, showCents = true) {
 
 function fmtDate(str) {
   if (!str) return '—'
-  return new Date(str).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(str).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Singapore' })
 }
 
 const QUICK_AMOUNTS = [100, 500, 1000, 5000]

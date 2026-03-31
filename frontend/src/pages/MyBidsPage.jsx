@@ -20,7 +20,7 @@ function fmt(n) {
 
 function fmtDate(str) {
   if (!str) return '—'
-  return new Date(str).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' })
+  return new Date(str).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
 }
 
 function calcReturn(faceValue, bid) {
