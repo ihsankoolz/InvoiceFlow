@@ -521,9 +521,9 @@ function InvestorDashboard({ user }) {
                         {isLeading ? 'Leading' : 'Outbid'}
                       </span>
                     </div>
-                    {isLeading && bid.expected_return != null && (
+                    {isLeading && bid.face_value != null && (
                       <p className="font-['Lato'] text-xs">
-                        <span className="text-teal">+{fmt(bid.expected_return)}</span>
+                        <span className="text-teal">+{fmt(Number(bid.face_value) - Number(bid.amount))}</span>
                         <span className="text-ink/40"> expected</span>
                       </p>
                     )}
@@ -543,7 +543,7 @@ function InvestorDashboard({ user }) {
                 View Bids
               </Link>
               <p className="font-['Lato'] text-xs text-ink/40">
-                Total expected: +{fmt(activeBids.filter(b => b.is_leading || b.leading).reduce((s, b) => s + Number(b.expected_return || 0), 0))}
+                Total expected: +{fmt(activeBids.filter(b => b.is_leading || b.leading).reduce((s, b) => s + (b.face_value != null ? Number(b.face_value) - Number(b.amount) : 0), 0))}
               </p>
             </div>
           )}
