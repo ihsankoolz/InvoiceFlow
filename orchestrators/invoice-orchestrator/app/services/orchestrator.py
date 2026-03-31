@@ -4,7 +4,7 @@ InvoiceOrchestrator — main orchestration logic for Scenario 1.
 See BUILD_INSTRUCTIONS_V2.md Section 8 — Orchestration Flow
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 
@@ -35,7 +35,7 @@ def calculate_urgency(due_date_str: str) -> str:
 
 def calculate_deadline(bid_period_hours: int) -> str:
     """Calculate auction deadline as ISO 8601 string."""
-    return (datetime.utcnow() + timedelta(hours=bid_period_hours)).isoformat()
+    return (datetime.now(timezone.utc) + timedelta(hours=bid_period_hours)).isoformat()
 
 
 class InvoiceOrchestrator:
@@ -56,7 +56,7 @@ class InvoiceOrchestrator:
 
     async def list_invoice(self, seller_id: int, debtor_uen: str, face_value: float,
                            minimum_bid: float, due_date: str, bid_period_hours: int,
-                           pdf_file, debtor_name: str = None) -> dict:
+                           pdf_file, debtor_name: str = None, urgency_level: str = 'MEDIUM') -> dict:
         """Full Scenario 1 orchestration — 8-step flow."""
 
         # Step 1: Check seller account is ACTIVE
@@ -106,7 +106,7 @@ class InvoiceOrchestrator:
                 "debtor_uen": debtor_uen,
                 "amount": face_value,
                 "minimum_bid": minimum_bid,
-                "urgency_level": calculate_urgency(invoice["due_date"]),
+                "urgency_level": urgency_level,
                 "deadline": calculate_deadline(bid_period_hours),
             },
         )

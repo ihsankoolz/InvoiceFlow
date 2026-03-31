@@ -14,7 +14,8 @@ function fadeUp(visible, delay = 0) {
 
 function fmtDate(str) {
   if (!str) return ''
-  const d = new Date(str)
+  const utc = /Z|[+-]\d{2}:\d{2}$/.test(str) ? str : str + 'Z'
+  const d = new Date(utc)
   const now = new Date()
   const diff = now - d
   if (diff < 60000) return 'Just now'
