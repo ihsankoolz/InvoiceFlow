@@ -1,4 +1,7 @@
-import uuid
+import random
+import re
+import string
+from datetime import datetime
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -8,6 +11,19 @@ from app.models.invoice import Invoice
 from app.schemas.invoice import InvoiceCreate
 from app.services.pdf_extractor import PDFExtractor
 from app.services.storage_service import StorageService
+
+
+def _generate_invoice_token(seller_id: int, seller_name: str = None) -> str:
+    """Generate a human-readable invoice token: INV-{SELLER_SLUG}-{YYYYMMDD}-{4-char-random}
+    e.g. INV-ACMECORP-20260331-K8X2
+    """
+    date_str = datetime.utcnow().strftime("%Y%m%d")
+    suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    if seller_name:
+        slug = re.sub(r'[^A-Z0-9]', '', seller_name.upper())[:8]
+    else:
+        slug = str(seller_id)
+    return f"INV-{slug}-{date_str}-{suffix}"
 
 
 class InvoiceService:
@@ -20,7 +36,7 @@ class InvoiceService:
 
     def create_invoice(self, data: InvoiceCreate, pdf_bytes: bytes) -> Invoice:
         """Create a new invoice record, upload the PDF to MinIO, and extract text fields."""
-        invoice_token = str(uuid.uuid4())
+        invoice_token = _generate_invoice_token(data.seller_id, data.seller_name)
         
         # 1. Upload to MinIO
         pdf_url = self.storage_service.upload_pdf(invoice_token, pdf_bytes)

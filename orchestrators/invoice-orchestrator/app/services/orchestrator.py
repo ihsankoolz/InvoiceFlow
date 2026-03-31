@@ -70,6 +70,7 @@ class InvoiceOrchestrator:
             files={"pdf_file": (pdf_file.filename, await pdf_file.read(), pdf_file.content_type)},
             data={
                 "seller_id": str(seller_id),
+                "seller_name": user.get("full_name", ""),
                 "debtor_name": debtor_name or "",
                 "debtor_uen": debtor_uen,
                 "amount": str(face_value),
