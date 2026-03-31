@@ -16,8 +16,16 @@ const WalletTransaction = require('../models/WalletTransaction');
  */
 router.get('/wallets/:userId', async (req, res) => {
   try {
-    const wallet = await WalletService.getBalance(parseInt(req.params.userId, 10));
-    res.json({ user_id: wallet.user_id, balance: String(wallet.balance), currency: wallet.currency });
+    const userId = parseInt(req.params.userId, 10);
+    const wallet = await WalletService.getBalance(userId);
+    const lockedEscrows = await Escrow.findAll({ where: { investor_id: userId, status: 'LOCKED' } });
+    const lockedBalance = lockedEscrows.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+    res.json({
+      user_id: wallet.user_id,
+      balance: String(wallet.balance),
+      locked_balance: lockedBalance.toFixed(2),
+      currency: wallet.currency,
+    });
   } catch (err) {
     res.status(404).json({ error: err.message });
   }

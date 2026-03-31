@@ -24,6 +24,21 @@ async def get_wallet_balance(user_id: int = Query(..., description="User ID")):
 
 
 @router.get(
+    "/api/wallet/locked",
+    tags=["Wallet"],
+    summary="Get total locked (escrow) balance for a user",
+    description="Returns the sum of all LOCKED escrow amounts for the given investor.",
+)
+async def get_locked_balance(user_id: int = Query(..., description="User ID")):
+    try:
+        escrows = await _http.get(f"{config.PAYMENT_SERVICE_URL}/escrows", params={"investor_id": user_id})
+        total = sum(float(e.get("amount", 0)) for e in (escrows if isinstance(escrows, list) else []))
+        return {"user_id": user_id, "locked_balance": str(round(total, 2))}
+    except Exception:
+        return {"user_id": user_id, "locked_balance": "0.00"}
+
+
+@router.get(
     "/api/wallet/transactions",
     tags=["Wallet"],
     summary="Get wallet transaction history for a user",
