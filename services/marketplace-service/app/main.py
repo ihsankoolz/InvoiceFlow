@@ -12,15 +12,17 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.consumers.marketplace_consumer import MarketplaceEventConsumer
-    consumer = MarketplaceEventConsumer()
+    consumer = None
     try:
+        from app.consumers.marketplace_consumer import MarketplaceEventConsumer
+        consumer = MarketplaceEventConsumer()
         await consumer.start()
         logger.info("MarketplaceEventConsumer started.")
     except Exception as e:
         logger.warning("Could not start MarketplaceEventConsumer: %s", e)
     yield
-    await consumer.stop()
+    if consumer is not None:
+        await consumer.stop()
 
 
 app = FastAPI(title="Marketplace Service", version="1.0.0", lifespan=lifespan)
