@@ -5,9 +5,9 @@ from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from app.config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRY_HOURS
+from app.config import JWT_ALGORITHM, JWT_EXPIRY_HOURS, JWT_SECRET
 from app.models.user import User
-from app.schemas import UserCreate, TokenResponse
+from app.schemas import TokenResponse, UserCreate
 from app.services.uen_validator import UENValidator
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

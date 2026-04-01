@@ -3,6 +3,7 @@ RabbitMQ publisher for event publishing to invoiceflow_events topic exchange.
 """
 
 import json
+
 import aio_pika
 
 

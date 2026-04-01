@@ -1,7 +1,7 @@
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from activities.bidding_activities import get_offers, accept_offer, reject_offer
+import pytest
+from activities.bidding_activities import accept_offer, get_offers, reject_offer
 
 
 @pytest.mark.asyncio

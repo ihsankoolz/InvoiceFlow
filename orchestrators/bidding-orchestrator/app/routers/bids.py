@@ -1,6 +1,6 @@
+import asyncio
 from typing import Optional
 
-import asyncio
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 
@@ -71,7 +71,7 @@ async def list_bids(
         asyncio.gather(*[_fetch_listing_by_token(t) for t in tokens]),
         asyncio.gather(*[_fetch_all_bids_for_invoice(t) for t in tokens]),
     )
-    listing_map: dict = {t: l for t, l in zip(tokens, listings_list) if l}
+    listing_map: dict = {t: listing for t, listing in zip(tokens, listings_list) if listing}
 
     # Build a map of invoice_token → highest bid_amount among all PENDING bids
     highest_map: dict = {}

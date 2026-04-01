@@ -1,8 +1,8 @@
-import pytest
 from unittest.mock import AsyncMock, patch
-from temporalio.exceptions import ApplicationError
 
-from activities.invoice_activities import verify_invoice, update_invoice_status
+import pytest
+from activities.invoice_activities import update_invoice_status, verify_invoice
+from temporalio.exceptions import ApplicationError
 
 
 @pytest.mark.asyncio

@@ -4,8 +4,8 @@ import string
 from datetime import datetime
 from typing import List
 
-from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 
 from app.models.invoice import Invoice
 from app.schemas.invoice import InvoiceCreate
@@ -37,13 +37,13 @@ class InvoiceService:
     def create_invoice(self, data: InvoiceCreate, pdf_bytes: bytes) -> Invoice:
         """Create a new invoice record, upload the PDF to MinIO, and extract text fields."""
         invoice_token = _generate_invoice_token(data.seller_id, data.seller_name)
-        
+
         # 1. Upload to MinIO
         pdf_url = self.storage_service.upload_pdf(invoice_token, pdf_bytes)
-        
+
         # 2. Extract fields from PDF
         extracted_data = self.pdf_extractor.extract_fields(pdf_bytes)
-        
+
         # 3. Create DB record — seller-provided debtor_name takes precedence over PDF extraction
         invoice = Invoice(
             invoice_token=invoice_token,
@@ -56,7 +56,7 @@ class InvoiceService:
             status="DRAFT",  # Initial status per architecture
             extracted_data=extracted_data
         )
-        
+
         self.db.add(invoice)
         self.db.commit()
         self.db.refresh(invoice)

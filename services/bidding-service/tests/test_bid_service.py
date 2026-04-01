@@ -1,9 +1,8 @@
 import pytest
-from fastapi import HTTPException
-
 from app.models.bid import Bid
 from app.schemas.bid import BidCreate
 from app.services.bid_service import BidService
+from fastapi import HTTPException
 
 
 def _make_bid_data(invoice_token="INV-001", investor_id=1, bid_amount=500.0):

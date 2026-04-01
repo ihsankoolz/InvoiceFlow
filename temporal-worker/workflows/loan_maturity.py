@@ -10,10 +10,11 @@ from datetime import datetime, timedelta, timezone
 from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
-    from activities.payment_activities import get_loan_grpc, update_loan_status_grpc
-    from activities.marketplace_activities import bulk_delist
-    from activities.rabbitmq_activities import publish_event
     from activities.invoice_activities import get_user
+    from activities.marketplace_activities import bulk_delist
+    from activities.payment_activities import get_loan_grpc, update_loan_status_grpc
+    from activities.rabbitmq_activities import publish_event
+
     import config
 
 

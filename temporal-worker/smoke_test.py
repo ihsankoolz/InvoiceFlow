@@ -7,7 +7,7 @@ Requires: docker compose up -d (Temporal must be running on localhost:7233)
 """
 
 import asyncio
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from temporalio.client import Client
 

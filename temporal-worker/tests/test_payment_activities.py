@@ -1,13 +1,13 @@
-import pytest
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from activities.payment_activities import (
-    get_loan_grpc,
-    update_loan_status_grpc,
-    create_loan,
     convert_escrow_to_loan,
-    release_funds_to_seller,
+    create_loan,
     credit_wallet,
+    get_loan_grpc,
+    release_funds_to_seller,
+    update_loan_status_grpc,
 )
 
 

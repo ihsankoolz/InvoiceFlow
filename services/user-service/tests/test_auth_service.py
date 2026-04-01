@@ -1,11 +1,10 @@
 import pytest
+from app.config import JWT_ALGORITHM, JWT_SECRET
+from app.models.user import User
+from app.services.user_service import UserService
 from fastapi import HTTPException
 from jose import jwt as jose_jwt
 from passlib.context import CryptContext
-
-from app.config import JWT_SECRET, JWT_ALGORITHM
-from app.models.user import User
-from app.services.user_service import UserService
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

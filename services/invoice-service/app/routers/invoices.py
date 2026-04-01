@@ -40,6 +40,7 @@ async def create_invoice(
     service = InvoiceService(db)
     pdf_bytes = await pdf_file.read()
     from datetime import date as date_type
+
     from app.schemas.invoice import InvoiceCreate
 
     data = InvoiceCreate(

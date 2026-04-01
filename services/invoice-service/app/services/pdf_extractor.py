@@ -1,6 +1,7 @@
 import io
 import re
 from datetime import datetime
+
 import pdfplumber
 
 
@@ -47,7 +48,7 @@ class PDFExtractor:
                 crop = page.crop((bill_to_x, bill_to_y, page.width, page.height * 0.55))
                 bill_to_text = crop.extract_text() or ""
 
-                lines = [l.strip() for l in bill_to_text.split("\n") if l.strip()]
+                lines = [line.strip() for line in bill_to_text.split("\n") if line.strip()]
                 for line in lines:
                     upper = line.upper()
                     if upper in ("BILL TO", "BILL", "TO"):

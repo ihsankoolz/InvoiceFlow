@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from app.services.email_service import EmailService
-from app.services.websocket_manager import ws_manager, WebSocketManager
+from app.services.websocket_manager import WebSocketManager, ws_manager
 
 # ---------------------------------------------------------------------------
 # Event-to-action mapping

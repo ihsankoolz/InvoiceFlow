@@ -17,9 +17,9 @@ from datetime import timedelta
 from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
+    from activities.invoice_activities import get_user
     from activities.payment_activities import get_loan_grpc, update_loan_status_grpc
     from activities.rabbitmq_activities import publish_event
-    from activities.invoice_activities import get_user
 
 
 @workflow.defn

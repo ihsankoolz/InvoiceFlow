@@ -1,7 +1,7 @@
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from activities.marketplace_activities import delist_listing, bulk_delist
+import pytest
+from activities.marketplace_activities import bulk_delist, delist_listing
 
 
 @pytest.mark.asyncio

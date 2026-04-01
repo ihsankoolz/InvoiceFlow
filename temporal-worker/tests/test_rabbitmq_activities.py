@@ -1,6 +1,7 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import activities.rabbitmq_activities  # ensure module is in sys.modules before patch resolves it
+import pytest
 from activities.rabbitmq_activities import publish_event
 
 
