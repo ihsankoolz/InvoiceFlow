@@ -12,11 +12,15 @@ from contextlib import asynccontextmanager
 logging.basicConfig(level=logging.INFO)
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
+from app.database import Base, engine
 from app.routers import notifications
 from app.services.websocket_manager import ws_manager
 from app.consumers.event_consumer import EventConsumer
 from app import config
+
+Base.metadata.create_all(bind=engine)
 
 
 @asynccontextmanager
@@ -45,6 +49,7 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(
     CORSMiddleware,

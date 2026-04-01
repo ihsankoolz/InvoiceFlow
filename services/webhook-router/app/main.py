@@ -17,6 +17,7 @@ from contextlib import asynccontextmanager
 
 import aio_pika
 from fastapi import FastAPI, HTTPException, Request
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app import config
 
@@ -48,6 +49,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Webhook Router", version="1.0.0", lifespan=lifespan)
+Instrumentator().instrument(app).expose(app)
 
 
 def _verify_stripe_signature(payload: bytes, sig_header: str, secret: str) -> None:

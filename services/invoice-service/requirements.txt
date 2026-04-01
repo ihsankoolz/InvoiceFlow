@@ -9,3 +9,5 @@ aio-pika==9.4.3
 alembic==1.13.3
 python-multipart==0.0.9
 python-dotenv==1.0.1
+
+prometheus-fastapi-instrumentator==7.1.0

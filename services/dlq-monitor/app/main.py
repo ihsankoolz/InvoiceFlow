@@ -13,12 +13,14 @@ import logging
 
 import httpx
 from fastapi import FastAPI, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app import config
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="DLQ Monitor", version="1.0.0")
+Instrumentator().instrument(app).expose(app)
 
 DLQ_SUFFIX = ".dlq"
 

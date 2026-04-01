@@ -2,6 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.routers.listings import router as listings_router
 from app.routers.public_listings import router as public_listings_router
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Marketplace Service", version="1.0.0", lifespan=lifespan)
+Instrumentator().instrument(app).expose(app)
 
 # Internal CRUD endpoints (used by other services)
 app.include_router(listings_router)
