@@ -2,10 +2,9 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from strawberry.fastapi import GraphQLRouter
 
 from app.routers.listings import router as listings_router
-from app.graphql.schema import schema
+from app.routers.public_listings import router as public_listings_router
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +24,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Marketplace Service", version="1.0.0", lifespan=lifespan)
 
-# Mount REST routes
+# Internal CRUD endpoints (used by other services)
 app.include_router(listings_router)
 
-# Mount GraphQL endpoint
-graphql_app = GraphQLRouter(schema)
-app.include_router(graphql_app, prefix="/graphql")
+# Public read-model endpoints (used by frontend via Kong)
+app.include_router(public_listings_router)
 
 
 @app.get("/health", tags=["Health"])

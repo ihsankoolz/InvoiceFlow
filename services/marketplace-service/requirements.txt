@@ -4,5 +4,4 @@ sqlalchemy==2.0.35
 pymysql==1.1.1
 pydantic==2.9.0
 aio-pika==9.4.3
-strawberry-graphql[fastapi]==0.243.0
 cryptography==43.0.1

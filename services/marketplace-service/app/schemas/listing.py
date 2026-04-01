@@ -12,6 +12,9 @@ class ListingCreate(BaseModel):
     minimum_bid: float
     urgency_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     deadline: datetime
+    # Read-model fields — optional at creation, populated from invoice data
+    face_value: Optional[float] = None
+    debtor_name: Optional[str] = None
 
 
 class ListingResponse(BaseModel):
@@ -24,6 +27,10 @@ class ListingResponse(BaseModel):
     urgency_level: str
     deadline: datetime
     status: str
+    face_value: Optional[float] = None
+    debtor_name: Optional[str] = None
+    current_bid: Optional[float] = None
+    bid_count: int = 0
     created_at: datetime
 
     class Config:
@@ -33,3 +40,5 @@ class ListingResponse(BaseModel):
 class ListingUpdate(BaseModel):
     deadline: Optional[datetime] = None
     status: Optional[Literal["ACTIVE", "CLOSED", "EXPIRED"]] = None
+    current_bid: Optional[float] = None
+    bid_count: Optional[int] = None

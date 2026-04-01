@@ -25,6 +25,8 @@ class ListingService:
             minimum_bid=data.minimum_bid,
             urgency_level=data.urgency_level,
             deadline=data.deadline,
+            face_value=data.face_value if data.face_value is not None else data.amount,
+            debtor_name=data.debtor_name,
         )
         self.db.add(listing)
         self.db.commit()
@@ -42,6 +44,10 @@ class ListingService:
             listing.deadline = data.deadline
         if data.status is not None:
             listing.status = data.status
+        if data.current_bid is not None:
+            listing.current_bid = data.current_bid
+        if data.bid_count is not None:
+            listing.bid_count = data.bid_count
         self.db.commit()
         self.db.refresh(listing)
         return listing

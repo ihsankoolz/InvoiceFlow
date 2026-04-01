@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import bids, wallet, webhooks, listings
+from app.routers import bids, wallet, webhooks
 
 logger = logging.getLogger(__name__)
 
@@ -41,4 +41,3 @@ async def health():
 app.include_router(bids.router)
 app.include_router(wallet.router)
 app.include_router(webhooks.router)
-app.include_router(listings.router)

@@ -101,15 +101,26 @@ services:
         methods:
           - GET
         strip_path: false
-      - name: listing-detail
-        paths:
-          - ~/api/listings/[^/]+$
-        methods:
-          - GET
-        strip_path: false
+
+  # --- Marketplace Listings (JWT required — read model, no N+1) ---
+  - name: marketplace-listings
+    url: http://marketplace-service:5002
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+    routes:
       - name: listings
         paths:
           - /api/listings
+        methods:
+          - GET
+        strip_path: false
+      - name: listing-detail
+        paths:
+          - ~/api/listings/[^/]+$
         methods:
           - GET
         strip_path: false
