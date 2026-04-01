@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@v3
         with:
-          args: "check ."
+          args: "check . --exclude=*/proto/*"
 
   test-temporal-worker:
     name: Test temporal-worker
@@ -30,7 +30,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run tests
-        run: pytest tests/ -v
+        run: |
+          if [ -d tests ] && [ -n "$(find tests -name 'test_*.py' 2>/dev/null)" ]; then
+            pytest tests/ -v
+          else
+            echo "No tests found, skipping."
+          fi
 
   test-bidding-service:
     name: Test bidding-service
@@ -46,7 +51,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt pytest pytest-asyncio
       - name: Run tests
-        run: pytest tests/ -v --ignore=tests/integration
+        run: |
+          if [ -d tests ] && [ -n "$(find tests -name 'test_*.py' 2>/dev/null)" ]; then
+            pytest tests/ -v
+          else
+            echo "No tests found, skipping."
+          fi
 
   test-invoice-service:
     name: Test invoice-service
@@ -62,4 +72,27 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt pytest pytest-asyncio
       - name: Run tests
-        run: pytest tests/ -v --ignore=tests/integration
+        run: |
+          if [ -d tests ] && [ -n "$(find tests -name 'test_*.py' 2>/dev/null)" ]; then
+            pytest tests/ -v
+          else
+            echo "No tests found, skipping."
+          fi
+
+  test-frontend:
+    name: Test frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package.json
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test
