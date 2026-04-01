@@ -25,8 +25,7 @@ async def test_accept_offer():
 
     assert result["status"] == "ACCEPTED"
     mock_client.patch.assert_called_once_with(
-        "http://bidding-service:5003/bids/1",
-        json={"status": "ACCEPTED"},
+        "http://bidding-service:5003/bids/1/accept",
     )
 
 
@@ -39,6 +38,5 @@ async def test_reject_offer():
 
     assert result["status"] == "REJECTED"
     mock_client.patch.assert_called_once_with(
-        "http://bidding-service:5003/bids/2",
-        json={"status": "REJECTED"},
+        "http://bidding-service:5003/bids/2/reject",
     )
