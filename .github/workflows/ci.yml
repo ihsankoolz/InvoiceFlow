@@ -49,14 +49,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest pytest-asyncio
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
       - name: Run tests
-        run: |
-          if [ -d tests ] && [ -n "$(find tests -name 'test_*.py' 2>/dev/null)" ]; then
-            pytest tests/ -v
-          else
-            echo "No tests found, skipping."
-          fi
+        run: pytest tests/ -v
 
   test-invoice-service:
     name: Test invoice-service
@@ -70,14 +65,57 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest pytest-asyncio
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
       - name: Run tests
-        run: |
-          if [ -d tests ] && [ -n "$(find tests -name 'test_*.py' 2>/dev/null)" ]; then
-            pytest tests/ -v
-          else
-            echo "No tests found, skipping."
-          fi
+        run: pytest tests/ -v
+
+  test-marketplace-service:
+    name: Test marketplace-service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/marketplace-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: pytest tests/ -v
+
+  test-notification-service:
+    name: Test notification-service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/notification-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: pytest tests/ -v
+
+  test-user-service:
+    name: Test user-service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/user-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: pytest tests/ -v
 
   test-frontend:
     name: Test frontend
