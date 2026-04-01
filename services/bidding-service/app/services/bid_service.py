@@ -109,6 +109,16 @@ class BidService:
         self.db.refresh(bid)
         return bid
 
+    def outbid_bid(self, bid_id: int) -> Bid:
+        """Mark a bid as OUTBID (displaced mid-auction by a higher bid)."""
+        bid = self.db.query(Bid).filter(Bid.id == bid_id).first()
+        if not bid:
+            raise HTTPException(status_code=404, detail="Bid not found")
+        bid.status = "OUTBID"
+        self.db.commit()
+        self.db.refresh(bid)
+        return bid
+
     def delete_bid(self, bid_id: int) -> None:
         """Hard-delete a bid row (rollback after escrow failure).
 

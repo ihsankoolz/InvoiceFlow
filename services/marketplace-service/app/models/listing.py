@@ -20,5 +20,11 @@ class Listing(Base):
         Enum("ACTIVE", "CLOSED", "EXPIRED", name="status_enum"),
         server_default="ACTIVE",
     )
+    # Read-model columns — populated on listing creation and updated by event consumer
+    face_value = Column(DECIMAL(12, 2), nullable=True)
+    debtor_name = Column(String(255), nullable=True)
+    current_bid = Column(DECIMAL(12, 2), nullable=True)
+    bid_count = Column(Integer, nullable=False, server_default="0")
+
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.routers import uen
 
@@ -11,6 +12,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
 )
+Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 

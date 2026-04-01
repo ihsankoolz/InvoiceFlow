@@ -98,7 +98,7 @@ class InvoiceOrchestrator:
             })
             raise HTTPException(status_code=400, detail="Invalid debtor UEN")
 
-        # Step 5: Create marketplace listing
+        # Step 5: Create marketplace listing (include read-model fields at creation time)
         listing = await self.http_client.post(
             f"{config.MARKETPLACE_SERVICE_URL}/listings/",
             json={
@@ -109,6 +109,8 @@ class InvoiceOrchestrator:
                 "minimum_bid": minimum_bid,
                 "urgency_level": urgency_level,
                 "deadline": calculate_deadline(bid_period_hours),
+                "face_value": face_value,
+                "debtor_name": debtor_name,
             },
         )
 

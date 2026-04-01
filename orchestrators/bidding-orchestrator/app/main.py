@@ -1,9 +1,30 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.routers import bids, wallet, webhooks, listings
+from app.routers import bids, wallet, webhooks
 
-app = FastAPI(title="Bidding Orchestrator")
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from app.consumers.stripe_consumer import StripeWebhookConsumer
+    consumer = StripeWebhookConsumer()
+    try:
+        await consumer.start()
+        logger.info("StripeWebhookConsumer started.")
+    except Exception as e:
+        logger.warning("Could not start StripeWebhookConsumer: %s", e)
+    yield
+    await consumer.stop()
+
+
+app = FastAPI(title="Bidding Orchestrator", lifespan=lifespan)
+Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,4 +43,3 @@ async def health():
 app.include_router(bids.router)
 app.include_router(wallet.router)
 app.include_router(webhooks.router)
-app.include_router(listings.router)

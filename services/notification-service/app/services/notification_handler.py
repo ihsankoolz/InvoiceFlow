@@ -1,14 +1,9 @@
 import uuid
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Optional
 
 from app.services.email_service import EmailService
 from app.services.websocket_manager import ws_manager, WebSocketManager
-
-# ---------------------------------------------------------------------------
-# In-memory notification store (list of dicts matching NotificationResponse)
-# ---------------------------------------------------------------------------
-notification_store: List[dict] = []
 
 # ---------------------------------------------------------------------------
 # Event-to-action mapping
@@ -185,20 +180,23 @@ class NotificationHandler:
         }
         await self._ws_manager.broadcast_to_users(ws_targets, ws_message)
 
-        # Store notification for each unique user
+        # Persist notification for each unique user
+        from app.database import SessionLocal
+        from app.models.notification import Notification
+
         seen_user_ids = set()
-        for target in email_targets:
-            uid = target.get("user_id")
-            if uid and uid not in seen_user_ids:
-                seen_user_ids.add(uid)
-                notification_store.append(
-                    {
-                        "id": str(uuid.uuid4()),
-                        "user_id": uid,
-                        "event_type": event_type,
-                        "message": subject,
-                        "payload": payload,
-                        "is_read": False,
-                        "created_at": datetime.now(timezone.utc),
-                    }
-                )
+        with SessionLocal() as db:
+            for target in email_targets:
+                uid = target.get("user_id")
+                if uid and uid not in seen_user_ids:
+                    seen_user_ids.add(uid)
+                    db.add(Notification(
+                        id=str(uuid.uuid4()),
+                        user_id=uid,
+                        event_type=event_type,
+                        message=subject,
+                        payload=payload,
+                        is_read=False,
+                        created_at=datetime.now(timezone.utc),
+                    ))
+            db.commit()

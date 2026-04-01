@@ -15,8 +15,8 @@ class WalletService {
    * @param {string|number} amount
    * @returns {Promise<Wallet>}
    */
-  async creditWallet(userId, amount) {
-    return await sequelize.transaction(async (t) => {
+  async creditWallet(userId, amount, outerTransaction = null) {
+    const doCredit = async (t) => {
       const [wallet] = await Wallet.findOrCreate({
         where: { user_id: userId },
         defaults: { user_id: userId, balance: 0.00 },
@@ -32,7 +32,10 @@ class WalletService {
         description: 'WALLET_CREDIT',
       }, { transaction: t });
       return wallet;
-    });
+    };
+
+    if (outerTransaction) return await doCredit(outerTransaction);
+    return await sequelize.transaction(doCredit);
   }
 
   /**
@@ -42,8 +45,8 @@ class WalletService {
    * @returns {Promise<Wallet>}
    * @throws {Error} If wallet not found or insufficient balance.
    */
-  async debitWallet(userId, amount) {
-    return await sequelize.transaction(async (t) => {
+  async debitWallet(userId, amount, outerTransaction = null) {
+    const doDebit = async (t) => {
       const wallet = await Wallet.findOne({
         where: { user_id: userId },
         lock: t.LOCK.UPDATE,
@@ -51,7 +54,7 @@ class WalletService {
       });
 
       if (!wallet) {
-        throw new Error(`Wallet not found for user ${userId}`);
+        throw new Error(`You need to top up your wallet before placing a bid.`);
       }
 
       const current = parseFloat(wallet.balance);
@@ -70,7 +73,10 @@ class WalletService {
         description: 'WALLET_DEBIT',
       }, { transaction: t });
       return wallet;
-    });
+    };
+
+    if (outerTransaction) return await doDebit(outerTransaction);
+    return await sequelize.transaction(doDebit);
   }
 
   /**
@@ -82,7 +88,7 @@ class WalletService {
   async getBalance(userId) {
     const wallet = await Wallet.findOne({ where: { user_id: userId } });
     if (!wallet) {
-      throw new Error(`Wallet not found for user ${userId}`);
+      throw new Error(`You need to top up your wallet before placing a bid.`);
     }
     return wallet;
   }

@@ -23,8 +23,24 @@ class EscrowService {
     if (existing) return existing;
 
     return await sequelize.transaction(async (t) => {
-      // Debit wallet first — throws if insufficient balance
-      await walletService.debitWallet(investorId, amount);
+      // Debit wallet within the same transaction — rolls back if escrow update/create fails
+      await walletService.debitWallet(investorId, amount, t);
+
+      // Reuse existing escrow record (RELEASED) to avoid unique_escrow constraint violation
+      const existing = await Escrow.findOne({
+        where: { investor_id: investorId, invoice_token: invoiceToken },
+        lock: t.LOCK.UPDATE,
+        transaction: t,
+      });
+
+      if (existing) {
+        await existing.update({
+          amount: parseFloat(amount).toFixed(2),
+          status: 'LOCKED',
+          idempotency_key: idempotencyKey,
+        }, { transaction: t });
+        return existing;
+      }
 
       const escrow = await Escrow.create({
         investor_id: investorId,
@@ -57,7 +73,7 @@ class EscrowService {
         throw new Error(`No LOCKED escrow found for investor ${investorId} on token ${invoiceToken}`);
       }
 
-      await walletService.creditWallet(investorId, escrow.amount);
+      await walletService.creditWallet(investorId, escrow.amount, t);
       await escrow.update({ status: 'RELEASED' }, { transaction: t });
       return escrow;
     });

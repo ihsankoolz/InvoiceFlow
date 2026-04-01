@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with:
+          args: "check . --exclude=*/proto/*"
+
+  test-temporal-worker:
+    name: Test temporal-worker
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: temporal-worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: |
+          if [ -d tests ] && [ -n "$(find tests -name 'test_*.py' 2>/dev/null)" ]; then
+            pytest tests/ -v
+          else
+            echo "No tests found, skipping."
+          fi
+
+  test-bidding-service:
+    name: Test bidding-service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/bidding-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: pytest tests/ -v
+
+  test-invoice-service:
+    name: Test invoice-service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/invoice-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: pytest tests/ -v
+
+  test-marketplace-service:
+    name: Test marketplace-service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/marketplace-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: pytest tests/ -v
+
+  test-notification-service:
+    name: Test notification-service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/notification-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: pytest tests/ -v
+
+  test-user-service:
+    name: Test user-service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/user-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest pytest-asyncio httpx
+      - name: Run tests
+        run: pytest tests/ -v
+
+  test-frontend:
+    name: Test frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package.json
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test

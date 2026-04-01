@@ -338,10 +338,10 @@ function InvestorDashboard({ user }) {
     api.get(`/bids?investor_id=${user.sub}`)
       .then(r => {
         const bids = r.data?.bids || r.data || []
-        const pending = bids.filter(b => b.status === 'PENDING' || b.status === 'ACTIVE')
+        const pending = bids.filter(b => b.status === 'PENDING' || b.status === 'ACTIVE' || b.status === 'OUTBID')
         setActiveBids(pending.slice(0, 3))
-        setLeadingCount(pending.filter(b => b.is_leading || b.leading).length)
-        setOutbidCount(pending.filter(b => !b.is_leading && !b.leading).length)
+        setLeadingCount(pending.filter(b => b.status === 'PENDING' || b.status === 'ACTIVE').length)
+        setOutbidCount(pending.filter(b => b.status === 'OUTBID').length)
         setTotalInBids(pending.reduce((s, b) => s + Number(b.amount || 0), 0))
       })
       .catch(() => { setActiveBids([]); setLeadingCount(0); setOutbidCount(0) })
@@ -504,7 +504,7 @@ function InvestorDashboard({ user }) {
               </div>
             ) : (
               activeBids.map((bid, i) => {
-                const isLeading = bid.is_leading || bid.leading
+                const isLeading = bid.status === 'PENDING' || bid.status === 'ACTIVE'
                 return (
                   <div key={bid.id || i} className="border-b border-black/5 pb-4 last:border-0 flex flex-col gap-1.5">
                     <div className="flex items-center justify-between">
