@@ -51,7 +51,7 @@ class WalletService {
       });
 
       if (!wallet) {
-        throw new Error(`Wallet not found for user ${userId}`);
+        throw new Error(`You need to top up your wallet before placing a bid.`);
       }
 
       const current = parseFloat(wallet.balance);
@@ -82,7 +82,7 @@ class WalletService {
   async getBalance(userId) {
     const wallet = await Wallet.findOne({ where: { user_id: userId } });
     if (!wallet) {
-      throw new Error(`Wallet not found for user ${userId}`);
+      throw new Error(`You need to top up your wallet before placing a bid.`);
     }
     return wallet;
   }
