@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Version control
+.git/
+.gitignore
+
+# Docs
+*.md
+docs/
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Monitoring configs (not needed in service images)
+monitoring/
+
+# Frontend (not in Python service images)
+frontend/
+
+# Shared module is mounted as a volume at runtime — exclude from build context
+# to prevent stale copies. Comment out if you need it baked in for production.
+# shared/

@@ -3,5 +3,8 @@ uvicorn==0.30.0
 sqlalchemy==2.0.35
 pymysql==1.1.1
 pydantic==2.9.0
-strawberry-graphql[fastapi]==0.243.0
+aio-pika==9.4.3
+alembic==1.13.3
 cryptography==43.0.1
+
+prometheus-fastapi-instrumentator==7.1.0

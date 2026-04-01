@@ -48,6 +48,12 @@ def reject_bid(bid_id: int, db: Session = Depends(get_db)):
     return service.reject_bid(bid_id)
 
 
+@router.patch("/{bid_id}/outbid", response_model=BidResponse)
+def outbid_bid(bid_id: int, db: Session = Depends(get_db)):
+    service = BidService(db)
+    return service.outbid_bid(bid_id)
+
+
 @router.delete("/{bid_id}", status_code=204)
 def delete_bid(bid_id: int, db: Session = Depends(get_db)):
     service = BidService(db)

@@ -17,6 +17,7 @@ with workflow.unsafe.imports_passed_through():
         convert_escrow_to_loan,
         create_loan,
         release_funds_to_seller,
+        release_escrow,
     )
     from activities.marketplace_activities import delist_listing
     from activities.rabbitmq_activities import publish_event
@@ -149,9 +150,17 @@ class AuctionCloseWorkflow:
         await workflow.execute_activity(delist_listing, args=[invoice_token], **act_opts)
         await workflow.execute_activity(accept_offer, args=[winner["id"]], **act_opts)
 
-        # Reject all losers in parallel
+        # Reject all losers and release their escrow in parallel
         await asyncio.gather(*[
             workflow.execute_activity(reject_offer, args=[o["id"]], **act_opts)
+            for o in losers
+        ])
+        await asyncio.gather(*[
+            workflow.execute_activity(
+                release_escrow,
+                args=[o["investor_id"], invoice_token, f"release-loser-{o['id']}"],
+                **act_opts,
+            )
             for o in losers
         ])
 

@@ -59,3 +59,13 @@ async def update_loan_status_grpc(loan_id: str, status: str) -> dict:
 async def credit_wallet(user_id: int, amount: float) -> dict:
     """Credit investor wallet via gRPC CreditWallet RPC. Used by WalletTopUpWorkflow."""
     return await grpc_client.credit_wallet(user_id=user_id, amount=amount)
+
+
+@activity.defn
+async def release_escrow(investor_id: int, invoice_token: str, idempotency_key: str) -> dict:
+    """Release locked escrow back to investor wallet via gRPC ReleaseEscrow RPC."""
+    return await grpc_client.release_escrow(
+        investor_id=investor_id,
+        invoice_token=invoice_token,
+        idempotency_key=idempotency_key,
+    )

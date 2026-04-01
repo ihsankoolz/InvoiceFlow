@@ -57,6 +57,28 @@ class PaymentGRPCClient:
             "amount": response.amount,
         }
 
+    async def release_escrow(
+        self,
+        investor_id: int,
+        invoice_token: str,
+        idempotency_key: str,
+    ) -> dict:
+        """Release locked escrow back to investor wallet via gRPC ReleaseEscrow RPC."""
+        from app.proto import payment_pb2  # noqa: PLC0415
+
+        stub = await self._get_stub()
+        request = payment_pb2.ReleaseEscrowRequest(
+            investor_id=investor_id,
+            invoice_token=invoice_token,
+            idempotency_key=idempotency_key,
+        )
+        response = await stub.ReleaseEscrow(request)
+        return {
+            "id": response.id,
+            "status": response.status,
+            "amount": response.amount,
+        }
+
     async def close(self):
         if self._channel:
             await self._channel.close()

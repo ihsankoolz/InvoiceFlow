@@ -1,0 +1,13 @@
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+  "E501",   # line too long — enforced by formatter, not linter
+  "F401",   # unused imports in __init__.py files
+]
+
+[lint.per-file-ignores]
+"*/__init__.py" = ["F401"]
+"*/proto/*" = ["E", "F", "W"]   # generated gRPC stubs

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.consumers.loan_consumer import LoanEventConsumer
 from app.routers import auth, users
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="User Service", lifespan=lifespan)
+Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(
     CORSMiddleware,
