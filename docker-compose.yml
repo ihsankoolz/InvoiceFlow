@@ -507,6 +507,135 @@ services:
     restart: on-failure
 
   # ============================================================
+  # NEW SERVICES (Section 7)
+  # ============================================================
+
+  webhook-router:
+    build: ./services/webhook-router
+    ports:
+      - "5013:5013"
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5013/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  dlq-monitor:
+    build: ./services/dlq-monitor
+    ports:
+      - "5014:5014"
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_MGMT_URL: http://rabbitmq:15672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+    volumes:
+      - ./shared:/app/shared
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5014/health')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ============================================================
+  # MONITORING STACK (Section 8)
+  # ============================================================
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-remote-write-receiver"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  loki:
+    image: grafana/loki:3.1.0
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/config.yml
+      - loki-data:/tmp/loki
+    command: -config.file=/etc/loki/config.yml
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  promtail:
+    image: grafana/promtail:3.1.0
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    ports:
+      - "3200:3200"   # Tempo UI / query API
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    volumes:
+      - ./monitoring/tempo/tempo-config.yml:/etc/tempo/config.yml
+      - tempo-data:/tmp/tempo
+    command: -config.file=/etc/tempo/config.yml
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ============================================================
   # FRONTEND (placeholder)
   # ============================================================
 
@@ -525,4 +654,8 @@ volumes:
   bidding-db-data:
   payment-db-data:
   temporal-db-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  tempo-data:
 

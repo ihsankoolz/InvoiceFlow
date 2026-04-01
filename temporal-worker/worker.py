@@ -1,8 +1,6 @@
 """
 Temporal Worker — main entry point.
 Registers all workflows and activities, starts polling the invoiceflow-queue.
-
-See BUILD_INSTRUCTIONS_V2.md Section 13 — Worker Entry Point
 """
 
 import asyncio
@@ -11,6 +9,7 @@ import sys
 import config
 from workflows.auction_close import AuctionCloseWorkflow
 from workflows.loan_maturity import LoanMaturityWorkflow
+from workflows.loan_repayment import LoanRepaymentWorkflow
 from workflows.wallet_topup import WalletTopUpWorkflow
 from activities.invoice_activities import verify_invoice, update_invoice_status, get_user
 from activities.bidding_activities import get_offers, accept_offer, reject_offer
@@ -34,7 +33,12 @@ async def main():
     worker = Worker(
         client,
         task_queue="invoiceflow-queue",
-        workflows=[AuctionCloseWorkflow, LoanMaturityWorkflow, WalletTopUpWorkflow],
+        workflows=[
+            AuctionCloseWorkflow,
+            LoanMaturityWorkflow,
+            LoanRepaymentWorkflow,
+            WalletTopUpWorkflow,
+        ],
         activities=[
             verify_invoice, update_invoice_status, get_user,
             get_offers, accept_offer, reject_offer,

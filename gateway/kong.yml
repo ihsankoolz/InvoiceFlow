@@ -125,15 +125,32 @@ services:
           - GET
         strip_path: false
 
-  # --- Stripe Webhook (no JWT — uses Stripe signature) ---
+  # --- Stripe Webhook → webhook-router (no JWT — uses Stripe signature) ---
   - name: stripe-webhook
-    url: http://bidding-orchestrator:5011
+    url: http://webhook-router:5013
     routes:
       - name: stripe-webhook-route
         paths:
           - /api/webhooks/stripe
         methods:
           - POST
+        strip_path: false
+
+  # --- DLQ Monitor (JWT required — internal ops endpoint) ---
+  - name: dlq-monitor
+    url: http://dlq-monitor:5014
+    plugins:
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify:
+            - exp
+    routes:
+      - name: dlq-status
+        paths:
+          - ~/api/dlq
+        methods:
+          - GET
         strip_path: false
 
   # --- Loan Orchestrator (JWT required) ---

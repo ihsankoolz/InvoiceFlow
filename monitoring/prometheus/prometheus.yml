@@ -1,0 +1,43 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # InvoiceFlow Python services (requires prometheus-fastapi-instrumentator)
+  - job_name: invoiceflow-services
+    static_configs:
+      - targets:
+          - user-service:5000
+          - invoice-service:5001
+          - marketplace-service:5002
+          - bidding-service:5003
+          - notification-service:5005
+          - invoice-orchestrator:5010
+          - bidding-orchestrator:5011
+          - loan-orchestrator:5012
+          - webhook-router:5013
+          - dlq-monitor:5014
+          - acra-wrapper:5007
+          - stripe-wrapper:5008
+    metrics_path: /metrics
+    # Services that don't expose /metrics will be skipped automatically
+
+  # RabbitMQ (requires rabbitmq_prometheus plugin, enabled by default in 3.8+)
+  - job_name: rabbitmq
+    static_configs:
+      - targets: ["rabbitmq:15692"]
+
+  # Loki self-monitoring
+  - job_name: loki
+    static_configs:
+      - targets: ["loki:3100"]
+
+  # Tempo self-monitoring
+  - job_name: tempo
+    static_configs:
+      - targets: ["tempo:3200"]
