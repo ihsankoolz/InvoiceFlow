@@ -1,7 +1,9 @@
 import pytest
 from fastapi import HTTPException
+from jose import jwt as jose_jwt
 from passlib.context import CryptContext
 
+from app.config import JWT_SECRET, JWT_ALGORITHM
 from app.models.user import User
 from app.services.user_service import UserService
 
@@ -45,9 +47,6 @@ def test_authenticate_wrong_password_raises_401(db):
 
 
 def test_authenticate_returns_jwt_with_correct_claims(db):
-    from jose import jwt as jose_jwt
-    from app.config import JWT_SECRET, JWT_ALGORITHM
-
     user = _seed_user(db, email="seller@test.com", password="mypassword", role="INVESTOR")
     service = UserService(db)
     result = service.authenticate("seller@test.com", "mypassword")
