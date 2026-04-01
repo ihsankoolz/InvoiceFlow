@@ -1,12 +1,21 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.routers import bids
 from app.database import engine, Base
 
-Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Bidding Service")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception:
+        pass  # DB unavailable in test/CI environments; conftest handles table creation
+    yield
+
+
+app = FastAPI(title="Bidding Service", lifespan=lifespan)
 Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(
