@@ -11,7 +11,7 @@ class Bid(Base):
     investor_id = Column(Integer, nullable=False)
     bid_amount = Column(DECIMAL(12, 2), nullable=False)
     status = Column(
-        Enum("PENDING", "ACCEPTED", "REJECTED", "CANCELLED", name="bid_status"),
+        Enum("PENDING", "ACCEPTED", "REJECTED", "CANCELLED", "OUTBID", name="bid_status"),
         default="PENDING",
     )
     created_at = Column(DateTime, server_default=func.now())

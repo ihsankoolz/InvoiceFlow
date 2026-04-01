@@ -27,4 +27,4 @@ class BidCreateResponse(BaseModel):
 
 
 class BidStatusUpdate(BaseModel):
-    status: Literal["PENDING", "ACCEPTED", "REJECTED", "CANCELLED"]
+    status: Literal["PENDING", "ACCEPTED", "REJECTED", "CANCELLED", "OUTBID"]

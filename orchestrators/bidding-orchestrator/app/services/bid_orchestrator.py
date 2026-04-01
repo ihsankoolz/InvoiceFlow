@@ -4,7 +4,7 @@ BidOrchestrator — orchestrates bid placement with escrow locking.
 Flow (5 steps):
   1. Create bid in Bidding Service → get bid + previous_highest
   2. Lock escrow via gRPC — rollback bid if this fails
-  3. If someone was outbid → publish bid.outbid (choreography releases their escrow)
+  3. If someone was outbid → release their escrow via gRPC, mark bid OUTBID, publish bid.outbid
   4. Check anti-snipe — if auction within final 5 min, signal Temporal + extend deadline
   5. Publish bid.placed
 """
@@ -68,15 +68,35 @@ class BidOrchestrator:
                 detail=f"Escrow lock failed (insufficient balance?): {str(e)}",
             )
 
-        # ── Step 3: Outbid choreography ────────────────────────────────────
+        # ── Step 3: Outbid handling ────────────────────────────────────────
         if previous_highest:
             outbid_user = await self.http_client.get(
                 f"{config.USER_SERVICE_URL}/users/{previous_highest['investor_id']}"
             )
+
+            # Release the outbid investor's escrow back to their wallet
+            try:
+                await self.grpc_client.release_escrow(
+                    investor_id=previous_highest["investor_id"],
+                    invoice_token=data.invoice_token,
+                    idempotency_key=f"release-outbid-{previous_highest['id']}",
+                )
+            except Exception:
+                pass  # best-effort; escrow will be released at auction close if this fails
+
+            # Mark the displaced bid as OUTBID
+            try:
+                await self.http_client.patch(
+                    f"{config.BIDDING_SERVICE_URL}/bids/{previous_highest['id']}/outbid"
+                )
+            except Exception:
+                pass  # best-effort
+
             await self.publisher.publish(
                 "bid.outbid",
                 {
                     "invoice_token": data.invoice_token,
+                    "previous_bid_id": previous_highest["id"],
                     "previous_bidder_id": previous_highest["investor_id"],
                     "previous_bidder_email": outbid_user["email"],
                     "outbid_amount": str(previous_highest["bid_amount"]),

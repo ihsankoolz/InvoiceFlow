@@ -108,3 +108,14 @@ class PaymentGRPCClient:
             idempotency_key=f"topup-{user_id}-{amount}",
         ))
         return {"user_id": response.user_id, "balance": response.balance}
+
+    async def release_escrow(self, investor_id: int, invoice_token: str, idempotency_key: str) -> dict:
+        """Call ReleaseEscrow RPC — returns funds from escrow to investor wallet."""
+        from proto import payment_pb2
+        stub = await self._get_stub()
+        response = await stub.ReleaseEscrow(payment_pb2.ReleaseEscrowRequest(
+            investor_id=investor_id,
+            invoice_token=invoice_token,
+            idempotency_key=idempotency_key,
+        ))
+        return {"id": response.id, "status": response.status, "amount": response.amount}
