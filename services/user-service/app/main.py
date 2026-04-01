@@ -23,8 +23,8 @@ async def lifespan(app: FastAPI):
     task.cancel()
     try:
         await task
-    except asyncio.CancelledError:
-        logger.info("LoanEventConsumer background task cancelled.")
+    except (asyncio.CancelledError, Exception):
+        logger.info("LoanEventConsumer background task stopped.")
 
 
 app = FastAPI(title="User Service", lifespan=lifespan)

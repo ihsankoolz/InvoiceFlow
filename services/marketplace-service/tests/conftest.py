@@ -1,3 +1,6 @@
+import os
+import sys
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -5,6 +8,11 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
 from app.main import app
+
+# Add repo root to path so `shared` package is importable when running pytest
+# from services/marketplace-service/ (shared/ lives at the repo root)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+
 
 SQLITE_URL = "sqlite:///:memory:"
 

@@ -9,16 +9,18 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-logging.basicConfig(level=logging.INFO)
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from app import config
+from app.consumers.event_consumer import EventConsumer
 from app.database import Base, engine
 from app.routers import notifications
 from app.services.websocket_manager import ws_manager
-from app.consumers.event_consumer import EventConsumer
-from app import config
+
+logging.basicConfig(level=logging.INFO)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,7 +39,7 @@ async def lifespan(app: FastAPI):
     consumer_task.cancel()
     try:
         await consumer_task
-    except asyncio.CancelledError:
+    except (asyncio.CancelledError, Exception):
         pass
     print("[notification-service] RabbitMQ consumer stopped")
 
