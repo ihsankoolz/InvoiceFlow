@@ -12,7 +12,6 @@ Three scenarios are covered:
 
 import asyncio
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from temporalio import activity
