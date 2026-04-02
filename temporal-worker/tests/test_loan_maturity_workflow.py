@@ -36,18 +36,20 @@ for _mod in _STUBBED_MODS:
     if _mod not in sys.modules:
         sys.modules[_mod] = MagicMock()
 
+_config_orig = sys.modules.get("config")
 _config = types.ModuleType("config")
 _config.REPAYMENT_WINDOW_SECONDS = 30
-_config_was_present = "config" in sys.modules
 sys.modules["config"] = _config
 
 from workflows.loan_maturity import LoanMaturityWorkflow  # noqa: E402
 
-# Remove stubs immediately so later test modules import the real packages.
+# Restore everything so later test modules see the real packages.
 for _mod in _STUBBED_MODS:
     if _mod not in _previously_present:
         sys.modules.pop(_mod, None)
-if not _config_was_present:
+if _config_orig is not None:
+    sys.modules["config"] = _config_orig
+else:
     sys.modules.pop("config", None)
 
 # ---------------------------------------------------------------------------
