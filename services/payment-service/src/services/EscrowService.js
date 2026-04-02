@@ -20,7 +20,10 @@ class EscrowService {
   async lockEscrow(investorId, invoiceToken, amount, idempotencyKey) {
     // Idempotency: return existing escrow if key already used
     const existing = await Escrow.findOne({ where: { idempotency_key: idempotencyKey } });
-    if (existing) return existing;
+    if (existing) {
+      console.warn(`[idempotency] lockEscrow: duplicate key detected, returning existing record. key=${idempotencyKey} escrow_id=${existing.id}`);
+      return existing;
+    }
 
     return await sequelize.transaction(async (t) => {
       // Debit wallet within the same transaction — rolls back if escrow update/create fails
