@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.bid import BidCreate, BidResponse, BidCreateResponse
+from app.schemas.bid import BidCreate, BidCreateResponse, BidResponse
 from app.services.bid_service import BidService
 
 router = APIRouter(prefix="/bids", tags=["Bids"])

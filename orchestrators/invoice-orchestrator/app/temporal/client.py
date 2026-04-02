@@ -1,4 +1,5 @@
 from temporalio.client import Client
+
 from app import config
 
 

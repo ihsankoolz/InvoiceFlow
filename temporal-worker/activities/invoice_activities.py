@@ -3,10 +3,10 @@ Invoice-related Temporal activities.
 Each activity makes HTTP calls to Invoice Service.
 """
 
+from clients.http_client import HTTPClient
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
-from clients.http_client import HTTPClient
 import config
 
 http_client = HTTPClient()

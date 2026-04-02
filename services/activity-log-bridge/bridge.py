@@ -1,9 +1,10 @@
-import pika
-import requests
 import json
 from datetime import datetime
 
-# print("SCRIPT IS STARTING NOW !!!") 
+import pika
+import requests
+
+# print("SCRIPT IS STARTING NOW !!!")
 
 # CONFIGURATION
 OUTSYSTEMS_URL = "https://personal-xowqm3b2.outsystemscloud.com/ActivityLog/rest/ActivityLogAPI/LogEvent"
@@ -13,7 +14,7 @@ def relay_to_outsystems(ch, method, properties, body):
         # parse the incoming RabbitMQ message
         payload_dict = json.loads(body)
         event_type = method.routing_key
-        
+
         # PREPARE THE DATA FOR OUTSYSTEMS
         # map RabbitMQ data to OutSystems 'EventRequest' structure
         event_data = {
@@ -28,7 +29,7 @@ def relay_to_outsystems(ch, method, properties, body):
 
         # SEND TO OUTSYSTEMS
         response = requests.post(OUTSYSTEMS_URL, json=event_data)
-        
+
         if response.status_code == 200:
             print(f" [OK] Relayed {event_type} to OutSystems")
         else:
@@ -37,12 +38,12 @@ def relay_to_outsystems(ch, method, properties, body):
     except Exception as e:
         print(f" [FAILED] Could not process message: {e}")
 
-# CONNECT TO RABBITMQ 
+# CONNECT TO RABBITMQ
 # 'localhost' works for local testing, 'rabbitmq' works for docker
 connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
 channel = connection.channel()
 
-# declare the exchange 
+# declare the exchange
 channel.exchange_declare(exchange='invoiceflow_events', exchange_type='topic', durable=True)
 
 # create a temporary queue for bridge

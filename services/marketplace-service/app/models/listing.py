@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum, DECIMAL, func
+from sqlalchemy import DECIMAL, Column, DateTime, Enum, Integer, String, func
+
 from app.database import Base
 
 
@@ -18,13 +19,14 @@ class Listing(Base):
     deadline = Column(DateTime, nullable=False)
     status = Column(
         Enum("ACTIVE", "CLOSED", "EXPIRED", name="status_enum"),
+        default="ACTIVE",
         server_default="ACTIVE",
     )
     # Read-model columns — populated on listing creation and updated by event consumer
     face_value = Column(DECIMAL(12, 2), nullable=True)
     debtor_name = Column(String(255), nullable=True)
     current_bid = Column(DECIMAL(12, 2), nullable=True)
-    bid_count = Column(Integer, nullable=False, server_default="0")
+    bid_count = Column(Integer, nullable=False, default=0, server_default="0")
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

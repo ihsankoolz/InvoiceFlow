@@ -61,7 +61,7 @@ def get_listings(
         )
 
     listings = query.order_by(Listing.deadline.asc()).all()
-    return [_listing_to_dict(l) for l in listings]
+    return [_listing_to_dict(listing) for listing in listings]
 
 
 @router.get("/api/listings/{listing_id}", summary="Get a single listing")

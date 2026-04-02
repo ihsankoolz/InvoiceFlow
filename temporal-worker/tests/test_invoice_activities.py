@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
+from activities.invoice_activities import update_invoice_status, verify_invoice
 from temporalio.exceptions import ApplicationError
 
 
@@ -7,7 +9,6 @@ from temporalio.exceptions import ApplicationError
 async def test_verify_invoice_listed():
     with patch("activities.invoice_activities.http_client") as mock_client:
         mock_client.get = AsyncMock(return_value={"invoice_token": "tok-abc", "status": "LISTED"})
-        from activities.invoice_activities import verify_invoice
         result = await verify_invoice("tok-abc")
 
     assert result["status"] == "LISTED"
@@ -17,7 +18,6 @@ async def test_verify_invoice_listed():
 async def test_verify_invoice_not_listed_raises():
     with patch("activities.invoice_activities.http_client") as mock_client:
         mock_client.get = AsyncMock(return_value={"invoice_token": "tok-abc", "status": "FINANCED"})
-        from activities.invoice_activities import verify_invoice
 
         with pytest.raises(ApplicationError, match="not available"):
             await verify_invoice("tok-abc")
@@ -27,7 +27,6 @@ async def test_verify_invoice_not_listed_raises():
 async def test_update_invoice_status():
     with patch("activities.invoice_activities.http_client") as mock_client:
         mock_client.patch = AsyncMock(return_value={"invoice_token": "tok-abc", "status": "FINANCED"})
-        from activities.invoice_activities import update_invoice_status
         result = await update_invoice_status("tok-abc", "FINANCED")
 
     assert result["status"] == "FINANCED"

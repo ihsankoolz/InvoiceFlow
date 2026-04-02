@@ -1,9 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, JSON, String
-
 from app.database import Base
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String
 
 
 class Notification(Base):

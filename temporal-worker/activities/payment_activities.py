@@ -3,9 +3,8 @@ Payment-related Temporal activities.
 ALL Payment Service calls use gRPC exclusively — no HTTP fallback.
 """
 
-from temporalio import activity
-
 from clients.grpc_client import PaymentGRPCClient
+from temporalio import activity
 
 grpc_client = PaymentGRPCClient()
 

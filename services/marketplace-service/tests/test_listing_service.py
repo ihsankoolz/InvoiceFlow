@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
 import pytest
-
 from app.schemas.listing import ListingCreate, ListingUpdate
 from app.services.listing_service import ListingService
 
@@ -50,7 +49,7 @@ def test_get_all_listings_returns_active_only_by_default(db):
 
     listings = service.get_all_listings()
     assert len(listings) == 2
-    assert all(l.status == "ACTIVE" for l in listings)
+    assert all(item.status == "ACTIVE" for item in listings)
 
 
 def test_get_all_listings_filter_by_urgency(db):

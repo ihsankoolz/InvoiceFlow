@@ -8,10 +8,10 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 
+from app import config
 from app.services.http_client import HTTPClient
 from app.services.rabbitmq_publisher import RabbitMQPublisher
 from app.temporal.client import TemporalClient
-from app import config
 
 
 def calculate_urgency(due_date_str: str) -> str:

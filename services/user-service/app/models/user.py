@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, func
+from sqlalchemy import Column, DateTime, Enum, Integer, String, func
 
 from app.database import Base
 
@@ -15,6 +15,7 @@ class User(Base):
     account_status = Column(
         Enum("ACTIVE", "DEFAULTED", name="account_status"),
         nullable=False,
+        default="ACTIVE",
         server_default="ACTIVE",
     )
     created_at = Column(DateTime, server_default=func.now())

@@ -3,9 +3,9 @@ Bidding-related Temporal activities.
 Each activity makes HTTP calls to Bidding Service.
 """
 
+from clients.http_client import HTTPClient
 from temporalio import activity
 
-from clients.http_client import HTTPClient
 import config
 
 http_client = HTTPClient()

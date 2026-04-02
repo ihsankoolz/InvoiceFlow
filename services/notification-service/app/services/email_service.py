@@ -5,9 +5,9 @@ from pathlib import Path
 import resend
 from jinja2 import Environment, FileSystemLoader
 
-logger = logging.getLogger(__name__)
-
 from app.config import RESEND_API_KEY, RESEND_FROM_EMAIL
+
+logger = logging.getLogger(__name__)
 
 # Set up Jinja2 template environment
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"

@@ -2,9 +2,8 @@ import uuid
 from datetime import datetime, timezone
 
 import pytest
-from fastapi.testclient import TestClient
-
 from app.models.notification import Notification
+from fastapi.testclient import TestClient
 
 
 def _add_notification(db, user_id: int, event_type: str = "invoice.listed", message: str = "test"):

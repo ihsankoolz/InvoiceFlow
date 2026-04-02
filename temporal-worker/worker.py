@@ -6,23 +6,24 @@ Registers all workflows and activities, starts polling the invoiceflow-queue.
 import asyncio
 import sys
 
-import config
+from activities.bidding_activities import accept_offer, get_offers, reject_offer
+from activities.invoice_activities import get_user, update_invoice_status, verify_invoice
+from activities.marketplace_activities import bulk_delist, delist_listing
+from activities.payment_activities import (
+    convert_escrow_to_loan,
+    create_loan,
+    credit_wallet,
+    get_loan_grpc,
+    release_funds_to_seller,
+    update_loan_status_grpc,
+)
+from activities.rabbitmq_activities import publish_event
 from workflows.auction_close import AuctionCloseWorkflow
 from workflows.loan_maturity import LoanMaturityWorkflow
 from workflows.loan_repayment import LoanRepaymentWorkflow
 from workflows.wallet_topup import WalletTopUpWorkflow
-from activities.invoice_activities import verify_invoice, update_invoice_status, get_user
-from activities.bidding_activities import get_offers, accept_offer, reject_offer
-from activities.payment_activities import (
-    convert_escrow_to_loan,
-    create_loan,
-    release_funds_to_seller,
-    get_loan_grpc,
-    update_loan_status_grpc,
-    credit_wallet,
-)
-from activities.marketplace_activities import delist_listing, bulk_delist
-from activities.rabbitmq_activities import publish_event
+
+import config
 
 
 async def main():

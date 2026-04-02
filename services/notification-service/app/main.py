@@ -9,16 +9,18 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-logging.basicConfig(level=logging.INFO)
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
+from app import config
+from app.consumers.event_consumer import EventConsumer
 from app.database import Base, engine
 from app.routers import notifications
 from app.services.websocket_manager import ws_manager
-from app.consumers.event_consumer import EventConsumer
-from app import config
+
+logging.basicConfig(level=logging.INFO)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,18 +29,23 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
     except Exception:
         pass  # DB unavailable in test/CI environments; conftest handles table creation
-    consumer = EventConsumer(
-        rabbitmq_url=config.RABBITMQ_URL,
-        websocket_manager=ws_manager,
-    )
-    consumer_task = asyncio.create_task(consumer.start())
-    print("[notification-service] RabbitMQ consumer started")
-    yield
-    consumer_task.cancel()
+    consumer_task = None
     try:
-        await consumer_task
-    except asyncio.CancelledError:
-        pass
+        consumer = EventConsumer(
+            rabbitmq_url=config.RABBITMQ_URL,
+            websocket_manager=ws_manager,
+        )
+        consumer_task = asyncio.create_task(consumer.start())
+        print("[notification-service] RabbitMQ consumer started")
+    except Exception as e:
+        print(f"[notification-service] Could not start consumer: {e}")
+    yield
+    if consumer_task is not None:
+        consumer_task.cancel()
+        try:
+            await consumer_task
+        except (asyncio.CancelledError, Exception):
+            pass
     print("[notification-service] RabbitMQ consumer stopped")
 
 
