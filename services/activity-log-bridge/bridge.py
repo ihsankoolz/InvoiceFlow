@@ -32,11 +32,15 @@ def relay_to_outsystems(ch, method, properties, body):
 
         if response.status_code == 200:
             print(f" [OK] Relayed {event_type} to OutSystems")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
         else:
             print(f" [ERROR] OutSystems returned {response.status_code}: {response.text}")
+            # Negative-ack without requeue — message goes to DLQ
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     except Exception as e:
         print(f" [FAILED] Could not process message: {e}")
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
 # CONNECT TO RABBITMQ
 # 'localhost' works for local testing, 'rabbitmq' works for docker
@@ -46,8 +50,18 @@ channel = connection.channel()
 # declare the exchange
 channel.exchange_declare(exchange='invoiceflow_events', exchange_type='topic', durable=True)
 
-# create a temporary queue for bridge
-result = channel.queue_declare(queue='outsystems_audit_queue', durable=True)
+# declare the DLQ first so it exists before the main queue references it
+channel.queue_declare(queue='outsystems_audit_queue.dlq', durable=True)
+
+# create the main bridge queue with dead-letter routing to the DLQ
+result = channel.queue_declare(
+    queue='outsystems_audit_queue',
+    durable=True,
+    arguments={
+        'x-dead-letter-exchange': '',           # default exchange (direct)
+        'x-dead-letter-routing-key': 'outsystems_audit_queue.dlq',
+    }
+)
 queue_name = result.method.queue
 
 # bind the queue to everything
@@ -55,5 +69,5 @@ channel.queue_bind(exchange='invoiceflow_events', queue=queue_name, routing_key=
 
 print(' [*] Bridge is active. Listening for RabbitMQ events. To exit press CTRL+C')
 
-channel.basic_consume(queue=queue_name, on_message_callback=relay_to_outsystems, auto_ack=True)
+channel.basic_consume(queue=queue_name, on_message_callback=relay_to_outsystems, auto_ack=False)
 channel.start_consuming()

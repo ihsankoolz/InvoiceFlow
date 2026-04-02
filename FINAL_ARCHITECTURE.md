@@ -101,12 +101,13 @@ The LoanMaturityWorkflow (already running as a child of AuctionCloseWorkflow) fi
 1. Durable timer waits until `due_date` (could be days or weeks)
 2. Marks loan DUE via Payment Service (gRPC :50051)
 3. Publishes `loan.due` to RabbitMQ → Notification Service emails the business
-4. Starts repayment window timer (120s demo / 86400s production)
-5. Timer expires → fetches loan status via Payment Service (gRPC :50051)
-6. If repaid → workflow ends cleanly
-7. If not repaid → marks loan OVERDUE via gRPC, publishes `loan.overdue` to RabbitMQ
-8. Four consumers react independently (choreography — see Choreography-Driven Flows)
-9. Bulk-delists all defaulting seller's listings via Marketplace Service (direct HTTP)
+4. Starts repayment window using `wait_condition` with timeout (120s demo / 86400s production) — exits early if `repayment_confirmed` signal arrives from LoanRepaymentWorkflow
+5. If signal received (or loan status already REPAID) → workflow ends cleanly
+6. If timeout expires without signal → fetches loan status to confirm, then marks loan OVERDUE via gRPC, publishes `loan.overdue` to RabbitMQ
+7. Four consumers react independently (choreography — see Choreography-Driven Flows)
+8. Bulk-delists all defaulting seller's listings via Marketplace Service (direct HTTP)
+
+**Signal handler:** `repayment_confirmed` — sent by LoanRepaymentWorkflow after marking the loan REPAID. Causes the repayment window to exit immediately rather than sleeping the full duration.
 
 **Ends when:** Repayment window check completes (either repaid or overdue + delist done).
 
@@ -119,9 +120,10 @@ The LoanMaturityWorkflow (already running as a child of AuctionCloseWorkflow) fi
 
 **What it does:**
 1. Marks loan REPAID via Payment Service (`UpdateLoanStatus` gRPC :50051)
-2. Fetches full loan details via Payment Service (`GetLoan` gRPC :50051)
-3. Fetches seller and investor details via User Service (direct HTTP)
-4. Publishes `loan.repaid` to RabbitMQ → four-consumer choreography begins
+2. Signals `repayment_confirmed` to the running `LoanMaturityWorkflow` (ID: `loan-{loan_id}`) — causes the maturity workflow to exit its repayment window early rather than sleeping the full duration
+3. Fetches full loan details via Payment Service (`GetLoan` gRPC :50051)
+4. Fetches seller and investor details via User Service (direct HTTP)
+5. Publishes `loan.repaid` to RabbitMQ → four-consumer choreography begins
 
 **Ends when:** Loan marked REPAID and event published.
 
@@ -161,7 +163,7 @@ Composite services orchestrate atomic services via direct HTTP (inside Docker ne
 | Invoice Service | :5001 | Python / FastAPI | invoice_db (MySQL :3307) | Invoice CRUD, PDF upload, pdfplumber, MinIO storage, status tracking. Also a RabbitMQ consumer for `loan.repaid` and `loan.overdue` |
 | Marketplace Service | :5002 | Python / FastAPI | market_db (MySQL :3308) | Listings read-model, urgency levels, filtering. Denormalises `current_bid` and `bid_count` from events |
 | Bidding Service | :5003 | Python / FastAPI | bidding_db (MySQL :3309) | Bid CRUD, offer accept/reject/outbid management |
-| Payment Service | :5004 / :50051 | Node.js / Express + gRPC | payment_db (MySQL :3310) | Wallets, escrow, loans. REST :5004 for reads; gRPC :50051 for all writes. Also a RabbitMQ consumer for `bid.outbid` (escrow release), `loan.repaid` (credit investor wallet), and `loan.overdue` (calculate penalty). **BTL #1** |
+| Payment Service | :5004 / :50051 | Node.js / Express + gRPC | payment_db (MySQL :3310) | Wallets, escrow, loans. REST :5004 for reads; gRPC :50051 for all writes. Also a RabbitMQ consumer for `bid.outbid` (escrow release), `loan.repaid` (credit investor wallet), and `loan.overdue` (calculate penalty). Idempotency key duplicates are logged at WARN level for observability. **BTL #1** |
 | Notification Service | :5005 | Python / FastAPI | notification_db (MySQL :3311) | RabbitMQ consumer for all events; WebSocket push to frontend; Resend email delivery. Persists notifications to notification_db (last 50 per user served via API) |
 | Webhook Router | :5013 | Python / FastAPI | None | Receives inbound Stripe webhooks, verifies Stripe-Signature HMAC, publishes normalised `stripe.checkout.completed` event to RabbitMQ. Decouples all downstream consumers from Stripe's raw payload shape |
 
@@ -186,7 +188,7 @@ Note: Stripe Wrapper handles **outbound** calls only (creating checkout sessions
 
 | Service | Technology | Purpose | Called By |
 |---------|------------|---------|----------|
-| Activity Log Bridge | Python (pika) | RabbitMQ consumer with `#` wildcard routing key. Relays all domain events to the OutSystems Activity Log REST API. Constructs an `EventRequest` with `event_type`, `payload`, `source_service`, `invoice_token`, `user_id`, `timestamp`, and `severity`. No HTTP endpoints of its own | RabbitMQ (push) → OutSystems (HTTPS) |
+| Activity Log Bridge | Python (pika) | RabbitMQ consumer with `#` wildcard routing key. Relays all domain events to the OutSystems Activity Log REST API. Constructs an `EventRequest` with `event_type`, `payload`, `source_service`, `invoice_token`, `user_id`, `timestamp`, and `severity`. Uses manual ack — on OutSystems failure, nacks without requeue so the message is routed to `outsystems_audit_queue.dlq`. No HTTP endpoints of its own | RabbitMQ (push) → OutSystems (HTTPS) |
 
 ### OutSystems Service (Activity Log)
 
@@ -217,7 +219,7 @@ Note: Stripe Wrapper handles **outbound** calls only (creating checkout sessions
 
 | Tool | Host Port | Purpose |
 |------|-----------|---------|
-| Prometheus | :9090 | Metrics scraping from all Python services |
+| Prometheus | :9090 | Metrics scraping from all Python services. Alert rules in `alert_rules.yml` fire when any `.dlq` queue depth exceeds 5 messages (`DLQDepthHigh` alert) |
 | Grafana | :3001 (maps to container :3000) | Dashboards |
 | Loki | :3100 | Log aggregation |
 | Promtail | — | Docker log shipping to Loki |
@@ -297,6 +299,7 @@ Stripe webhook safeguards: Webhook Router recomputes the Stripe-Signature using 
 | 23 | Start WalletTopUpWorkflow | Bidding Orchestrator → Temporal Server | Temporal SDK |
 | 23a | Signal `extend_deadline` on AuctionCloseWorkflow | Bidding Orchestrator → Temporal Server | Temporal SDK (signal) |
 | 24 | Start LoanRepaymentWorkflow | Loan Orchestrator → Temporal Server | Temporal SDK |
+| 24a | Signal `repayment_confirmed` on LoanMaturityWorkflow | Temporal Worker (LoanRepaymentWorkflow) → Temporal Server | Temporal SDK (signal) — causes maturity workflow to exit repayment window early |
 
 Invoice Orchestrator starts AuctionCloseWorkflow after an invoice is listed. Bidding Orchestrator starts WalletTopUpWorkflow after consuming `stripe.checkout.completed` (wallet_topup). Bidding Orchestrator signals running AuctionCloseWorkflow instances for anti-snipe deadline extensions. Loan Orchestrator starts LoanRepaymentWorkflow after the Stripe repayment confirm call. Loan Orchestrator does NOT start LoanMaturityWorkflow — that is started internally by the Temporal Worker as a child of AuctionCloseWorkflow.
 
@@ -629,6 +632,7 @@ This flow has two branches: (A) Loan Comes Due + Repayment Window, then either (
 | B10 | KONG | Loan Orchestrator | Route to :5012 | REST/JSON | |
 | B11 | Loan Orchestrator | Temporal Server | Start `LoanRepaymentWorkflow` (ID: `loan-repay-{loan_id}`) | Temporal SDK | |
 | B12 | Temporal Worker | Payment Service | `UpdateLoanStatus` → status REPAID | gRPC :50051 | |
+| B12a | Temporal Worker (LoanRepaymentWorkflow) | Temporal Server | Signal `repayment_confirmed` to `LoanMaturityWorkflow` (ID: `loan-{loan_id}`) | Temporal SDK (signal) | Causes maturity workflow to exit repayment window immediately |
 | B13 | Temporal Worker | Payment Service | `GetLoan` — fetch full loan details | gRPC :50051 | |
 | B14 | Temporal Worker | User Service | `GET /users/{id}` — fetch seller + investor emails | HTTP (direct) | |
 | B15 | Temporal Worker | RabbitMQ | Publish `loan.repaid` | AMQP | **Four-consumer choreography begins** |
@@ -638,7 +642,7 @@ This flow has two branches: (A) Loan Comes Due + Repayment Window, then either (
 | B16d | RabbitMQ | Notification Service | Consume `loan.repaid` (queue: `notification_repaid_updates`) → email both parties | AMQP | Consumer 4 — concurrent with B16a, B16b, B16c |
 | B17 | Notification Service | Resend | Send emails to business + investor | HTTPS (external) | |
 | B18 | RabbitMQ | Activity Log Bridge | Consume `loan.repaid` → relay to OutSystems | AMQP → HTTPS | |
-| B19 | LoanMaturityWorkflow | — | Repayment window check finds loan REPAID → **workflow ends cleanly** | Temporal internal | |
+| B19 | LoanMaturityWorkflow | — | `repayment_confirmed` signal received → `wait_condition` exits early → **workflow ends cleanly** | Temporal internal | Signal sent at B12a |
 
 #### Phase C: Business Defaults (repayment window expires unpaid)
 

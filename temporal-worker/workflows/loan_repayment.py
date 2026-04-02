@@ -6,9 +6,10 @@ the /confirm-repayment REST endpoint in future iterations).
 
 Steps:
   1. Update loan status to REPAID via gRPC
-  2. Fetch full loan details
-  3. Fetch seller and investor emails
-  4. Publish loan.repaid event for downstream consumers
+  2. Signal the running LoanMaturityWorkflow so it exits the repayment window early
+  3. Fetch full loan details
+  4. Fetch seller and investor emails
+  5. Publish loan.repaid event for downstream consumers
      (invoice-service sets invoice → REPAID, notification-service emails both parties)
 """
 
@@ -35,10 +36,20 @@ class LoanRepaymentWorkflow:
             update_loan_status_grpc, args=[loan_id, "REPAID"], **act_opts
         )
 
-        # Step 2: Fetch full loan details (investor_id, seller_id, principal, invoice_token)
+        # Step 2: Signal LoanMaturityWorkflow so it exits the repayment window early
+        # instead of sleeping the full window and then polling for status.
+        try:
+            maturity_handle = workflow.get_external_workflow_handle(f"loan-{loan_id}")
+            await maturity_handle.signal("repayment_confirmed")
+        except Exception:
+            # Maturity workflow may have already completed (e.g. window expired simultaneously).
+            # Not a fatal error — the status is already REPAID in the database.
+            pass
+
+        # Step 3: Fetch full loan details (investor_id, seller_id, principal, invoice_token)
         loan = await workflow.execute_activity(get_loan_grpc, args=[loan_id], **act_opts)
 
-        # Step 3: Fetch user details for notification events
+        # Step 4: Fetch user details for notification events
         seller = await workflow.execute_activity(
             get_user, args=[loan["seller_id"]], **act_opts
         )
@@ -46,7 +57,7 @@ class LoanRepaymentWorkflow:
             get_user, args=[loan["investor_id"]], **act_opts
         )
 
-        # Step 4: Publish loan.repaid — consumed by invoice-service, notification-service
+        # Step 5: Publish loan.repaid — consumed by invoice-service, notification-service
         await workflow.execute_activity(
             publish_event,
             args=[

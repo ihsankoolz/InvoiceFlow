@@ -1,0 +1,11 @@
+groups:
+  - name: invoiceflow_dlq_alerts
+    rules:
+      - alert: DLQDepthHigh
+        expr: rabbitmq_queue_messages{queue=~".*\\.dlq"} > 5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "DLQ depth exceeded threshold"
+          description: "Queue {{ $labels.queue }} has {{ $value }} messages in the dead-letter queue (threshold: 5). Messages are failing to process and require investigation."
