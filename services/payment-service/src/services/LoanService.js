@@ -25,7 +25,10 @@ class LoanService {
   async createLoan(data, idempotencyKey) {
     // Idempotency: return existing loan if key already used
     const existing = await Loan.findOne({ where: { loan_id: idempotencyKey } });
-    if (existing) return existing;
+    if (existing) {
+      console.warn(`[idempotency] createLoan: duplicate key detected, returning existing record. key=${idempotencyKey} loan_id=${existing.loan_id}`);
+      return existing;
+    }
 
     const loan = await Loan.create({
       loan_id: uuidv4(),

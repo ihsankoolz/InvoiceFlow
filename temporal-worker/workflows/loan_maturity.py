@@ -22,6 +22,14 @@ with workflow.unsafe.imports_passed_through():
 class LoanMaturityWorkflow:
     """Monitors loan maturity: waits until due date → checks repayment → marks OVERDUE if not repaid."""
 
+    def __init__(self):
+        self._repayment_confirmed = False
+
+    @workflow.signal
+    def repayment_confirmed(self):
+        """Signalled by LoanRepaymentWorkflow when the business has repaid."""
+        self._repayment_confirmed = True
+
     @workflow.run
     async def run(self, loan_id: str, due_date: str):
         act_opts = {"schedule_to_close_timeout": timedelta(seconds=30)}
@@ -46,14 +54,20 @@ class LoanMaturityWorkflow:
             **act_opts,
         )
 
-        # Step 3: Wait for repayment window
+        # Step 3: Wait for repayment window — exits early if repayment_confirmed signal arrives
         repayment_window = timedelta(seconds=config.REPAYMENT_WINDOW_SECONDS)
-        await workflow.sleep(repayment_window)
+        await workflow.wait_condition(
+            lambda: self._repayment_confirmed,
+            timeout=repayment_window,
+        )
 
-        # Step 4: Check if repaid
+        # Step 4: Check if repaid (signal received or status already REPAID)
+        if self._repayment_confirmed:
+            return  # Seller repaid in time — exited early via signal
+
         loan = await workflow.execute_activity(get_loan_grpc, args=[loan_id], **act_opts)
         if loan["status"] == "REPAID":
-            return  # Seller repaid in time — done
+            return  # Repaid (signal may have been missed but status is correct)
 
         # Step 5: Mark OVERDUE + publish event + bulk delist
         await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "OVERDUE"], **act_opts)
