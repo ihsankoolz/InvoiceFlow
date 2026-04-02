@@ -427,14 +427,13 @@ Separate queues are required for each fan-out consumer. A single queue with mult
 |-------|-------------|-------------|---------|
 | `invoice.listed` | Invoice Orchestrator | Notification Service, Activity Log Bridge | Invoice successfully listed on marketplace |
 | `invoice.rejected` | Invoice Orchestrator | Notification Service, Activity Log Bridge | Debtor UEN validation failed |
-| `bid.placed` | Bidding Orchestrator | Notification Service, Activity Log Bridge | New bid submitted |
+| `bid.placed` | Bidding Orchestrator | Marketplace Service, Notification Service, Activity Log Bridge | New bid submitted — Marketplace Service updates `current_bid` and `bid_count` read-model |
 | `bid.confirmed` | Bidding Orchestrator | Notification Service, Activity Log Bridge | Bid acknowledged to bidder |
 | `bid.outbid` | Bidding Orchestrator | Payment Service, Notification Service, Activity Log Bridge | Previous highest bidder outbid → Payment Service releases previous bidder's escrow |
-| `auction.extended` | Bidding Orchestrator | Notification Service, Activity Log Bridge | Anti-snipe: bid placed in final 5 min, deadline extended by 5 min |
+| `auction.extended` | Bidding Orchestrator | Marketplace Service, Notification Service, Activity Log Bridge | Anti-snipe: bid placed in final 5 min, deadline extended by 5 min — Marketplace Service updates displayed deadline |
 | `stripe.checkout.completed` | Webhook Router | Bidding Orchestrator (wallet_topup), Loan Orchestrator (loan_repayment) | Stripe confirms payment; type field routes to correct orchestrator |
 | `wallet.credited` | Temporal Worker (WalletTopUpWorkflow) | Notification Service, Activity Log Bridge | Stripe top-up confirmed and wallet credited |
 | `auction.closing.warning` | Temporal Worker (AuctionCloseWorkflow) | Notification Service, Activity Log Bridge | T-12h or T-1h before deadline |
-| `auction.extended` | Bidding Orchestrator | Notification Service, Activity Log Bridge | Bid placed in final 5 min; deadline extended |
 | `auction.closed.winner` | Temporal Worker (AuctionCloseWorkflow) | Notification Service, Activity Log Bridge | Auction ended, winner selected |
 | `auction.closed.loser` | Temporal Worker (AuctionCloseWorkflow) | Notification Service, Activity Log Bridge | Auction ended, each losing bidder notified |
 | `auction.expired` | Temporal Worker (AuctionCloseWorkflow) | Notification Service, Activity Log Bridge | Auction ended with zero bids |
