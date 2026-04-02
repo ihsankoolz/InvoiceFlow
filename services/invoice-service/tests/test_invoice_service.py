@@ -3,11 +3,9 @@ from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from app.models.invoice import Invoice
 from app.schemas.invoice import InvoiceCreate
 from app.services.invoice_service import InvoiceService, _generate_invoice_token
-
 
 # ── Token generation ─────────────────────────────────────────────────────────
 

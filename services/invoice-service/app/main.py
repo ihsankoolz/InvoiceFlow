@@ -6,8 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from app.database import Base, engine
 from app.consumers.loan_consumer import LoanEventConsumer
+from app.database import Base, engine
 from app.routers import invoices
 
 logger = logging.getLogger(__name__)

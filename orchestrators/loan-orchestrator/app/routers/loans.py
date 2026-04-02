@@ -4,10 +4,10 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app import config
 from app.schemas.requests import (
-    RepayLoanRequest,
-    ConfirmRepaymentRequest,
-    RepaymentResponse,
     CheckoutUrlResponse,
+    ConfirmRepaymentRequest,
+    RepayLoanRequest,
+    RepaymentResponse,
 )
 from app.services.http_client import HTTPClient
 from app.services.loan_orchestrator import LoanOrchestrator

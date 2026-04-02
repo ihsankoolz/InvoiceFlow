@@ -16,14 +16,20 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Start the RabbitMQ consumer as a background task on startup."""
-    consumer = LoanEventConsumer()
-    task = asyncio.create_task(consumer.start())
-    logger.info("LoanEventConsumer background task started.")
-    yield
-    task.cancel()
+    task = None
     try:
-        await task
-    except asyncio.CancelledError:
+        consumer = LoanEventConsumer()
+        task = asyncio.create_task(consumer.start())
+        logger.info("LoanEventConsumer background task started.")
+    except Exception as e:
+        logger.warning("Could not start LoanEventConsumer: %s", e)
+    yield
+    if task is not None:
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):
+            pass
         logger.info("LoanEventConsumer background task cancelled.")
 
 

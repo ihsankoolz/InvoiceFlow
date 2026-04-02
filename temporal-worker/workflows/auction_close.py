@@ -11,18 +11,19 @@ from datetime import timedelta
 from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
-    from activities.invoice_activities import verify_invoice, update_invoice_status, get_user
-    from activities.bidding_activities import get_offers, accept_offer, reject_offer
+    from activities.bidding_activities import accept_offer, get_offers, reject_offer
+    from activities.invoice_activities import get_user, update_invoice_status, verify_invoice
+    from activities.marketplace_activities import delist_listing
     from activities.payment_activities import (
         convert_escrow_to_loan,
         create_loan,
-        release_funds_to_seller,
         release_escrow,
+        release_funds_to_seller,
     )
-    from activities.marketplace_activities import delist_listing
     from activities.rabbitmq_activities import publish_event
-    from workflows.loan_maturity import LoanMaturityWorkflow
+
     import config
+    from workflows.loan_maturity import LoanMaturityWorkflow
 
 
 @workflow.defn
@@ -133,7 +134,7 @@ class AuctionCloseWorkflow:
         )
 
         # Fire-and-forget: LoanMaturityWorkflow runs for days/weeks — do NOT await result
-        child_handle = await workflow.start_child_workflow(
+        await workflow.start_child_workflow(
             LoanMaturityWorkflow.run,
             args=[loan["loan_id"], loan["due_date"]],
             id=f"loan-{loan['loan_id']}",

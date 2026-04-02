@@ -1,7 +1,9 @@
 import io
-from minio import Minio
 from datetime import timedelta
-from app.config import MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET
+
+from minio import Minio
+
+from app.config import MINIO_ACCESS_KEY, MINIO_BUCKET, MINIO_ENDPOINT, MINIO_SECRET_KEY
 
 
 class StorageService:
@@ -36,7 +38,7 @@ class StorageService:
         """
         self._ensure_bucket_exists()
         object_name = f"{invoice_token}.pdf"
-        
+
         self.client.put_object(
             self.bucket,
             object_name,
@@ -44,7 +46,7 @@ class StorageService:
             length=len(pdf_bytes),
             content_type="application/pdf",
         )
-        
+
         # Return a simple internal identifier or URL
         return f"s3://{self.bucket}/{object_name}"
 

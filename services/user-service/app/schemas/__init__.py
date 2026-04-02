@@ -1,9 +1,9 @@
 from app.schemas.user import (
-    UserCreate,
-    UserResponse,
-    UserLogin,
-    TokenResponse,
     StatusUpdate,
+    TokenResponse,
+    UserCreate,
+    UserLogin,
+    UserResponse,
 )
 
 __all__ = [

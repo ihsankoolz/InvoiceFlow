@@ -99,7 +99,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt pytest pytest-asyncio httpx
       - name: Run tests
-        run: pytest tests/ -v
+        run: pytest tests/ -v --tb=long
 
   test-user-service:
     name: Test user-service
@@ -115,7 +115,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt pytest pytest-asyncio httpx
       - name: Run tests
-        run: pytest tests/ -v
+        run: pytest tests/ -v --tb=long
 
   test-frontend:
     name: Test frontend

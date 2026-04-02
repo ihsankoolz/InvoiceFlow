@@ -80,7 +80,7 @@ class BidOrchestrator:
                 )
             raise HTTPException(
                 status_code=400,
-                detail=f"Could not place bid. Please try again.",
+                detail="Could not place bid. Please try again.",
             )
 
         # ── Steps 3-5: wrapped so any failure releases the just-locked escrow ──
