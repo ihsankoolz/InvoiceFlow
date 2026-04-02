@@ -24,21 +24,31 @@ import pytest
 # Stub heavy dependencies before importing the workflow module.
 # ---------------------------------------------------------------------------
 
-for _mod in [
+_STUBBED_MODS = [
     "grpc", "tenacity",
     "clients", "clients.grpc_client", "clients.http_client",
     "activities", "activities.payment_activities",
     "activities.invoice_activities", "activities.marketplace_activities",
     "activities.rabbitmq_activities",
-]:
+]
+_previously_present = {m for m in _STUBBED_MODS if m in sys.modules}
+for _mod in _STUBBED_MODS:
     if _mod not in sys.modules:
         sys.modules[_mod] = MagicMock()
 
 _config = types.ModuleType("config")
 _config.REPAYMENT_WINDOW_SECONDS = 30
+_config_was_present = "config" in sys.modules
 sys.modules["config"] = _config
 
 from workflows.loan_maturity import LoanMaturityWorkflow  # noqa: E402
+
+# Remove stubs immediately so later test modules import the real packages.
+for _mod in _STUBBED_MODS:
+    if _mod not in _previously_present:
+        sys.modules.pop(_mod, None)
+if not _config_was_present:
+    sys.modules.pop("config", None)
 
 # ---------------------------------------------------------------------------
 # Constants
