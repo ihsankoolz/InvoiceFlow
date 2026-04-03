@@ -1,18 +1,20 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import LandingPage from './pages/LandingPage'
-import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
-import DashboardPage from './pages/DashboardPage'
-import MarketplacePage from './pages/MarketplacePage'
-import ListingDetailPage from './pages/ListingDetailPage'
-import ListInvoicePage from './pages/ListInvoicePage'
-import MyInvoicesPage from './pages/MyInvoicesPage'
-import MyBidsPage from './pages/MyBidsPage'
-import WalletPage from './pages/WalletPage'
-import LoansPage from './pages/LoansPage'
-import NotificationsPage from './pages/NotificationsPage'
-import PaymentSuccessPage from './pages/PaymentSuccessPage'
+
+const LandingPage        = lazy(() => import('./pages/LandingPage'))
+const LoginPage          = lazy(() => import('./pages/LoginPage'))
+const RegisterPage       = lazy(() => import('./pages/RegisterPage'))
+const DashboardPage      = lazy(() => import('./pages/DashboardPage'))
+const MarketplacePage    = lazy(() => import('./pages/MarketplacePage'))
+const ListingDetailPage  = lazy(() => import('./pages/ListingDetailPage'))
+const ListInvoicePage    = lazy(() => import('./pages/ListInvoicePage'))
+const MyInvoicesPage     = lazy(() => import('./pages/MyInvoicesPage'))
+const MyBidsPage         = lazy(() => import('./pages/MyBidsPage'))
+const WalletPage         = lazy(() => import('./pages/WalletPage'))
+const LoansPage          = lazy(() => import('./pages/LoansPage'))
+const NotificationsPage  = lazy(() => import('./pages/NotificationsPage'))
+const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'))
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -29,7 +31,12 @@ function ProtectedRoute({ children }) {
 
 function AppRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={
+      <div className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="font-['Lato'] text-ink">Loading...</div>
+      </div>
+    }>
+      <Routes>
       {/* Public routes */}
       <Route path="/"         element={<LandingPage />} />
       <Route path="/login"    element={<LoginPage />} />
@@ -70,7 +77,8 @@ function AppRoutes() {
 
       {/* Catch-all: redirect to landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   )
 }
 
