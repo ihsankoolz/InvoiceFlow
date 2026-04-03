@@ -511,7 +511,8 @@ These flows show every service interaction in order for each scenario. Steps lab
 | 15 | Invoice Orchestrator | RabbitMQ | Publish `invoice.listed` | AMQP | |
 | 16a | RabbitMQ | Notification Service | Consume `invoice.listed` → email business confirmation + WebSocket push | AMQP | Concurrent with 16b |
 | 16b | RabbitMQ | Activity Log Bridge | Consume `invoice.listed` → relay to OutSystems Activity Log API | AMQP → HTTPS | Concurrent with 16a |
-| 17 | Notification Service | Resend | Send email | HTTPS (external) | |
+| 17a | Notification Service | Resend | Send email | HTTPS (external) | Concurrent with 17b |
+| 17b | Notification Service | React Frontend | WebSocket push — invoice listed notification | WebSocket | Concurrent with 17a |
 
 **Temporal (background, after listing):**
 
@@ -552,6 +553,8 @@ This flow has three phases: (A) Wallet Top-Up, (B) Bidding with Anti-Snipe, (C) 
 | A18 | Temporal Worker | RabbitMQ | Publish `wallet.credited` | AMQP | |
 | A19a | RabbitMQ | Notification Service | Consume `wallet.credited` → email + WebSocket push to investor | AMQP | Concurrent with A19b |
 | A19b | RabbitMQ | Activity Log Bridge | Consume `wallet.credited` → relay to OutSystems | AMQP → HTTPS | Concurrent with A19a |
+| A20a | Notification Service | Resend | Send wallet credited confirmation email to investor | HTTPS (external) | Concurrent with A20b |
+| A20b | Notification Service | React Frontend | WebSocket push — wallet credited notification | WebSocket | Concurrent with A20a |
 
 #### Phase B: Placing a Bid (with Anti-Snipe Extension)
 
@@ -569,6 +572,8 @@ This flow has three phases: (A) Wallet Top-Up, (B) Bidding with Anti-Snipe, (C) 
 | B10a | *(If outbid occurred)* Bidding Orchestrator | RabbitMQ | Publish `bid.outbid` (previous highest bidder info) | AMQP | Concurrent with B10b |
 | B10b | *(If outbid occurred)* RabbitMQ | Payment Service | Consume `bid.outbid` → release previous bidder's escrow back to wallet | AMQP (choreography) | Concurrent with B10a fan-out |
 | B10c | *(If outbid occurred)* RabbitMQ | Notification Service | Consume `bid.outbid` → notify outbid investor | AMQP | Concurrent with B10b |
+| B10d | *(If outbid occurred)* Notification Service | Resend | Send outbid email to previous highest bidder | HTTPS (external) | Concurrent with B10e |
+| B10e | *(If outbid occurred)* Notification Service | React Frontend | WebSocket push — outbid notification | WebSocket | Concurrent with B10d |
 | B11 | Bidding Orchestrator | Marketplace Service | `GET /listings/{id}` — check if auction is within final 5 minutes | HTTP (direct) | Compare current time vs deadline |
 | B12a | *(If within 5 min)* Bidding Orchestrator | Temporal Server | Signal `extend_deadline` to `AuctionCloseWorkflow` (ID: `auction-{invoice_token}`) | Temporal SDK (signal) | Workflow restarts 5-min timer; concurrent with B12b and B12c |
 | B12b | *(If within 5 min)* Bidding Orchestrator | Marketplace Service | `PATCH /listings/{id}` — update displayed deadline (+5 min) | HTTP (direct) | Frontend reflects new deadline; concurrent with B12a and B12c |
@@ -576,6 +581,8 @@ This flow has three phases: (A) Wallet Top-Up, (B) Bidding with Anti-Snipe, (C) 
 | B13 | Bidding Orchestrator | RabbitMQ | Publish `bid.placed` | AMQP | |
 | B14a | RabbitMQ | Notification Service | Consume `bid.placed` → notify seller of new bid | AMQP | Concurrent with B14b |
 | B14b | RabbitMQ | Activity Log Bridge | Consume `bid.placed` → relay to OutSystems | AMQP → HTTPS | Concurrent with B14a |
+| B15a | Notification Service | Resend | Send new bid email to seller | HTTPS (external) | Concurrent with B15b |
+| B15b | Notification Service | React Frontend | WebSocket push — new bid notification to seller | WebSocket | Concurrent with B15a |
 
 #### Phase C: Auction Closes (Timer Expires)
 
@@ -596,6 +603,8 @@ This flow has three phases: (A) Wallet Top-Up, (B) Bidding with Anti-Snipe, (C) 
 | C13 | Temporal Worker | RabbitMQ | Publish `auction.closed.winner` + `auction.closed.loser` (per loser) | AMQP | Step 10 — no escrow refund needed; already released on outbid |
 | C14a | RabbitMQ | Notification Service | Consume → email winner + each loser + seller | AMQP | Concurrent with C14b |
 | C14b | RabbitMQ | Activity Log Bridge | Consume → relay to OutSystems | AMQP → HTTPS | Concurrent with C14a |
+| C15a | Notification Service | Resend | Send auction result emails to winner, losers, and seller | HTTPS (external) | Concurrent with C15b |
+| C15b | Notification Service | React Frontend | WebSocket push — auction result notification to winner, losers, and seller | WebSocket | Concurrent with C15a |
 
 ---
 
@@ -612,7 +621,8 @@ This flow has two branches: (A) Loan Comes Due + Repayment Window, then either (
 | A3 | Temporal Worker | RabbitMQ | Publish `loan.due` | AMQP | |
 | A4a | RabbitMQ | Notification Service | Consume `loan.due` → email business "your loan is due" + WebSocket push | AMQP | Concurrent with A4b |
 | A4b | RabbitMQ | Activity Log Bridge | Consume `loan.due` → relay to OutSystems | AMQP → HTTPS | Concurrent with A4a |
-| A5 | Notification Service | Resend | Send email | HTTPS (external) | |
+| A5a | Notification Service | Resend | Send email | HTTPS (external) | Concurrent with A5b |
+| A5b | Notification Service | React Frontend | WebSocket push — loan due notification to business | WebSocket | Concurrent with A5a |
 | A6 | LoanMaturityWorkflow | — | Start repayment window timer (120s demo / 86400s prod) | Temporal internal | 24h in production |
 
 #### Phase B: Business Repays Successfully (within repayment window)
@@ -639,7 +649,8 @@ This flow has two branches: (A) Loan Comes Due + Repayment Window, then either (
 | B16b | RabbitMQ | Payment Service | Consume `loan.repaid` (queue: `payment_repaid_updates`) → credit investor wallet | AMQP | Consumer 2 — concurrent with B16a, B16c, B16d |
 | B16c | RabbitMQ | User Service | Consume `loan.repaid` (queue: `user_repaid_updates`) → reset business account_status ACTIVE | AMQP | Consumer 3 — concurrent with B16a, B16b, B16d |
 | B16d | RabbitMQ | Notification Service | Consume `loan.repaid` (queue: `notification_repaid_updates`) → email both parties | AMQP | Consumer 4 — concurrent with B16a, B16b, B16c |
-| B17 | Notification Service | Resend | Send emails to business + investor | HTTPS (external) | |
+| B17a | Notification Service | Resend | Send emails to business + investor | HTTPS (external) | Concurrent with B17b |
+| B17b | Notification Service | React Frontend | WebSocket push — loan repaid notification to business + investor | WebSocket | Concurrent with B17a |
 | B18 | RabbitMQ | Activity Log Bridge | Consume `loan.repaid` → relay to OutSystems | AMQP → HTTPS | |
 | B19 | LoanMaturityWorkflow | — | `repayment_confirmed` signal received → `wait_condition` exits early → **workflow ends cleanly** | Temporal internal | Signal sent at B12a |
 
@@ -655,7 +666,8 @@ This flow has two branches: (A) Loan Comes Due + Repayment Window, then either (
 | C5b | RabbitMQ | Payment Service | Consume `loan.overdue` (queue: `payment_loan_updates`) → calculate 5% penalty | AMQP | Consumer 2 — concurrent with C5a, C5c, C5d |
 | C5c | RabbitMQ | User Service | Consume `loan.overdue` (queue: `user_loan_updates`) → set business account_status → DEFAULTED | AMQP | Consumer 3 — concurrent with C5a, C5b, C5d |
 | C5d | RabbitMQ | Notification Service | Consume `loan.overdue` (queue: `notification_loan_updates`) → email both parties | AMQP | Consumer 4 — concurrent with C5a, C5b, C5c |
-| C6 | Notification Service | Resend | Send emails to business + investor | HTTPS (external) | |
+| C6a | Notification Service | Resend | Send emails to business + investor | HTTPS (external) | Concurrent with C6b |
+| C6b | Notification Service | React Frontend | WebSocket push — loan overdue/default notification to business + investor | WebSocket | Concurrent with C6a |
 | C7 | RabbitMQ | Activity Log Bridge | Consume `loan.overdue` → relay to OutSystems | AMQP → HTTPS | |
 | C8 | Temporal Worker | Marketplace Service | `DELETE /listings?seller_id={id}` — bulk delist all defaulting seller's active listings | HTTP (direct) | Prevents further auctions |
 | C9 | LoanMaturityWorkflow | — | **Workflow ends** | Temporal internal | |

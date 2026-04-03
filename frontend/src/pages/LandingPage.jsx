@@ -319,7 +319,7 @@ export default function LandingPage() {
               <div key={step.num} style={fadeUp(howIn, 160 + i * 80)}>
                 <p className="font-['Lato'] text-2xl text-black mb-2">{step.num}</p>
                 <p className="font-['Lato'] font-medium text-[26px] text-black mb-3 leading-tight">{step.title}</p>
-                <p className="font-['Lato'] font-light text-xl text-black leading-relaxed">{step.body}</p>
+                <p className="font-['Lato'] text-xl text-black leading-relaxed">{step.body}</p>
               </div>
             ))}
           </div>
@@ -329,9 +329,9 @@ export default function LandingPage() {
       {/* ── FAQ ── */}
       <section ref={faqRef} className="bg-teal py-20">
         <div className="px-8 lg:px-16 max-w-[1512px] mx-auto" style={fadeUp(faqIn, 0)}>
-          <p className="font-['Lato'] font-medium text-[#fff8ec] text-2xl mb-2">FAQ</p>
-          <h2 className="font-['Lato'] font-semibold text-[#fff8ec] text-5xl mb-2">Common questions</h2>
-          <p className="font-['Lato'] text-[#fff8ec] text-2xl mb-8">
+          <p className="font-['Lato'] font-medium text-white text-2xl mb-2">FAQ</p>
+          <h2 className="font-['Lato'] font-semibold text-white text-5xl mb-2">Common questions</h2>
+          <p className="font-['Lato'] text-white text-2xl mb-8">
             Everything you need to know before you list or bid.
           </p>
           <div className="flex gap-3 mb-10">
@@ -341,15 +341,15 @@ export default function LandingPage() {
                 onClick={() => setFaqTab(tab)}
                 className={`font-['Lato'] font-semibold text-base px-7 py-2.5 rounded-[22px] transition-colors duration-150 ${
                   faqTab === tab
-                    ? 'bg-[#fff8ec] text-teal'
-                    : 'border border-[#fff8ec] text-[#fff8ec] hover:bg-white/10'
+                    ? 'bg-white text-teal'
+                    : 'border border-white text-white hover:bg-white/10'
                 }`}
               >
                 {tab === 'business' ? 'For Businesses' : 'For Investors'}
               </button>
             ))}
           </div>
-          <div className="bg-[#fff8ec] rounded-[15px] overflow-hidden max-w-[1319px]">
+          <div className="bg-white rounded-[15px] overflow-hidden max-w-[1319px]">
             {faqItems.map((item, i) => (
               <div key={item.question} style={fadeUp(faqIn, 160 + i * 80)}>
                 <FAQItem question={item.question} answer={item.answer} />
@@ -380,8 +380,8 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer className="bg-teal px-8 lg:px-16 py-8">
         <div className="max-w-[1512px] mx-auto flex items-center justify-between">
-          <p className="font-['Lato'] font-bold text-xl text-[#fff8ec]">InvoiceFlow</p>
-          <p className="font-['Lato'] text-sm text-[#fff8ec]/60">
+          <p className="font-['Lato'] font-bold text-xl text-white">InvoiceFlow</p>
+          <p className="font-['Lato'] text-sm text-white/60">
             © {new Date().getFullYear()} InvoiceFlow · SMU IS213
           </p>
         </div>
