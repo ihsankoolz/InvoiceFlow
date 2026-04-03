@@ -8,7 +8,6 @@ import pytest
 from activities.invoice_activities import get_user
 from activities.payment_activities import release_escrow
 
-
 # ---------------------------------------------------------------------------
 # get_user
 # ---------------------------------------------------------------------------
