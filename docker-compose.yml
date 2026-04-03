@@ -543,13 +543,11 @@ services:
       RABBITMQ_MGMT_URL: http://rabbitmq:15672
       RABBITMQ_USER: guest
       RABBITMQ_PASS: guest
-    volumes:
-      - ./shared:/app/shared
     depends_on:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5014/health')\""]
+      test: ["CMD-SHELL", "curl -sf http://localhost:5014/health"]
       interval: 30s
       timeout: 5s
       retries: 3

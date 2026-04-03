@@ -31,6 +31,7 @@ mysql-data/
 
 # Claude Code
 .claude/
+CLAUDE.md
 
 #stripe
 stripe.exe
