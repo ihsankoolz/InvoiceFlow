@@ -42,7 +42,7 @@ function useCountdown(deadline) {
       else setRemaining(`${mins}m`)
     }
     calc()
-    const id = setInterval(calc, 30000)
+    const id = setInterval(calc, 1000)
     return () => clearInterval(id)
   }, [deadline])
   return remaining

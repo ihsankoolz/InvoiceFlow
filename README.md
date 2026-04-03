@@ -41,9 +41,7 @@ docker compose ps
 
 | Document | Description |
 |----------|-------------|
-| [Final_Architecture_MK_2.md](Final_Architecture_MK_2.md) | Authoritative architecture (v4.3) — services, connections, protocols, rules |
-| [BUILD_INSTRUCTIONS_V2.md](BUILD_INSTRUCTIONS_V2.md) | Detailed build instructions per service — endpoints, schemas, classes, test steps |
-| [TEAM_GUIDE.md](TEAM_GUIDE.md) | Step-by-step team playbook from zero to working demo |
+| [FINAL_ARCHITECTURE.md](FINAL_ARCHITECTURE.md) | Authoritative architecture — services, connections, protocols, rules, CI/CD, demo mode |
 
 ---
 
@@ -142,19 +140,6 @@ RabbitMQ  exchange: invoiceflow_events  (topic)
   loan.overdue  → 4 consumers (Invoice, Payment, User, Notification)
   wallet.credited
 ```
-
----
-
-## Scaffold Status
-
-All 13 services are scaffolded with:
-
-- Complete folder structures and `__init__.py` files
-- **Complete**: models, schemas, `config.py`, `database.py`, `docker-compose` entries
-- **Skeleton**: service classes with correct method signatures, step-by-step docstrings, and `TODO` bodies
-- **Skeleton**: router endpoints with correct decorators, `response_model`, and `TODO` bodies
-
-To implement a service, open [BUILD_INSTRUCTIONS_V2.md](BUILD_INSTRUCTIONS_V2.md), find your service's section, and fill in the `TODO` bodies following the docstrings.
 
 ---
 
