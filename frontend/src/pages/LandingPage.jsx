@@ -392,7 +392,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section ref={faqRef} className="bg-teal py-20">
+      <section ref={faqRef} className="bg-teal py-32">
         <div className="px-8 lg:px-16 max-w-[1512px] mx-auto" style={fadeUp(faqIn, 0)}>
           <p className="font-['Lato'] font-medium text-[#fff8ec] text-2xl mb-2">FAQ</p>
           <h2 className="font-['Lato'] font-semibold text-[#fff8ec] text-5xl mb-2">Common questions</h2>
