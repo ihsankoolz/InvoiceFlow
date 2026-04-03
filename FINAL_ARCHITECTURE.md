@@ -711,4 +711,60 @@ Schema migrations are managed with **Alembic** for all Python/SQLAlchemy service
 | Metrics | Prometheus :9090 → Grafana :3001 |
 | Logging | structlog → Promtail → Loki :3100 |
 | External Audit Log | Activity Log Bridge → OutSystems Platform |
+| CI/CD | GitHub Actions — see below |
+
+---
+
+## CI/CD Pipeline
+
+### Overview
+
+The pipeline is defined in `.github/workflows/ci.yml` and runs on every push to any branch, and on pull requests targeting `main`. Deployment only triggers on pushes to `main` after all checks pass.
+
+### CI — Continuous Integration (all branches)
+
+| Job | What it does |
+|-----|-------------|
+| `lint` | Runs `ruff check` across all Python code (excludes generated proto files) |
+| `test-temporal-worker` | Installs deps, runs pytest in `temporal-worker/` |
+| `test-bidding-service` | Installs deps, runs pytest in `services/bidding-service/` |
+| `test-invoice-service` | Installs deps, runs pytest in `services/invoice-service/` |
+| `test-marketplace-service` | Installs deps, runs pytest in `services/marketplace-service/` |
+| `test-notification-service` | Installs deps, runs pytest in `services/notification-service/` |
+| `test-user-service` | Installs deps, runs pytest in `services/user-service/` |
+| `test-frontend` | Installs npm deps, runs `npm test` in `frontend/` |
+
+All jobs run in parallel on `ubuntu-latest`.
+
+### CD — Continuous Deployment (`main` branch only)
+
+| Job | Trigger | What it does |
+|-----|---------|-------------|
+| `deploy` | Push to `main`, only after all CI jobs pass | SSHs into the EC2 instance, runs `git pull origin main` and `docker compose up --build -d` |
+
+**Frontend** is deployed separately via Vercel, which auto-deploys on every push to `main`.
+
+### Secrets required (stored in GitHub repository secrets)
+
+| Secret | Purpose |
+|--------|---------|
+| `EC2_HOST` | Public IP or hostname of the EC2 instance |
+| `EC2_USER` | SSH username (e.g. `ubuntu`) |
+| `EC2_SSH_KEY` | Private key used to SSH into the EC2 instance |
+
+### Deployment flow
+
+```
+Push to main
+    │
+    ├─ All CI jobs run in parallel (lint + 7 test jobs)
+    │
+    └─ All pass → deploy job SSHs into EC2
+                      │
+                      ├─ git pull origin main
+                      └─ docker compose up --build -d
+                              (rebuilds changed images, restarts affected containers)
+
+Push to other branches / PRs → CI only, no deploy
+```
 | Deployment | Docker + Docker Compose |
