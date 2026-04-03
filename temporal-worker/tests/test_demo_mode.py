@@ -85,14 +85,14 @@ _DUE_DATE_FUTURE = "2030-01-01T00:00:00"  # far future — demo mode must overri
 
 
 def _demo_config(auction_secs=90, loan_secs=90, repayment_secs=60, anti_snipe_secs=15):
-    """Return a fresh config object with DEMO_MODE=True."""
-    cfg = MagicMock()
+    """Return a fresh config module with DEMO_MODE=True."""
+    cfg = types.ModuleType("config")
     cfg.DEMO_MODE = True
     cfg.DEMO_AUCTION_SECONDS = auction_secs
     cfg.DEMO_LOAN_MATURITY_SECONDS = loan_secs
     cfg.DEMO_REPAYMENT_WINDOW_SECONDS = repayment_secs
     cfg.ANTI_SNIPE_SECONDS = anti_snipe_secs
-    cfg.REPAYMENT_WINDOW_SECONDS = 86400  # production value — should NOT be used in demo mode
+    cfg.REPAYMENT_WINDOW_SECONDS = 86400
     return cfg
 
 
