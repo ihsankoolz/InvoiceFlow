@@ -24,7 +24,7 @@ A business uploads an invoice PDF, the system extracts key fields (pdfplumber), 
 
 An investor tops up their wallet via Stripe, browses the marketplace, and places a bid (escrow locked immediately via gRPC). If this bid outbids a previous highest bidder, the previous bidder's escrow is released immediately back to their wallet via choreography. The system implements anti-snipe protection: if a bid is placed within the final 5 minutes of the auction, the deadline automatically extends by 5 minutes, giving other investors a fair window to respond. This extension can trigger repeatedly — every bid in the final 5 minutes resets the 5-minute window. When no new bids arrive within the final window and the (possibly extended) timer expires, only the winning bidder has escrow locked. Temporal then executes the financial workflow: convert escrow, create loan, release funds to seller, update statuses, delist, and notify all parties.
 
-**Anti-snipe mechanism:** When Bidding Orchestrator processes a new bid, it checks if the auction is within its final 5 minutes. If so, it sends a Temporal Signal (`extend_deadline`) to the running AuctionCloseWorkflow. The workflow receives the signal, cancels its current timer, and restarts a new 5-minute timer. The Marketplace Service also updates the listing's displayed deadline so the frontend reflects the extension in real time.
+**Anti-snipe mechanism:** When Bidding Orchestrator processes a new bid, it checks if the auction is within its final `ANTI_SNIPE_WINDOW_SECONDS` (default 300s / 5 minutes, configurable via env var). If so, it sends a Temporal Signal (`extend_deadline`) to the running AuctionCloseWorkflow. The workflow receives the signal, cancels its current timer, and restarts the countdown. The Marketplace Service also updates the listing's displayed deadline so the frontend reflects the extension in real time.
 
 **Stripe webhook path:** Stripe posts a webhook to KONG, which routes it to the Webhook Router service. The Webhook Router verifies the Stripe-Signature HMAC and publishes a normalised `stripe.checkout.completed` event (with a `type` field) to RabbitMQ. Bidding Orchestrator consumes events with `type=wallet_topup` and starts WalletTopUpWorkflow.
 
@@ -65,7 +65,7 @@ The LoanMaturityWorkflow (already running as a child of AuctionCloseWorkflow) fi
 1. Waits for `bid_period_hours` using Temporal's durable timer (survives crashes)
 2. Sends T-12h auction closing warning (publishes `auction.closing.warning` to RabbitMQ)
 3. Sends T-1h auction closing warning (publishes `auction.closing.warning` to RabbitMQ)
-4. **Anti-snipe loop:** In the final 5 minutes, the workflow listens for `extend_deadline` signals. Each signal cancels the current timer and restarts a 5-minute countdown. The loop exits only when the timer expires with no new signal.
+4. **Anti-snipe loop:** In the final `ANTI_SNIPE_SECONDS` window (default 300s, configurable via env var), the workflow listens for `extend_deadline` signals. Each signal resets the timer. The loop exits only when the timer expires with no new signal.
 5. Timer expires — fetches all offers from Bidding Service (direct HTTP)
 6. If zero bids → publishes `auction.expired` and ends
 7. If bids exist → picks highest bidder as winner, runs the 10-step financial workflow:
@@ -85,7 +85,7 @@ The LoanMaturityWorkflow (already running as a child of AuctionCloseWorkflow) fi
 
 **Note on escrow:** By auction close, only the winning bidder has funds in escrow. All previous bidders' escrow was already released immediately when they were outbid (via `bid.outbid` → Payment Service choreography). There is no refund step at auction close.
 
-**Anti-snipe implementation detail:** The workflow uses `workflow.wait_condition()` with a 5-minute timeout inside a loop. When Bidding Orchestrator detects a bid in the final 5 minutes, it calls `workflow_handle.signal('extend_deadline')` via the Temporal SDK. The workflow receives the signal, sets a flag, and re-enters the loop with a fresh 5-minute timer. The loop must check the signal flag before waiting (in case a signal arrived during the preceding `sleep_until`), then reset the flag only after confirming the check.
+**Anti-snipe implementation detail:** The workflow uses `workflow.wait_condition()` with an `ANTI_SNIPE_SECONDS` timeout (env var, default 300s) inside a loop. When Bidding Orchestrator detects a bid within the anti-snipe window, it calls `workflow_handle.signal('extend_deadline')` via the Temporal SDK. The workflow receives the signal, sets a flag, and re-enters the loop with a fresh timer. The loop must check the signal flag before waiting (in case a signal arrived during the preceding `sleep_until`), then reset the flag only after confirming the check. The Bidding Orchestrator checks the same window via `ANTI_SNIPE_WINDOW_SECONDS` (env var, default 300s) when comparing the current time against the marketplace listing deadline.
 
 **Ends when:** All steps complete (or all retries exhausted → failure recorded for manual intervention).
 
@@ -101,7 +101,7 @@ The LoanMaturityWorkflow (already running as a child of AuctionCloseWorkflow) fi
 1. Durable timer waits until `due_date` (could be days or weeks)
 2. Marks loan DUE via Payment Service (gRPC :50051)
 3. Publishes `loan.due` to RabbitMQ → Notification Service emails the business
-4. Starts repayment window using `wait_condition` with timeout (120s demo / 86400s production) — exits early if `repayment_confirmed` signal arrives from LoanRepaymentWorkflow
+4. Starts repayment window using `wait_condition` with timeout (`DEMO_REPAYMENT_WINDOW_SECONDS` in demo mode, `REPAYMENT_WINDOW_SECONDS` in production, default 86400s / 24h) — exits early if `repayment_confirmed` signal arrives from LoanRepaymentWorkflow
 5. If signal received (or loan status already REPAID) → workflow ends cleanly
 6. If timeout expires without signal → fetches loan status to confirm, then marks loan OVERDUE via gRPC, publishes `loan.overdue` to RabbitMQ
 7. Four consumers react independently (choreography — see Choreography-Driven Flows)
@@ -188,7 +188,7 @@ Note: Stripe Wrapper handles **outbound** calls only (creating checkout sessions
 
 | Service | Technology | Purpose | Called By |
 |---------|------------|---------|----------|
-| Activity Log Bridge | Python (pika) | RabbitMQ consumer with `#` wildcard routing key. Relays all domain events to the OutSystems Activity Log REST API. Constructs an `EventRequest` with `event_type`, `payload`, `source_service`, `invoice_token`, `user_id`, `timestamp`, and `severity`. Uses manual ack — on OutSystems failure, nacks without requeue so the message is routed to `outsystems_audit_queue.dlq`. No HTTP endpoints of its own | RabbitMQ (push) → OutSystems (HTTPS) |
+| Activity Log Bridge | Python (pika) | RabbitMQ consumer with `#` wildcard routing key. Relays all domain events to the OutSystems Activity Log REST API. Constructs an `EventRequest` with `event_type`, `payload`, `source_service`, `invoice_token`, `user_id`, `timestamp`, and `severity`. Uses manual ack — on OutSystems failure, nacks without requeue so the message is routed to `outsystems_audit_queue.dlq`. On startup, retries the RabbitMQ connection up to 15 times (5s delay) to handle slow broker initialisation. No HTTP endpoints of its own | RabbitMQ (push) → OutSystems (HTTPS) |
 
 ### OutSystems Service (Activity Log)
 
@@ -417,7 +417,7 @@ Separate queues are required for each fan-out consumer. A single queue with mult
 11. **Webhook Router owns Stripe webhook intake.** It is the single entry point for all Stripe events. Downstream orchestrators consume normalised events from RabbitMQ rather than raw Stripe payloads, decoupling them from Stripe's schema.
 12. **Repayment and default flows are symmetrical.** Both `loan.repaid` and `loan.overdue` use the same four-consumer choreography pattern — the Temporal Worker publishes to RabbitMQ, and Invoice Service + Payment Service + User Service + Notification Service each react independently.
 13. **Notification Service persists to notification_db.** Notifications are stored in MySQL (notification_db, :3311) — not in-memory. The API serves the last 50 per user ordered by `created_at DESC`.
-14. **WebSocket connections bypass KONG.** The React frontend connects directly to Notification Service (`ws://notification-service:5005/ws/{user_id}`) for real-time push. KONG's HTTP/1.1 proxy does not natively support WebSocket upgrade.
+14. **WebSocket connections bypass KONG.** The React frontend connects directly to Notification Service (`ws://notification-service:5005/ws/{user_id}`) for real-time push. KONG's HTTP/1.1 proxy does not natively support WebSocket upgrade. The frontend (`NotificationContext.jsx`) implements exponential backoff reconnect — starting at 1s, doubling on each failure, capped at 30s — so transient disconnects recover automatically without user action.
 
 ---
 
@@ -574,10 +574,10 @@ This flow has three phases: (A) Wallet Top-Up, (B) Bidding with Anti-Snipe, (C) 
 | B10c | *(If outbid occurred)* RabbitMQ | Notification Service | Consume `bid.outbid` → notify outbid investor | AMQP | Concurrent with B10b |
 | B10d | *(If outbid occurred)* Notification Service | Resend | Send outbid email to previous highest bidder | HTTPS (external) | Concurrent with B10e |
 | B10e | *(If outbid occurred)* Notification Service | React Frontend | WebSocket push — outbid notification | WebSocket | Concurrent with B10d |
-| B11 | Bidding Orchestrator | Marketplace Service | `GET /listings/{id}` — check if auction is within final 5 minutes | HTTP (direct) | Compare current time vs deadline |
-| B12a | *(If within 5 min)* Bidding Orchestrator | Temporal Server | Signal `extend_deadline` to `AuctionCloseWorkflow` (ID: `auction-{invoice_token}`) | Temporal SDK (signal) | Workflow restarts 5-min timer; concurrent with B12b and B12c |
-| B12b | *(If within 5 min)* Bidding Orchestrator | Marketplace Service | `PATCH /listings/{id}` — update displayed deadline (+5 min) | HTTP (direct) | Frontend reflects new deadline; concurrent with B12a and B12c |
-| B12c | *(If within 5 min)* Bidding Orchestrator | RabbitMQ | Publish `auction.extended` | AMQP | Concurrent with B12a and B12b |
+| B11 | Bidding Orchestrator | Marketplace Service | `GET /listings/{id}` — check if auction is within final `ANTI_SNIPE_WINDOW_SECONDS` (default 300s) | HTTP (direct) | Compare current time vs deadline |
+| B12a | *(If within window)* Bidding Orchestrator | Temporal Server | Signal `extend_deadline` to `AuctionCloseWorkflow` (ID: `auction-{invoice_token}`) | Temporal SDK (signal) | Workflow restarts anti-snipe timer; concurrent with B12b and B12c |
+| B12b | *(If within window)* Bidding Orchestrator | Marketplace Service | `PATCH /listings/{id}` — update displayed deadline (+`ANTI_SNIPE_WINDOW_SECONDS`) | HTTP (direct) | Frontend reflects new deadline; concurrent with B12a and B12c |
+| B12c | *(If within window)* Bidding Orchestrator | RabbitMQ | Publish `auction.extended` | AMQP | Concurrent with B12a and B12b |
 | B13 | Bidding Orchestrator | RabbitMQ | Publish `bid.placed` | AMQP | |
 | B14a | RabbitMQ | Notification Service | Consume `bid.placed` → notify seller of new bid | AMQP | Concurrent with B14b |
 | B14b | RabbitMQ | Activity Log Bridge | Consume `bid.placed` → relay to OutSystems | AMQP → HTTPS | Concurrent with B14a |
@@ -623,7 +623,7 @@ This flow has two branches: (A) Loan Comes Due + Repayment Window, then either (
 | A4b | RabbitMQ | Activity Log Bridge | Consume `loan.due` → relay to OutSystems | AMQP → HTTPS | Concurrent with A4a |
 | A5a | Notification Service | Resend | Send email | HTTPS (external) | Concurrent with A5b |
 | A5b | Notification Service | React Frontend | WebSocket push — loan due notification to business | WebSocket | Concurrent with A5a |
-| A6 | LoanMaturityWorkflow | — | Start repayment window timer (120s demo / 86400s prod) | Temporal internal | 24h in production |
+| A6 | LoanMaturityWorkflow | — | Start repayment window timer (`DEMO_REPAYMENT_WINDOW_SECONDS` / `REPAYMENT_WINDOW_SECONDS`, default 86400s) | Temporal internal | 24h in production; set `DEMO_MODE=true` to shorten |
 
 #### Phase B: Business Repays Successfully (within repayment window)
 
@@ -767,4 +767,46 @@ Push to main
 
 Push to other branches / PRs → CI only, no deploy
 ```
-| Deployment | Docker + Docker Compose |
+
+---
+
+## Demo Mode
+
+Demo mode shortens all Temporal workflow timers so all three user scenarios can be demonstrated end-to-end in under 1.5 minutes each. It is controlled entirely via environment variables — no code changes required.
+
+### Activation
+
+Set the following in your `.env` file (and `.env` on the EC2 instance for production demo):
+
+```bash
+DEMO_MODE=true
+DEMO_AUCTION_SECONDS=90        # AuctionCloseWorkflow: skips T-12h/T-1h warnings, runs single 90s countdown
+DEMO_LOAN_MATURITY_SECONDS=90  # LoanMaturityWorkflow: fires after 90s instead of loan due_date
+DEMO_REPAYMENT_WINDOW_SECONDS=60  # LoanMaturityWorkflow: repayment window is 60s instead of 86400s
+ANTI_SNIPE_SECONDS=15          # AuctionCloseWorkflow: anti-snipe loop window is 15s
+ANTI_SNIPE_WINDOW_SECONDS=15   # Bidding Orchestrator: triggers signal if bid placed within 15s of deadline
+```
+
+### Timing overview
+
+| Scenario | Production timing | Demo timing |
+|----------|------------------|-------------|
+| Scenario 1: invoice listing to auction start | Immediate | Immediate |
+| Scenario 2: auction countdown | `bid_period_hours` (hours/days) | 90s (`DEMO_AUCTION_SECONDS`) |
+| Scenario 2: anti-snipe window | 300s (5 min) | 15s (`ANTI_SNIPE_SECONDS` / `ANTI_SNIPE_WINDOW_SECONDS`) |
+| Scenario 3: loan maturity (time until loan due) | Days/weeks | 90s (`DEMO_LOAN_MATURITY_SECONDS`) |
+| Scenario 3: repayment window | 86400s (24h) | 60s (`DEMO_REPAYMENT_WINDOW_SECONDS`) |
+
+### Services affected
+
+| Service | What changes |
+|---------|-------------|
+| Temporal Worker (`temporal-worker/`) | `AuctionCloseWorkflow` skips T-12h/T-1h warnings; uses `DEMO_AUCTION_SECONDS` for countdown. `LoanMaturityWorkflow` fires after `DEMO_LOAN_MATURITY_SECONDS`; uses `DEMO_REPAYMENT_WINDOW_SECONDS` for repayment window |
+| Invoice Orchestrator (`orchestrators/invoice-orchestrator/`) | `calculate_deadline()` uses `DEMO_AUCTION_SECONDS` when `DEMO_MODE=true` so the marketplace listing deadline matches the Temporal timer |
+| Bidding Orchestrator (`orchestrators/bidding-orchestrator/`) | Anti-snipe check uses `ANTI_SNIPE_WINDOW_SECONDS` env var (both in demo and production — defaults to 300s) |
+
+### Notes
+
+- In demo mode, `AuctionCloseWorkflow` does **not** publish T-12h or T-1h closing warnings — the auction is too short for these to be meaningful.
+- The `invoice-orchestrator` deadline calculation must match `DEMO_AUCTION_SECONDS` so the anti-snipe comparison (current time vs. displayed deadline) stays in sync.
+- `ANTI_SNIPE_SECONDS` and `ANTI_SNIPE_WINDOW_SECONDS` are separate env vars because they govern different services (Temporal Worker and Bidding Orchestrator respectively). Set both to the same value in demo mode.
