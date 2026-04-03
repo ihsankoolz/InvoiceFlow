@@ -41,6 +41,10 @@ _config_orig = sys.modules.get("config")
 _config = types.ModuleType("config")
 _config.ANTI_SNIPE_SECONDS = 300
 _config.REPAYMENT_WINDOW_SECONDS = 30
+_config.DEMO_MODE = False
+_config.DEMO_AUCTION_SECONDS = 90
+_config.DEMO_LOAN_MATURITY_SECONDS = 90
+_config.DEMO_REPAYMENT_WINDOW_SECONDS = 60
 sys.modules["config"] = _config
 
 from workflows.auction_close import AuctionCloseWorkflow  # noqa: E402
