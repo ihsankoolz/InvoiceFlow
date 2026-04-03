@@ -45,18 +45,18 @@ def relay_to_outsystems(ch, method, properties, body):
 
 # CONNECT TO RABBITMQ — retry until ready (RabbitMQ can be slow to start)
 # 'localhost' works for local testing, 'rabbitmq' works for docker
-_MAX_RETRIES = 15
-_RETRY_DELAY = 5  # seconds
-for _attempt in range(1, _MAX_RETRIES + 1):
+MAX_RETRIES = 15
+RETRY_DELAY = 5  # seconds
+for attempt in range(1, MAX_RETRIES + 1):
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
-        print(f" [*] Connected to RabbitMQ on attempt {_attempt}")
+        print(f" [*] Connected to RabbitMQ on attempt {attempt}")
         break
-    except pika.exceptions.AMQPConnectionError as _e:
-        print(f" [!] RabbitMQ not ready (attempt {_attempt}/{_MAX_RETRIES}): {_e}")
-        if _attempt == _MAX_RETRIES:
+    except pika.exceptions.AMQPConnectionError as e:
+        print(f" [!] RabbitMQ not ready (attempt {attempt}/{MAX_RETRIES}): {e}")
+        if attempt == MAX_RETRIES:
             raise
-        time.sleep(_RETRY_DELAY)
+        time.sleep(RETRY_DELAY)
 channel = connection.channel()
 
 # declare the exchange
