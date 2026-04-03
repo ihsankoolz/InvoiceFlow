@@ -55,8 +55,8 @@ _config.DEMO_LOAN_MATURITY_SECONDS = 90
 _config.DEMO_REPAYMENT_WINDOW_SECONDS = 60
 sys.modules["config"] = _config
 
-from workflows.auction_close import AuctionCloseWorkflow      # noqa: E402
-from workflows.loan_maturity import LoanMaturityWorkflow      # noqa: E402
+from workflows.auction_close import AuctionCloseWorkflow  # noqa: E402
+from workflows.loan_maturity import LoanMaturityWorkflow  # noqa: E402
 
 for _mod in _STUBBED_MODS:
     if _mod not in _previously_present:
