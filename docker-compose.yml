@@ -475,8 +475,8 @@ services:
       - "5008:5008"
     environment:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_SUCCESS_URL: https://invoiceflow.vercel.app/payment/success
-      STRIPE_CANCEL_URL: https://invoiceflow.vercel.app/payment/cancel
+      STRIPE_SUCCESS_URL: https://invoiceflowsga.vercel.app/payment/success
+      STRIPE_CANCEL_URL: https://invoiceflowsga.vercel.app/payment/cancel
     volumes:
       - ./shared:/app/shared
     healthcheck:
