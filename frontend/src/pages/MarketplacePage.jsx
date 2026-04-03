@@ -60,7 +60,7 @@ function CountdownBadge({ deadline }) {
 
 /* ── Listing card ── */
 function ListingCard({ listing, onBid, delay, inView, isInvestor }) {
-  const ret = calcReturn(listing.face_value, listing.current_bid || listing.minimum_bid)
+  const ret = listing.current_bid ? calcReturn(listing.face_value, listing.current_bid) : null
   return (
     <div
       className="bg-white border border-ink/10 rounded-[20px] overflow-hidden hover:shadow-sm hover:-translate-y-0.5 transition-[transform,box-shadow] duration-150 flex flex-col"
@@ -82,9 +82,9 @@ function ListingCard({ listing, onBid, delay, inView, isInvestor }) {
         {/* Current bid + return */}
         <div className="flex items-end justify-between">
           <div>
-            <p className="font-['Lato'] text-xs text-ink/40 mb-0.5">Current bid</p>
+            <p className="font-['Lato'] text-xs text-ink/40 mb-0.5">{listing.current_bid ? 'Current bid' : 'Min bid'}</p>
             <p className="font-['Lato'] font-semibold text-[28px] text-ink leading-none">
-              {fmt(listing.current_bid || listing.minimum_bid)}
+              {listing.current_bid ? fmt(listing.current_bid) : fmt(listing.minimum_bid)}
             </p>
           </div>
           {ret && (
