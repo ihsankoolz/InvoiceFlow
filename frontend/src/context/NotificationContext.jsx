@@ -23,22 +23,41 @@ export function NotificationProvider({ children }) {
     if (!user) return
 
     let cancelled = false
-    try {
-      const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/${user.sub}`)
-      wsRef.current = ws
+    let retryTimeout = null
+    let delay = 1000
 
-      ws.onopen = () => { if (cancelled) ws.close() }
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data)
-          if (!cancelled) addToast(msg)
-        } catch { /* ignore parse errors */ }
-      }
-      ws.onerror = () => { /* silently ignore */ }
-    } catch { /* silently ignore if WS unavailable */ }
+    function connect() {
+      if (cancelled) return
+      try {
+        const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/${user.sub}`)
+        wsRef.current = ws
+
+        ws.onopen = () => {
+          if (cancelled) { ws.close(); return }
+          delay = 1000 // reset backoff on successful connection
+        }
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data)
+            if (!cancelled) addToast(msg)
+          } catch { /* ignore parse errors */ }
+        }
+        ws.onerror = () => { /* onclose will handle reconnect */ }
+        ws.onclose = () => {
+          if (cancelled) return
+          retryTimeout = setTimeout(() => {
+            delay = Math.min(delay * 2, 30000) // exponential backoff, cap at 30s
+            connect()
+          }, delay)
+        }
+      } catch { /* ignore if WS unavailable, onclose will retry */ }
+    }
+
+    connect()
 
     return () => {
       cancelled = true
+      clearTimeout(retryTimeout)
       const ws = wsRef.current
       wsRef.current = null
       if (ws && ws.readyState === WebSocket.OPEN) ws.close()
