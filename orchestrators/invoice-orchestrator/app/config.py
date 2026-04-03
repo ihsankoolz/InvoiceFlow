@@ -10,3 +10,5 @@ MARKETPLACE_SERVICE_URL = os.getenv("MARKETPLACE_SERVICE_URL", "http://marketpla
 ACRA_WRAPPER_URL = os.getenv("ACRA_WRAPPER_URL", "http://acra-wrapper:5007")
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672")
 TEMPORAL_HOST = os.getenv("TEMPORAL_HOST", "temporal:7233")
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
+DEMO_AUCTION_SECONDS = int(os.getenv("DEMO_AUCTION_SECONDS", "90"))
