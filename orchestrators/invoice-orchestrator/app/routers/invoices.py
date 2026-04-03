@@ -76,7 +76,7 @@ async def list_invoice(
     face_value: float = Form(...),
     minimum_bid: float = Form(...),
     due_date: str = Form(...),
-    bid_period_hours: int = Form(48),
+    bid_period_hours: float = Form(48),
     urgency_level: str = Form('MEDIUM'),
     pdf: UploadFile = File(...),
 ):

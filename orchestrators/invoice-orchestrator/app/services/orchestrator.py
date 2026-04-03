@@ -33,7 +33,7 @@ def calculate_urgency(due_date_str: str) -> str:
     return "LOW"
 
 
-def calculate_deadline(bid_period_hours: int) -> str:
+def calculate_deadline(bid_period_hours: float) -> str:
     """Calculate auction deadline as ISO 8601 string.
     In demo mode, uses DEMO_AUCTION_SECONDS so the frontend countdown matches the actual workflow timer."""
     if config.DEMO_MODE:
@@ -60,7 +60,7 @@ class InvoiceOrchestrator:
         self.temporal_client = temporal_client
 
     async def list_invoice(self, seller_id: int, debtor_uen: str, face_value: float,
-                           minimum_bid: float, due_date: str, bid_period_hours: int,
+                           minimum_bid: float, due_date: str, bid_period_hours: float,
                            pdf_file, debtor_name: str = None, urgency_level: str = 'MEDIUM') -> dict:
         """Full Scenario 1 orchestration — 8-step flow."""
 

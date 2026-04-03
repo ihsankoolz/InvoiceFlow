@@ -134,3 +134,28 @@ jobs:
         run: npm install
       - name: Run tests
         run: npm test
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - test-temporal-worker
+      - test-bidding-service
+      - test-invoice-service
+      - test-marketplace-service
+      - test-notification-service
+      - test-user-service
+      - test-frontend
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/InvoiceFlow
+            git pull origin main
+            docker compose up --build -d
