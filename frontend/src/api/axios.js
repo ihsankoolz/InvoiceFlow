@@ -4,6 +4,7 @@ const TOKEN_KEY = 'invoiceflow_token'
 
 const api = axios.create({
   baseURL: '/api',
+  timeout: 10000,
 })
 
 // Attach Authorization header on every request if a token exists

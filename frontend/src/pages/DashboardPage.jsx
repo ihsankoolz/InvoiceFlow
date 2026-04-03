@@ -316,47 +316,54 @@ function InvestorDashboard({ user }) {
   useEffect(() => {
     if (!user) return
 
-    // Wallet balance + locked escrow (both returned by the same endpoint)
-    api.get(`/wallet/balance?user_id=${user.sub}`)
-      .then(r => {
-        setWalletBalance(Number(r.data?.balance ?? r.data?.available_balance ?? 0))
-        setLockedBalance(Number(r.data?.locked_balance ?? 0))
-      })
-      .catch(() => setWalletBalance(null))
-      .finally(() => setWalletLoading(false))
+    Promise.allSettled([
+      api.get(`/wallet/balance?user_id=${user.sub}`),
+      api.get(`/wallet/transactions?user_id=${user.sub}`),
+      api.get(`/bids?investor_id=${user.sub}`),
+      api.get(`/loans?investor_id=${user.sub}`),
+    ]).then(([walletRes, txRes, bidsRes, loansRes]) => {
+      // Wallet balance + locked escrow
+      if (walletRes.status === 'fulfilled') {
+        setWalletBalance(Number(walletRes.value.data?.balance ?? walletRes.value.data?.available_balance ?? 0))
+        setLockedBalance(Number(walletRes.value.data?.locked_balance ?? 0))
+      } else {
+        setWalletBalance(null)
+      }
+      setWalletLoading(false)
 
-    // Transactions (activity feed)
-    api.get(`/wallet/transactions?user_id=${user.sub}`)
-      .then(r => {
-        const data = r.data?.transactions || r.data || []
+      // Transactions (activity feed)
+      if (txRes.status === 'fulfilled') {
+        const data = txRes.value.data?.transactions || txRes.value.data || []
         setTransactions(Array.isArray(data) ? data.slice(0, 5) : [])
-      })
-      .catch(() => setTransactions([]))
-      .finally(() => setTxLoading(false))
+      } else {
+        setTransactions([])
+      }
+      setTxLoading(false)
 
-    // Active bids
-    api.get(`/bids?investor_id=${user.sub}`)
-      .then(r => {
-        const bids = r.data?.bids || r.data || []
+      // Active bids
+      if (bidsRes.status === 'fulfilled') {
+        const bids = bidsRes.value.data?.bids || bidsRes.value.data || []
         const pending = bids.filter(b => b.status === 'PENDING' || b.status === 'ACTIVE' || b.status === 'OUTBID')
         setActiveBids(pending.slice(0, 3))
         setLeadingCount(pending.filter(b => b.status === 'PENDING' || b.status === 'ACTIVE').length)
         setOutbidCount(pending.filter(b => b.status === 'OUTBID').length)
         setTotalInBids(pending.reduce((s, b) => s + Number(b.amount || 0), 0))
-      })
-      .catch(() => { setActiveBids([]); setLeadingCount(0); setOutbidCount(0) })
-      .finally(() => setBidsLoading(false))
+      } else {
+        setActiveBids([]); setLeadingCount(0); setOutbidCount(0)
+      }
+      setBidsLoading(false)
 
-    // Upcoming repayments (loans investor is involved in)
-    api.get(`/loans?investor_id=${user.sub}`)
-      .then(r => {
-        const loans = r.data?.loans || r.data || []
+      // Upcoming repayments (loans investor is involved in)
+      if (loansRes.status === 'fulfilled') {
+        const loans = loansRes.value.data?.loans || loansRes.value.data || []
         const active = loans.filter(l => l.status === 'ACTIVE' || l.status === 'DUE')
         setLoansCount(active.length)
         setUpcomingLoans(active.slice(0, 3))
-      })
-      .catch(() => { setUpcomingLoans([]); setLoansCount(0) })
-      .finally(() => setLoansLoading(false))
+      } else {
+        setUpcomingLoans([]); setLoansCount(0)
+      }
+      setLoansLoading(false)
+    })
   }, [user])
 
   // Days left progress for a loan
