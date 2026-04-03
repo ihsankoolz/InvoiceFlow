@@ -319,7 +319,7 @@ export default function LandingPage() {
               <div key={step.num} style={fadeUp(howIn, 160 + i * 80)}>
                 <p className="font-['Lato'] text-2xl text-black mb-2">{step.num}</p>
                 <p className="font-['Lato'] font-medium text-[26px] text-black mb-3 leading-tight">{step.title}</p>
-                <p className="font-['Lato'] font-light text-xl text-black leading-relaxed">{step.body}</p>
+                <p className="font-['Lato'] text-xl text-black leading-relaxed">{step.body}</p>
               </div>
             ))}
           </div>
