@@ -1,4 +1,5 @@
 from temporalio.client import Client
+from temporalio.exceptions import WorkflowAlreadyStartedError
 
 from app import config
 
@@ -27,9 +28,14 @@ class TemporalClient:
         """
         if not self.client:
             await self.connect()
-        await self.client.start_workflow(
-            workflow_name,
-            args=list(args.values()),
-            id=workflow_id,
-            task_queue=task_queue,
-        )
+        try:
+            await self.client.start_workflow(
+                workflow_name,
+                args=list(args.values()),
+                id=workflow_id,
+                task_queue=task_queue,
+            )
+        except WorkflowAlreadyStartedError:
+            # Workflow already running for this invoice — safe to ignore.
+            # This can happen if the same invoice is submitted twice (e.g. double-click or demo rerun).
+            pass

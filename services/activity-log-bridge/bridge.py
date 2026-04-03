@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime
 
 import pika
@@ -42,9 +43,20 @@ def relay_to_outsystems(ch, method, properties, body):
         print(f" [FAILED] Could not process message: {e}")
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-# CONNECT TO RABBITMQ
+# CONNECT TO RABBITMQ — retry until ready (RabbitMQ can be slow to start)
 # 'localhost' works for local testing, 'rabbitmq' works for docker
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+_MAX_RETRIES = 15
+_RETRY_DELAY = 5  # seconds
+for _attempt in range(1, _MAX_RETRIES + 1):
+    try:
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+        print(f" [*] Connected to RabbitMQ on attempt {_attempt}")
+        break
+    except pika.exceptions.AMQPConnectionError as _e:
+        print(f" [!] RabbitMQ not ready (attempt {_attempt}/{_MAX_RETRIES}): {_e}")
+        if _attempt == _MAX_RETRIES:
+            raise
+        time.sleep(_RETRY_DELAY)
 channel = connection.channel()
 
 # declare the exchange
