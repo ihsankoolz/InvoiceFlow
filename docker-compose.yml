@@ -475,8 +475,8 @@ services:
       - "5008:5008"
     environment:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_SUCCESS_URL: http://localhost:3000/payment/success
-      STRIPE_CANCEL_URL: http://localhost:3000/payment/cancel
+      STRIPE_SUCCESS_URL: https://invoiceflow.vercel.app/payment/success
+      STRIPE_CANCEL_URL: https://invoiceflow.vercel.app/payment/cancel
     volumes:
       - ./shared:/app/shared
     healthcheck:
@@ -508,20 +508,6 @@ services:
       temporal:
         condition: service_healthy
       rabbitmq:
-        condition: service_healthy
-    restart: on-failure
-
-  # ============================================================
-  # STRIPE CLI (local webhook forwarding)
-  # ============================================================
-
-  stripe-cli:
-    image: stripe/stripe-cli:latest
-    command: listen --forward-to http://host.docker.internal:8000/api/webhooks/stripe
-    volumes:
-      - ~/.config/stripe:/root/.config/stripe
-    depends_on:
-      kong:
         condition: service_healthy
     restart: on-failure
 
