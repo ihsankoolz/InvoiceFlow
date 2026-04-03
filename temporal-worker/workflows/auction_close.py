@@ -44,48 +44,53 @@ class AuctionCloseWorkflow:
     @workflow.run
     async def run(self, invoice_token: str, bid_period_hours: int):
         act_opts = {"schedule_to_close_timeout": timedelta(seconds=30)}
-        deadline = workflow.now() + timedelta(hours=bid_period_hours)
 
-        # T-12h warning
-        t12h = deadline - timedelta(hours=12)
-        if t12h > workflow.now():
-            await workflow.sleep(t12h - workflow.now())
-            offers_12h = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)
-            bidders_12h = []
-            for o in offers_12h:
-                u = await workflow.execute_activity(get_user, args=[o["investor_id"]], **act_opts)
-                bidders_12h.append({"user_id": o["investor_id"], "email": u["email"]})
-            await workflow.execute_activity(
-                publish_event,
-                args=["auction.closing.warning", {
-                    "invoice_token": invoice_token,
-                    "hours_remaining": 12,
-                    "bidders": bidders_12h,
-                }],
-                **act_opts,
-            )
+        if config.DEMO_MODE:
+            # Demo: skip T-12h/T-1h warnings, use a short fixed duration
+            await workflow.sleep(timedelta(seconds=config.DEMO_AUCTION_SECONDS))
+        else:
+            deadline = workflow.now() + timedelta(hours=bid_period_hours)
 
-        # T-1h warning
-        t1h = deadline - timedelta(hours=1)
-        if t1h > workflow.now():
-            await workflow.sleep(t1h - workflow.now())
-            offers_1h = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)
-            bidders_1h = []
-            for o in offers_1h:
-                u = await workflow.execute_activity(get_user, args=[o["investor_id"]], **act_opts)
-                bidders_1h.append({"user_id": o["investor_id"], "email": u["email"]})
-            await workflow.execute_activity(
-                publish_event,
-                args=["auction.closing.warning", {
-                    "invoice_token": invoice_token,
-                    "hours_remaining": 1,
-                    "bidders": bidders_1h,
-                }],
-                **act_opts,
-            )
+            # T-12h warning
+            t12h = deadline - timedelta(hours=12)
+            if t12h > workflow.now():
+                await workflow.sleep(t12h - workflow.now())
+                offers_12h = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)
+                bidders_12h = []
+                for o in offers_12h:
+                    u = await workflow.execute_activity(get_user, args=[o["investor_id"]], **act_opts)
+                    bidders_12h.append({"user_id": o["investor_id"], "email": u["email"]})
+                await workflow.execute_activity(
+                    publish_event,
+                    args=["auction.closing.warning", {
+                        "invoice_token": invoice_token,
+                        "hours_remaining": 12,
+                        "bidders": bidders_12h,
+                    }],
+                    **act_opts,
+                )
 
-        # Wait until deadline
-        await workflow.sleep(deadline - workflow.now())
+            # T-1h warning
+            t1h = deadline - timedelta(hours=1)
+            if t1h > workflow.now():
+                await workflow.sleep(t1h - workflow.now())
+                offers_1h = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)
+                bidders_1h = []
+                for o in offers_1h:
+                    u = await workflow.execute_activity(get_user, args=[o["investor_id"]], **act_opts)
+                    bidders_1h.append({"user_id": o["investor_id"], "email": u["email"]})
+                await workflow.execute_activity(
+                    publish_event,
+                    args=["auction.closing.warning", {
+                        "invoice_token": invoice_token,
+                        "hours_remaining": 1,
+                        "bidders": bidders_1h,
+                    }],
+                    **act_opts,
+                )
+
+            # Wait until deadline
+            await workflow.sleep(deadline - workflow.now())
 
         # Anti-snipe loop: keep extending while signals arrive
         # CRITICAL: Check flag BEFORE resetting — a signal may have arrived during sleep_until

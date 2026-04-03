@@ -14,3 +14,4 @@ PAYMENT_SERVICE_URL = os.getenv("PAYMENT_SERVICE_URL", "http://payment-service:5
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672")
 TEMPORAL_HOST = os.getenv("TEMPORAL_HOST", "temporal:7233")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_...")
+ANTI_SNIPE_WINDOW_SECONDS = int(os.getenv("ANTI_SNIPE_WINDOW_SECONDS", "300"))

@@ -5,7 +5,7 @@ Flow (5 steps):
   1. Create bid in Bidding Service → get bid + previous_highest
   2. Lock escrow via gRPC — rollback bid if this fails
   3. If someone was outbid → release their escrow via gRPC, mark bid OUTBID, publish bid.outbid
-  4. Check anti-snipe — if auction within final 5 min, signal Temporal + extend deadline
+  4. Check anti-snipe — if auction within ANTI_SNIPE_WINDOW, signal Temporal + extend deadline
   5. Publish bid.placed
 """
 
@@ -20,7 +20,7 @@ from app.services.http_client import HTTPClient
 from app.services.rabbitmq_publisher import RabbitMQPublisher
 from app.temporal.client import TemporalClient
 
-ANTI_SNIPE_WINDOW = timedelta(minutes=5)
+ANTI_SNIPE_WINDOW = timedelta(seconds=config.ANTI_SNIPE_WINDOW_SECONDS)
 
 
 class BidOrchestrator:

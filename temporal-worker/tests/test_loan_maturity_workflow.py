@@ -39,6 +39,9 @@ for _mod in _STUBBED_MODS:
 _config_orig = sys.modules.get("config")
 _config = types.ModuleType("config")
 _config.REPAYMENT_WINDOW_SECONDS = 30
+_config.DEMO_MODE = False
+_config.DEMO_LOAN_MATURITY_SECONDS = 90
+_config.DEMO_REPAYMENT_WINDOW_SECONDS = 60
 sys.modules["config"] = _config
 
 from workflows.loan_maturity import LoanMaturityWorkflow  # noqa: E402
