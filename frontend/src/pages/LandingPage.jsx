@@ -9,6 +9,7 @@ import imgAcra      from '../assets/images/image 9.png'
 import imgInvestor  from '../assets/images/image 10.png'
 import imgIphone    from '../assets/images/Blue.png'
 import iconArrow    from '../assets/icons/7.svg'
+import cheegyat from '../assets/images/cheegyat.png'
 
 /* ── Animation helpers ── */
 function useInView(threshold = 0.08) {
@@ -81,7 +82,14 @@ const INVESTOR_STEPS = [
   { num: '04', title: 'Earn your return',     body: 'When you win, funds are escrowed until the auction closes. Returns are credited to your wallet once the business repays.' },
 ]
 
-const TEAM = ['Keene', 'Ihsan', 'Amanda', 'Gyaltsen', 'Michelle', 'Cheng Lin']
+const TEAM = [
+  { name: 'Keene',      photo: null },
+  { name: 'Ihsan',      photo: null },
+  { name: 'Amanda',     photo: null },
+  { name: 'Gyaltsen',   photo: cheegyat, photoStyle: { objectPosition: 'right center' }, zoom: 1.1 },
+  { name: 'Michelle',   photo: null },
+  { name: 'Cheng Lin',  photo: null },
+]
 
 export default function LandingPage() {
   const [howTab, setHowTab] = useState('business')
@@ -433,10 +441,15 @@ export default function LandingPage() {
           Our Team
         </h2>
         <div className="grid grid-cols-3 gap-12 max-w-[900px] mx-auto">
-          {TEAM.map((name, i) => (
-            <div key={name} className="flex flex-col items-center gap-4" style={fadeUp(teamIn, i * 80)}>
-              <div className="w-[180px] h-[180px] rounded-full bg-cream border border-black/10" />
-              <p className="font-['Lato'] font-semibold text-xl text-black text-center">{name}</p>
+          {TEAM.map((member, i) => (
+            <div key={member.name} className="flex flex-col items-center gap-4" style={fadeUp(teamIn, i * 80)}>
+              {member.photo
+                ? <div className="w-[180px] h-[180px] rounded-full border border-black/10 overflow-hidden flex-shrink-0">
+                    <img src={member.photo} alt={member.name} className="w-full h-full object-cover" style={{ ...member.photoStyle, transform: member.zoom ? `scale(${member.zoom})` : undefined, transformOrigin: member.photoStyle?.objectPosition || 'center' }} />
+                  </div>
+                : <div className="w-[180px] h-[180px] rounded-full bg-cream border border-black/10" />
+              }
+              <p className="font-['Lato'] font-semibold text-xl text-black text-center">{member.name}</p>
             </div>
           ))}
         </div>
