@@ -34,11 +34,14 @@ class LoanMaturityWorkflow:
     async def run(self, loan_id: str, due_date: str):
         act_opts = {"schedule_to_close_timeout": timedelta(seconds=30)}
 
-        # Step 1: Sleep until due date
-        due_dt = datetime.fromisoformat(due_date).replace(tzinfo=timezone.utc)
-        delay = due_dt - workflow.now()
-        if delay.total_seconds() > 0:
-            await workflow.sleep(delay)
+        # Step 1: Sleep until due date (or a short fixed duration in demo mode)
+        if config.DEMO_MODE:
+            await workflow.sleep(timedelta(seconds=config.DEMO_LOAN_MATURITY_SECONDS))
+        else:
+            due_dt = datetime.fromisoformat(due_date).replace(tzinfo=timezone.utc)
+            delay = due_dt - workflow.now()
+            if delay.total_seconds() > 0:
+                await workflow.sleep(delay)
 
         # Step 2: Mark loan DUE
         await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "DUE"], **act_opts)
@@ -55,7 +58,9 @@ class LoanMaturityWorkflow:
         )
 
         # Step 3: Wait for repayment window — exits early if repayment_confirmed signal arrives
-        repayment_window = timedelta(seconds=config.REPAYMENT_WINDOW_SECONDS)
+        repayment_window = timedelta(
+            seconds=config.DEMO_REPAYMENT_WINDOW_SECONDS if config.DEMO_MODE else config.REPAYMENT_WINDOW_SECONDS
+        )
         await workflow.wait_condition(
             lambda: self._repayment_confirmed,
             timeout=repayment_window,
