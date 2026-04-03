@@ -212,7 +212,7 @@ plugins:
     config:
       origins:
         - "http://localhost:3000"
-        - "https://invoiceflow.vercel.app"
+        - "https://invoiceflowsga.vercel.app"
       methods:
         - GET
         - POST
