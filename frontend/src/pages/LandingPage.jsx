@@ -142,12 +142,77 @@ export default function LandingPage() {
           </Link>
         </div>
         <div className="flex-shrink-0 flex items-center justify-center" style={fadeUp(heroIn, 120)}>
-          <img
-            src={imgIphone}
-            alt="InvoiceFlow mobile app"
-            style={{ maxHeight: 'calc(100vh - 120px)', width: 'auto', maxWidth: '360px' }}
-            className="object-contain"
-          />
+          <div className="relative" style={{ maxHeight: 'calc(100vh - 120px)', width: '300px' }}>
+            <img
+              src={imgIphone}
+              alt="InvoiceFlow mobile app"
+              style={{ maxHeight: 'calc(100vh - 120px)', width: '100%' }}
+              className="object-contain relative z-10 pointer-events-none"
+            />
+            {/* Mock marketplace screen inside phone */}
+            <div className="absolute inset-0 z-0 flex justify-center" style={{ paddingTop: '13%', paddingBottom: '5%' }}>
+              <div
+                className="overflow-hidden bg-[#fffcf7] flex flex-col"
+                style={{ width: '80%', height: '100%', borderRadius: '4px', overflowY: 'hidden' }}
+              >
+                {/* Mini nav */}
+                <div className="bg-white px-3 py-2 border-b border-black/8 flex-shrink-0">
+                  <p className="font-['Lato'] font-bold text-[10px] text-black">InvoiceFlow</p>
+                  <p className="font-['Lato'] font-semibold text-[11px] text-black mt-0.5">Marketplace</p>
+                </div>
+
+                {/* Mock invoice cards — matches real ListingCard structure */}
+                <div className="flex flex-col gap-1.5 p-1.5">
+                  {[
+                    { token: 'INV-8821', debtor: 'Tan & Sons Pte Ltd',   currentBid: '$41,200', faceValue: '$48,000', minBid: '$41,200', ret: '16.5', urgency: 'HIGH',     timeLeft: '2h 14m' },
+                    { token: 'INV-9034', debtor: 'NovaTech Solutions',    currentBid: '$19,800', faceValue: '$22,500', minBid: '$19,800', ret: '13.6', urgency: 'CRITICAL', timeLeft: '38m' },
+                    { token: 'INV-7752', debtor: 'Meridian Logistics',    currentBid: '$66,500', faceValue: '$75,000', minBid: '$66,500', ret: '12.8', urgency: 'MEDIUM',   timeLeft: '1d 4h' },
+                  ].map((item) => {
+                    const urgencyStyle = {
+                      HIGH:     { bg: 'bg-[#fff3e0]', text: 'text-[#ff9500]',  border: 'border-[#ff9500]/40' },
+                      CRITICAL: { bg: 'bg-red-50',    text: 'text-red-600',    border: 'border-red-300' },
+                      MEDIUM:   { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-300' },
+                    }[item.urgency]
+
+                    return (
+                      <div key={item.token} className="bg-white rounded-[8px] border border-black/8 overflow-hidden flex flex-col">
+                        {/* Cream top bar — badge + countdown */}
+                        <div className="bg-[#fffcf7] px-2.5 py-1.5 flex items-center justify-between flex-shrink-0">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-['Lato'] font-semibold border ${urgencyStyle.bg} ${urgencyStyle.text} ${urgencyStyle.border}`}>
+                            {item.urgency}
+                          </span>
+                          <span className="font-['Lato'] text-[8px] text-black/40">{item.timeLeft}</span>
+                        </div>
+                        {/* Body */}
+                        <div className="px-2.5 py-2 flex flex-col gap-1.5">
+                          <p className="font-['Lato'] text-[8px] text-black/40">Invoice · {item.token}</p>
+                          {/* Current bid + return */}
+                          <div className="flex items-center justify-between">
+                            <p className="font-['Lato'] font-semibold text-[14px] text-black leading-none">{item.currentBid}</p>
+                            <span className="bg-[#e8f5e0] rounded px-1.5 py-0.5 font-['Lato'] text-[8px] font-semibold text-[#3e9b00]">+{item.ret}%</span>
+                          </div>
+                          <div className="h-px bg-black/6" />
+                          <div className="flex justify-between">
+                            <span className="font-['Lato'] text-[8px] text-black/40">Face value</span>
+                            <span className="font-['Lato'] text-[8px] font-medium text-black">{item.faceValue}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-['Lato'] text-[8px] text-black/40">Min bid</span>
+                            <span className="font-['Lato'] text-[8px] font-medium text-black">{item.minBid}</span>
+                          </div>
+                          <div className="h-px bg-black/6" />
+                          <p className="font-['Lato'] text-[9px] font-medium text-black truncate">{item.debtor}</p>
+                          <div className="bg-teal rounded-[4px] py-1 text-center">
+                            <p className="font-['Lato'] font-semibold text-[8px] text-white">Place Bid</p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -329,9 +394,9 @@ export default function LandingPage() {
       {/* ── FAQ ── */}
       <section ref={faqRef} className="bg-teal py-20">
         <div className="px-8 lg:px-16 max-w-[1512px] mx-auto" style={fadeUp(faqIn, 0)}>
-          <p className="font-['Lato'] font-medium text-white text-2xl mb-2">FAQ</p>
-          <h2 className="font-['Lato'] font-semibold text-white text-5xl mb-2">Common questions</h2>
-          <p className="font-['Lato'] text-white text-2xl mb-8">
+          <p className="font-['Lato'] font-medium text-[#fff8ec] text-2xl mb-2">FAQ</p>
+          <h2 className="font-['Lato'] font-semibold text-[#fff8ec] text-5xl mb-2">Common questions</h2>
+          <p className="font-['Lato'] text-[#fff8ec] text-2xl mb-8">
             Everything you need to know before you list or bid.
           </p>
           <div className="flex gap-3 mb-10">
@@ -341,15 +406,15 @@ export default function LandingPage() {
                 onClick={() => setFaqTab(tab)}
                 className={`font-['Lato'] font-semibold text-base px-7 py-2.5 rounded-[22px] transition-colors duration-150 ${
                   faqTab === tab
-                    ? 'bg-white text-teal'
-                    : 'border border-white text-white hover:bg-white/10'
+                    ? 'bg-[#fff8ec] text-teal'
+                    : 'border border-[#fff8ec] text-[#fff8ec] hover:bg-white/10'
                 }`}
               >
                 {tab === 'business' ? 'For Businesses' : 'For Investors'}
               </button>
             ))}
           </div>
-          <div className="bg-white rounded-[15px] overflow-hidden max-w-[1319px]">
+          <div className="bg-[#fff8ec] rounded-[15px] overflow-hidden max-w-[1319px] py-3">
             {faqItems.map((item, i) => (
               <div key={item.question} style={fadeUp(faqIn, 160 + i * 80)}>
                 <FAQItem question={item.question} answer={item.answer} />
