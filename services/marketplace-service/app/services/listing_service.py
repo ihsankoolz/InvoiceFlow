@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
 from app.models.listing import Listing
@@ -14,6 +16,7 @@ class ListingService:
             query = query.filter(Listing.status == status)
         if urgency_level:
             query = query.filter(Listing.urgency_level == urgency_level)
+        query = query.filter(Listing.deadline > datetime.now(timezone.utc))
         return query.order_by(Listing.deadline.asc()).all()
 
     def create_listing(self, data: ListingCreate) -> Listing:
