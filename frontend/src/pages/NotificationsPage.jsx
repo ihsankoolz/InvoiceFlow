@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, AlertTriangle, CheckCircle, DollarSign, Info } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
@@ -75,54 +75,12 @@ export default function NotificationsPage() {
   const [loading, setLoading]             = useState(true)
   const [error, setError]                 = useState('')
 
-  const wsRef = useRef(null)
-
   const [headerRef] = useInView(0.05)
   const [listRef, listInView]     = useInView(0.05)
 
   useEffect(() => {
     if (!user) return
     loadNotifications()
-
-    let cancelled = false
-    try {
-      const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/${user.sub}`)
-      wsRef.current = ws
-
-      ws.onopen = () => {
-        if (cancelled) ws.close()
-      }
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data)
-          const newNotif = {
-            id: msg.id || Date.now(),
-            title: msg.title || msg.event_type || 'Notification',
-            message: msg.message || msg.body || '',
-            event_type: msg.event_type || 'NOTIFICATION',
-            created_at: msg.created_at || new Date().toISOString(),
-            is_read: false,
-            isNew: true,
-            ...msg,
-          }
-          setNotifications((prev) => [newNotif, ...prev])
-        } catch {
-          // Ignore parse errors
-        }
-      }
-      ws.onerror = () => {
-        // Silently ignore WS errors — not all environments have WS running
-      }
-    } catch {
-      // Silently ignore if WS is unavailable
-    }
-
-    return () => {
-      cancelled = true
-      const ws = wsRef.current
-      wsRef.current = null
-      if (ws && ws.readyState === WebSocket.OPEN) ws.close()
-    }
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadNotifications() {
