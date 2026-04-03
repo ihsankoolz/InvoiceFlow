@@ -42,7 +42,7 @@ class AuctionCloseWorkflow:
         self.extend_requested = True
 
     @workflow.run
-    async def run(self, invoice_token: str, bid_period_hours: int):
+    async def run(self, invoice_token: str, bid_period_hours: float):
         act_opts = {"schedule_to_close_timeout": timedelta(seconds=30)}
 
         if config.DEMO_MODE:

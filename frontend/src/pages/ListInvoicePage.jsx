@@ -43,7 +43,8 @@ export default function ListInvoicePage() {
   const [minimumBid, setMinimumBid]     = useState('')
   const [dueDate, setDueDate]           = useState('')
   const [urgency, setUrgency]           = useState('MEDIUM')
-  const [bidPeriod, setBidPeriod]       = useState('24')
+  const [bidHours, setBidHours]         = useState('24')
+  const [bidMinutes, setBidMinutes]     = useState('0')
 
   const [extracting, setExtracting]     = useState(false)
   const [loading, setLoading]           = useState(false)
@@ -95,7 +96,8 @@ export default function ListInvoicePage() {
     if (Number(minimumBid) > Number(faceValue)) return 'Minimum bid cannot exceed face value.'
     if (!dueDate) return 'Invoice due date is required.'
     if (new Date(dueDate) <= new Date()) return 'Due date must be in the future.'
-    if (!bidPeriod || Number(bidPeriod) < 1) return 'Bid period must be at least 1 hour.'
+    const totalMinutes = Number(bidHours) * 60 + Number(bidMinutes)
+    if (totalMinutes < 1) return 'Bid period must be at least 1 minute.'
     return null
   }
 
@@ -115,7 +117,8 @@ export default function ListInvoicePage() {
       formData.append('face_value', faceValue)
       formData.append('minimum_bid', minimumBid)
       formData.append('due_date', dueDate)
-      formData.append('bid_period_hours', bidPeriod)
+      const bidPeriodHours = (Number(bidHours) + Number(bidMinutes) / 60).toFixed(4)
+      formData.append('bid_period_hours', bidPeriodHours)
       formData.append('urgency_level', urgency)
 
       await api.post('/invoices', formData, {
@@ -346,16 +349,36 @@ export default function ListInvoicePage() {
                   {/* Bid period */}
                   <div>
                     <label className="block font-['Lato'] text-sm font-medium text-ink mb-1">
-                      Bid period (hours)
+                      Bid period
                     </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="720"
-                      value={bidPeriod}
-                      onChange={(e) => setBidPeriod(e.target.value)}
-                      className="w-full border border-ink/30 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors"
-                    />
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="720"
+                            value={bidHours}
+                            onChange={(e) => setBidHours(e.target.value)}
+                            className="w-full border border-ink/30 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors pr-14"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 font-['Lato'] text-sm text-ink/40">hrs</span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="relative">
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={bidMinutes}
+                            onChange={(e) => setBidMinutes(e.target.value)}
+                            className="w-full border border-ink/30 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors pr-14"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 font-['Lato'] text-sm text-ink/40">min</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

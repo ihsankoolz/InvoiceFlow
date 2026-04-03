@@ -8,7 +8,7 @@ class ListInvoiceRequest(BaseModel):
     debtor_uen: str
     amount: float
     due_date: date
-    bid_period_hours: int = 48
+    bid_period_hours: float = 48
 
 
 class ListInvoiceResponse(BaseModel):
