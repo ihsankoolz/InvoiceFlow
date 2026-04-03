@@ -51,14 +51,14 @@ export default function ToastContainer() {
         return (
           <div
             key={toast.id}
-            className="pointer-events-auto w-80 bg-white border border-ink/10 rounded-[14px] shadow-lg p-4 flex items-start gap-3"
+            className="pointer-events-auto w-80 bg-white border border-ink/10 rounded-[14px] shadow-md p-4 flex items-start gap-3"
             style={{
               animation: toast.leaving
                 ? 'toastOut 300ms cubic-bezier(0.4,0,1,1) both'
                 : 'toastIn 300ms cubic-bezier(0,0,0.2,1) both',
             }}
           >
-            <div className="w-7 h-7 rounded-full bg-[#fffcf7] border border-ink/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-7 h-7 rounded-full bg-cream flex items-center justify-center flex-shrink-0 mt-0.5">
               <ToastIcon eventType={toast.event_type} />
             </div>
             <div className="flex-1 min-w-0">
