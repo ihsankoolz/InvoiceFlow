@@ -5,22 +5,6 @@
   "schemaVersion": 38,
   "refresh": "30s",
   "time": { "from": "now-1h", "to": "now" },
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus",
-      "type": "datasource",
-      "pluginId": "prometheus"
-    }
-  ],
-  "__requires": [
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    }
-  ],
   "panels": [
     {
       "id": 1,
@@ -51,11 +35,10 @@
         {
           "expr": "up{job=\"invoiceflow-services\"}",
           "legendFormat": "{{instance}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "refId": "A"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
     },
     {
       "id": 2,
@@ -73,11 +56,10 @@
         {
           "expr": "sum by (instance) (rate(http_requests_total{job=\"invoiceflow-services\"}[1m]))",
           "legendFormat": "{{instance}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "refId": "A"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
     },
     {
       "id": 3,
@@ -96,11 +78,10 @@
         {
           "expr": "sum by (instance) (rate(http_requests_total{job=\"invoiceflow-services\", status_code=~\"5..\"}[1m]))",
           "legendFormat": "{{instance}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "refId": "A"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
     },
     {
       "id": 4,
@@ -118,11 +99,10 @@
         {
           "expr": "histogram_quantile(0.95, sum by (instance, le) (rate(http_request_duration_seconds_bucket{job=\"invoiceflow-services\"}[5m])))",
           "legendFormat": "{{instance}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "refId": "A"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
     },
     {
       "id": 5,
@@ -140,75 +120,96 @@
         {
           "expr": "histogram_quantile(0.50, sum by (instance, le) (rate(http_request_duration_seconds_bucket{job=\"invoiceflow-services\"}[5m])))",
           "legendFormat": "{{instance}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "refId": "A"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
     },
     {
       "id": 6,
-      "title": "DLQ Message Count",
-      "type": "stat",
-      "gridPos": { "x": 0, "y": 20, "w": 8, "h": 4 },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "colorMode": "background",
-        "graphMode": "none"
-      },
+      "title": "Payment gRPC Operations (ops/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
       "fieldConfig": {
         "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "red", "value": 1 }
-            ]
-          },
-          "unit": "short"
+          "unit": "ops",
+          "custom": { "lineWidth": 2 }
         }
       },
+      "options": { "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "sum(rabbitmq_queue_messages{queue=~\".*\\\\.dlq\"})",
-          "legendFormat": "DLQ Total",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "expr": "sum by (method) (rate(payment_grpc_operations_total{status=\"success\"}[1m]))",
+          "legendFormat": "{{method}}",
+          "refId": "A"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
     },
     {
       "id": 7,
-      "title": "DLQ Depth per Queue",
-      "type": "bargauge",
-      "gridPos": { "x": 8, "y": 20, "w": 16, "h": 4 },
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"] },
-        "orientation": "horizontal",
-        "displayMode": "gradient"
-      },
+      "title": "Payment gRPC Errors (ops/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
       "fieldConfig": {
         "defaults": {
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "red", "value": 1 }
-            ]
-          },
-          "unit": "short"
+          "unit": "ops",
+          "custom": { "lineWidth": 2 },
+          "color": { "fixedColor": "red", "mode": "fixed" }
         }
       },
+      "options": { "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "rabbitmq_queue_messages{queue=~\".*\\\\.dlq\"}",
-          "legendFormat": "{{queue}}",
-          "refId": "A",
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+          "expr": "sum by (method) (rate(payment_grpc_operations_total{status=\"error\"}[1m]))",
+          "legendFormat": "{{method}}",
+          "refId": "A"
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    },
+    {
+      "id": 8,
+      "title": "RabbitMQ Queue Depth",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "rabbitmq_queue_messages{queue!~\".*\\.dlq\"}",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    },
+    {
+      "id": 9,
+      "title": "DLQ Depth (Dead Letter Queues)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2 },
+          "color": { "fixedColor": "red", "mode": "fixed" }
+        }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "rabbitmq_queue_messages{queue=~\".*\\.dlq\"}",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
     }
   ]
 }

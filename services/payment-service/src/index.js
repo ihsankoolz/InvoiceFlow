@@ -13,6 +13,7 @@ const { startGrpcServer } = require('./grpc/server');
 const { setupSwagger } = require('./rest/swagger');
 const restRoutes = require('./rest/routes');
 const { startConsumer } = require('./consumers/eventConsumer');
+const { register } = require('./metrics');
 
 const app = express();
 app.use(cors());
@@ -21,6 +22,12 @@ app.use(express.json());
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'payment-service' });
+});
+
+// Prometheus metrics
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 // REST routes
