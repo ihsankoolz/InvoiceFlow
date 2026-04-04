@@ -18,6 +18,11 @@ services:
   # --- Auth (no JWT) ---
   - name: auth-service
     url: http://user-service:5000
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 10
+          policy: local
     routes:
       - name: auth-routes
         paths:
@@ -42,18 +47,33 @@ services:
         methods:
           - POST
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 20
+              policy: local
       - name: invoice-create
         paths:
           - /api/invoices
         methods:
           - POST
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 20
+              policy: local
       - name: invoice-list
         paths:
           - /api/invoices
         methods:
           - GET
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 100
+              policy: local
 
   # --- Bidding Orchestrator (JWT required on bids + wallet) ---
   - name: bidding-orchestrator
@@ -71,36 +91,66 @@ services:
         methods:
           - POST
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 30
+              policy: local
       - name: bids-list
         paths:
           - /api/bids
         methods:
           - GET
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 100
+              policy: local
       - name: wallet-topup
         paths:
           - /api/wallet/topup
         methods:
           - POST
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 5
+              policy: local
       - name: wallet-balance
         paths:
           - /api/wallet/balance
         methods:
           - GET
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 100
+              policy: local
       - name: wallet-transactions
         paths:
           - /api/wallet/transactions
         methods:
           - GET
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 100
+              policy: local
       - name: wallet-locked
         paths:
           - /api/wallet/locked
         methods:
           - GET
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 100
+              policy: local
 
   # --- Marketplace Listings (JWT required — read model, no N+1) ---
   - name: marketplace-listings
@@ -175,12 +225,22 @@ services:
         methods:
           - POST
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 10
+              policy: local
       - name: loan-confirm-repayment
         paths:
           - ~/api/loans/[^/]+/confirm-repayment$
         methods:
           - POST
         strip_path: false
+        plugins:
+          - name: rate-limiting
+            config:
+              minute: 10
+              policy: local
 
   # --- Notification Service (JWT required, direct to atomic) ---
   - name: notification-service
@@ -225,12 +285,6 @@ plugins:
         - X-Correlation-ID
       credentials: true
       max_age: 3600
-
-  # Rate Limiting — global
-  - name: rate-limiting
-    config:
-      minute: 100
-      policy: local
 
   # Correlation ID — global
   - name: correlation-id
