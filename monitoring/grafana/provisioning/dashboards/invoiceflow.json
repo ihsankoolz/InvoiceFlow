@@ -5,6 +5,22 @@
   "schemaVersion": 38,
   "refresh": "30s",
   "time": { "from": "now-1h", "to": "now" },
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "type": "datasource",
+      "pluginId": "prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
+  ],
   "panels": [
     {
       "id": 1,
@@ -35,10 +51,11 @@
         {
           "expr": "up{job=\"invoiceflow-services\"}",
           "legendFormat": "{{instance}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" }
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
     },
     {
       "id": 2,
@@ -56,10 +73,11 @@
         {
           "expr": "sum by (instance) (rate(http_requests_total{job=\"invoiceflow-services\"}[1m]))",
           "legendFormat": "{{instance}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" }
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
     },
     {
       "id": 3,
@@ -78,10 +96,11 @@
         {
           "expr": "sum by (instance) (rate(http_requests_total{job=\"invoiceflow-services\", status_code=~\"5..\"}[1m]))",
           "legendFormat": "{{instance}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" }
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
     },
     {
       "id": 4,
@@ -99,10 +118,11 @@
         {
           "expr": "histogram_quantile(0.95, sum by (instance, le) (rate(http_request_duration_seconds_bucket{job=\"invoiceflow-services\"}[5m])))",
           "legendFormat": "{{instance}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" }
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
     },
     {
       "id": 5,
@@ -120,10 +140,11 @@
         {
           "expr": "histogram_quantile(0.50, sum by (instance, le) (rate(http_request_duration_seconds_bucket{job=\"invoiceflow-services\"}[5m])))",
           "legendFormat": "{{instance}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" }
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
     },
     {
       "id": 6,
@@ -151,10 +172,11 @@
         {
           "expr": "sum(rabbitmq_queue_messages{queue=~\".*\\\\.dlq\"})",
           "legendFormat": "DLQ Total",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" }
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
     },
     {
       "id": 7,
@@ -182,10 +204,11 @@
         {
           "expr": "rabbitmq_queue_messages{queue=~\".*\\\\.dlq\"}",
           "legendFormat": "{{queue}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
         }
       ],
-      "datasource": { "type": "prometheus", "uid": "prometheus" }
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" }
     }
   ]
 }
