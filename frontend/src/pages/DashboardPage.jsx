@@ -83,6 +83,7 @@ function SellerDashboard({ user }) {
   const [pageRef, pageInView] = useInView(0.01)
 
   const [invoices, setInvoices]           = useState([])
+  const [allLoans, setAllLoans]           = useState([])
   const [activeListings, setActiveListings] = useState([])
   const [upcomingLoans, setUpcomingLoans] = useState([])
   const [loansCount, setLoansCount]       = useState(0)
@@ -99,6 +100,7 @@ function SellerDashboard({ user }) {
       const loans       = loansRes.status === 'fulfilled' ? (loansRes.value.data?.loans || loansRes.value.data || []) : []
       const active      = loans.filter(l => l.status === 'ACTIVE' || l.status === 'DUE')
       setInvoices(allInvoices)
+      setAllLoans(loans)
       setActiveListings(allInvoices.filter(i => i.status === 'LISTED').slice(0, 5))
       setLoansCount(active.length)
       setUpcomingLoans(active.slice(0, 3))
@@ -114,7 +116,7 @@ function SellerDashboard({ user }) {
 
   // Derived performance stats
   const totalFinanced   = invoices.filter(i => ['FINANCED', 'ACCEPTED'].includes(i.status))
-  const totalRaised     = totalFinanced.reduce((s, i) => s + Number(i.amount || 0), 0)
+  const totalRaised     = allLoans.reduce((s, l) => s + Number(l.bid_amount || 0), 0)
   // Financing rate = financed / invoices that actually reached market (excludes DRAFT & REJECTED)
   const listedOrBeyond  = invoices.filter(i => ['LISTED', 'FINANCED', 'ACCEPTED', 'REPAID', 'DEFAULTED'].includes(i.status))
   const totalSubmitted  = listedOrBeyond.length

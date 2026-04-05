@@ -33,6 +33,10 @@ const Loan = sequelize.define('Loan', {
     type: DataTypes.DECIMAL(12, 2),
     allowNull: false,
   },
+  bid_amount: {
+    type: DataTypes.DECIMAL(12, 2),
+    allowNull: false,
+  },
   penalty_amount: {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0.00,

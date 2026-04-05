@@ -38,6 +38,7 @@ message CreateLoanRequest {
     string principal = 4;
     string due_date = 5;
     string idempotency_key = 6;
+    string bid_amount = 7;
 }
 
 message ReleaseFundsRequest {
@@ -76,6 +77,7 @@ message LoanResponse {
     int32 investor_id = 5;
     int32 seller_id = 6;
     string invoice_token = 7;
+    string bid_amount = 8;
 }
 
 message TransferResponse {

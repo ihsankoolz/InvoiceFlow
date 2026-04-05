@@ -70,9 +70,9 @@ async function convertEscrowToLoan(call, callback) {
 async function createLoan(call, callback) {
   const end = grpcDuration.startTimer({ method: 'createLoan' });
   try {
-    const { invoice_token, investor_id, seller_id, principal, due_date, idempotency_key } = call.request;
+    const { invoice_token, investor_id, seller_id, principal, bid_amount, due_date, idempotency_key } = call.request;
     const loan = await LoanService.createLoan(
-      { invoice_token, investor_id, seller_id, principal, due_date },
+      { invoice_token, investor_id, seller_id, principal, bid_amount, due_date },
       idempotency_key,
     );
     grpcOpsTotal.inc({ method: 'createLoan', status: 'success' });
@@ -80,6 +80,7 @@ async function createLoan(call, callback) {
       loan_id: loan.loan_id,
       status: loan.status,
       principal: String(loan.principal),
+      bid_amount: String(loan.bid_amount),
       due_date: String(loan.due_date),
       investor_id: loan.investor_id,
       seller_id: loan.seller_id,

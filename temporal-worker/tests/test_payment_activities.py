@@ -40,17 +40,17 @@ async def test_create_loan():
     with patch("activities.payment_activities.grpc_client") as mock_client:
         mock_client.create_loan = AsyncMock(return_value={
             "loan_id": "loan-456", "status": "ACTIVE", "principal": "10000.0",
-            "due_date": "2026-05-01", "investor_id": 3, "seller_id": 4,
+            "bid_amount": "8000.0", "due_date": "2026-05-01", "investor_id": 3, "seller_id": 4,
         })
         result = await create_loan(
             investor_id=3, seller_id=4, invoice_token="tok-abc",
-            principal=10000.0, due_date="2026-05-01",
+            principal=10000.0, bid_amount=8000.0, due_date="2026-05-01",
         )
 
     assert result["loan_id"] == "loan-456"
     mock_client.create_loan.assert_called_once_with(
         investor_id=3, seller_id=4, invoice_token="tok-abc",
-        principal=10000.0, due_date="2026-05-01",
+        principal=10000.0, bid_amount=8000.0, due_date="2026-05-01",
     )
 
 
