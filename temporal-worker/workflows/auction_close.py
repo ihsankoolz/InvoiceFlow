@@ -156,18 +156,20 @@ class AuctionCloseWorkflow:
         await workflow.execute_activity(delist_listing, args=[invoice_token], **act_opts)
         await workflow.execute_activity(accept_offer, args=[winner["id"]], **act_opts)
 
-        # Reject all losers and release their escrow in parallel
+        # Reject all losers and release their escrow in parallel.
+        # OUTBID losers already had escrow released during bid placement (2B) — only release PENDING losers.
         await asyncio.gather(*[
             workflow.execute_activity(reject_offer, args=[o["id"]], **act_opts)
             for o in losers
         ])
+        pending_losers = [o for o in losers if o["status"] == "PENDING"]
         await asyncio.gather(*[
             workflow.execute_activity(
                 release_escrow,
                 args=[o["investor_id"], invoice_token, f"release-loser-{o['id']}"],
                 **act_opts,
             )
-            for o in losers
+            for o in pending_losers
         ])
 
         # Fetch emails for outcome events
