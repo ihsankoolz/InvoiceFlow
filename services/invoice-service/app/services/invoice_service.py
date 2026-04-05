@@ -14,11 +14,11 @@ from app.services.storage_service import StorageService
 
 
 def _generate_invoice_token(seller_id: int, seller_name: str = None) -> str:
-    """Generate a human-readable invoice token: INV-{SELLER_SLUG}-{YYYYMMDD}-{4-char-random}
-    e.g. INV-ACMECORP-20260331-K8X2
+    """Generate a human-readable invoice token: INV-{SELLER_SLUG}-{YYYYMMDD}-{6-char-random}
+    e.g. INV-ACMECORP-20260331-K8X2AB
     """
     date_str = datetime.utcnow().strftime("%Y%m%d")
-    suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     if seller_name:
         slug = re.sub(r'[^A-Z0-9]', '', seller_name.upper())[:8]
     else:
