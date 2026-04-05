@@ -582,7 +582,7 @@ These flows show every service interaction in order for each scenario. Steps lab
 | B15a | Notification Service | Resend | Send new bid email to seller | HTTPS (external) | Concurrent with B15b |
 | B15b | Notification Service | React Frontend | WebSocket push — new bid notification to seller | WebSocket | Concurrent with B15a |
 
-### Phase C: Auction Closes (Timer Expires)
+#### Phase C: Auction Closes (Timer Expires)
 
 | Step | From | To | Action | Tech | Notes |
 |------|------|----|--------|------|-------|
@@ -597,12 +597,11 @@ These flows show every service interaction in order for each scenario. Steps lab
 | C9 | Temporal Worker | Invoice Service | `PATCH /invoices/{token}` → FINANCED | HTTP | Step 6 |
 | C10 | Temporal Worker | Marketplace Service | `DELETE /listings/{id}` — delist | HTTP | Step 7 |
 | C11 | Temporal Worker | Bidding Service | `accept_offer` (winner) | HTTP | Step 8 |
-| C12 | Temporal Worker | Bidding Service | `reject_offer` (all losers — **parallel**) | HTTP | Step 9 — no escrow refund; already released on outbid |
-| C13 | Temporal Worker | RabbitMQ | Publish `auction.closed.winner` + `auction.closed.loser` (per loser) | AMQP | Step 10 |
-| C14a | RabbitMQ | Notification Service | Consume `auction.closed.*` | AMQP | Concurrent with C14b |
-| C14b | RabbitMQ | Activity Log Bridge | Consume → relay to OutSystems | AMQP → HTTPS | Concurrent with C14a |
-| C15a | Notification Service | Resend | Send auction result emails to winner, losers, and seller | HTTPS (external) | Concurrent with C15b |
-| C15b | Notification Service | React Frontend | WebSocket push — auction result notification | WebSocket | Concurrent with C15a |
+| C12 | Temporal Worker | RabbitMQ | Publish `auction.closed.winner` + `auction.closed.loser` (per loser) | AMQP | Step 10 |
+| C13a | RabbitMQ | Notification Service | Consume `auction.closed.*` | AMQP | Concurrent with C14b |
+| C13b | RabbitMQ | Activity Log Bridge | Consume → relay to OutSystems | AMQP → HTTPS | Concurrent with C14a |
+| C14a | Notification Service | Resend | Send auction result emails to winner, losers, and seller | HTTPS (external) | Concurrent with C15b |
+| C14b | Notification Service | React Frontend | WebSocket push — auction result notification | WebSocket | Concurrent with C15a |
 
 ---
 
