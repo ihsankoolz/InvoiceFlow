@@ -7,6 +7,7 @@ current_bid, and bid_count are pre-materialised columns on the
 listings table, kept up-to-date by MarketplaceEventConsumer.
 """
 
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -47,7 +48,8 @@ def get_listings(
     Filters: urgency_level, search (matches invoice_token, debtor_name, debtor_uen).
     Single DB query — no calls to invoice-service or bidding-service.
     """
-    query = db.query(Listing).filter(Listing.status == "ACTIVE")
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    query = db.query(Listing).filter(Listing.status == "ACTIVE", Listing.deadline > now_utc)
 
     if urgency_level and urgency_level != "ALL":
         query = query.filter(Listing.urgency_level == urgency_level)

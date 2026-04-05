@@ -44,7 +44,8 @@ class ListingService:
         if not listing:
             return None
         if data.deadline is not None:
-            listing.deadline = data.deadline
+            dl = data.deadline
+            listing.deadline = dl.replace(tzinfo=None) if dl.tzinfo else dl
         if data.status is not None:
             listing.status = data.status
         if data.current_bid is not None:

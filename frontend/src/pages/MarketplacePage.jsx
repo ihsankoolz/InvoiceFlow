@@ -32,7 +32,8 @@ function useCountdown(deadline) {
   useEffect(() => {
     function calc() {
       if (!deadline) { setRemaining('—'); return }
-      const diff = new Date(deadline) - Date.now()
+      const iso = deadline.endsWith('Z') || deadline.includes('+') ? deadline : deadline + 'Z'
+      const diff = new Date(iso) - Date.now()
       if (diff <= 0) { setRemaining('Ended'); return }
       const days  = Math.floor(diff / 86400000)
       const hours = Math.floor((diff % 86400000) / 3600000)
