@@ -25,6 +25,7 @@ const INVESTOR_NAV = [
   { icon: Home,            label: 'Home',          path: '/dashboard' },
   { icon: ShoppingCart,    label: 'Marketplace',   path: '/marketplace' },
   { icon: FileSpreadsheet, label: 'My Bids',       path: '/bids' },
+  { icon: CreditCard,      label: 'Repayments',    path: '/repayments' },
   { icon: Wallet,          label: 'Wallet',        path: '/wallet' },
   { icon: Bell,            label: 'Notifications', path: '/notifications' },
 ]
