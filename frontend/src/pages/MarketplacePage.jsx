@@ -7,6 +7,7 @@ import { fetchListings } from '../api/marketplace'
 import api from '../api/axios'
 import { useInView } from '../hooks/useInView'
 import { useAuth } from '../context/AuthContext'
+import { useNotifications } from '../context/NotificationContext'
 
 /* ── Animation helper ── */
 function fadeUp(visible, delay = 0) {
@@ -39,9 +40,10 @@ function useCountdown(deadline) {
       const days  = Math.floor(diff / 86400000)
       const hours = Math.floor((diff % 86400000) / 3600000)
       const mins  = Math.floor((diff % 3600000) / 60000)
+      const secs  = Math.floor((diff % 60000) / 1000)
       if (days > 0) setRemaining(`${days}d ${hours}h`)
       else if (hours > 0) setRemaining(`${hours}h ${mins}m`)
-      else setRemaining(`${mins}m`)
+      else setRemaining(`${mins}m ${secs}s`)
     }
     calc()
     const id = setInterval(calc, 1000)
@@ -160,6 +162,7 @@ const SORT_OPTIONS = [
 export default function MarketplacePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { lastMessage } = useNotifications()
   const isInvestor = user?.role === 'INVESTOR'
 
   const [listings, setListings] = useState([])
@@ -175,7 +178,7 @@ export default function MarketplacePage() {
   const [gridRef, gridInView]     = useInView(0.05)
 
   // Fetch listing IDs the investor has already bid on
-  useEffect(() => {
+  function fetchBidIds() {
     if (!isInvestor || !user?.sub) return
     api.get(`/bids?investor_id=${user.sub}`)
       .then((res) => {
@@ -188,7 +191,14 @@ export default function MarketplacePage() {
         setBidListingIds(ids)
       })
       .catch(() => {}) // silently ignore — button just defaults to "Place Bid"
-  }, [isInvestor, user?.sub])
+  }
+
+  useEffect(() => { fetchBidIds() }, [isInvestor, user?.sub]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch bids when outbid WS message arrives
+  useEffect(() => {
+    if (lastMessage?.type === 'bid.outbid') fetchBidIds()
+  }, [lastMessage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function load() {
     setLoading(true)

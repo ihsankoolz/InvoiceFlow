@@ -6,6 +6,7 @@ const NotificationContext = createContext(null)
 export function NotificationProvider({ children }) {
   const { user } = useAuth()
   const [toasts, setToasts] = useState([])
+  const [lastMessage, setLastMessage] = useState(null)
   const wsRef = useRef(null)
 
   const dismiss = useCallback((id) => {
@@ -40,7 +41,7 @@ export function NotificationProvider({ children }) {
         ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(event.data)
-            if (!cancelled) addToast(msg)
+            if (!cancelled) { addToast(msg); setLastMessage(msg) }
           } catch { /* ignore parse errors */ }
         }
         ws.onerror = () => { /* onclose will handle reconnect */ }
@@ -66,7 +67,7 @@ export function NotificationProvider({ children }) {
   }, [user, addToast])
 
   return (
-    <NotificationContext.Provider value={{ toasts, dismiss }}>
+    <NotificationContext.Provider value={{ toasts, dismiss, lastMessage }}>
       {children}
     </NotificationContext.Provider>
   )
