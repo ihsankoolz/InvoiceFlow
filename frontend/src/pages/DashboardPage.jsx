@@ -101,6 +101,7 @@ function SellerDashboard({ user }) {
       const loans       = loansRes.status === 'fulfilled' ? (loansRes.value.data?.loans || loansRes.value.data || []) : []
       const listings    = listingsRes.status === 'fulfilled' ? (listingsRes.value.data || []) : []
       const active      = loans.filter(l => l.status === 'ACTIVE' || l.status === 'DUE')
+      active.sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
       setInvoices(allInvoices)
       setAllLoans(loans)
       setActiveListings(listings.slice(0, 5))
@@ -368,6 +369,7 @@ function InvestorDashboard({ user }) {
       if (loansRes.status === 'fulfilled') {
         const loans = loansRes.value.data?.loans || loansRes.value.data || []
         const active = loans.filter(l => l.status === 'ACTIVE' || l.status === 'DUE')
+        active.sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
         setLoansCount(active.length)
         setUpcomingLoans(active.slice(0, 3))
       } else {

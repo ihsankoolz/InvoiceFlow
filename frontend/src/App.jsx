@@ -13,6 +13,7 @@ import MyInvoicesPage from './pages/MyInvoicesPage'
 import MyBidsPage from './pages/MyBidsPage'
 import WalletPage from './pages/WalletPage'
 import LoansPage from './pages/LoansPage'
+import RepaymentsPage from './pages/RepaymentsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import PaymentSuccessPage from './pages/PaymentSuccessPage'
 
@@ -61,6 +62,9 @@ function AppRoutes() {
       } />
       <Route path="/loans" element={
         <ProtectedRoute><LoansPage /></ProtectedRoute>
+      } />
+      <Route path="/repayments" element={
+        <ProtectedRoute><RepaymentsPage /></ProtectedRoute>
       } />
       <Route path="/notifications" element={
         <ProtectedRoute><NotificationsPage /></ProtectedRoute>
