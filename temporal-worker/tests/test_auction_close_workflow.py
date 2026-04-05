@@ -74,8 +74,8 @@ _INVOICE = {
     "due_date": "2026-12-31",
 }
 _LOAN = {"loan_id": "loan-abc-123", "due_date": "2026-12-31"}
-_OFFER_A = {"id": 1, "investor_id": INVESTOR_A, "bid_amount": 5000.0}
-_OFFER_B = {"id": 2, "investor_id": INVESTOR_B, "bid_amount": 3000.0}
+_OFFER_A = {"id": 1, "investor_id": INVESTOR_A, "bid_amount": 5000.0, "status": "PENDING"}
+_OFFER_B = {"id": 2, "investor_id": INVESTOR_B, "bid_amount": 3000.0, "status": "PENDING"}
 
 
 # ---------------------------------------------------------------------------

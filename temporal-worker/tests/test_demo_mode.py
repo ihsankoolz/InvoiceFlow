@@ -79,8 +79,8 @@ LOAN_ID = "loan-demo-123"
 
 _INVOICE = {"invoice_token": INVOICE_TOKEN, "seller_id": SELLER_ID, "status": "LISTED", "due_date": "2030-01-01"}
 _LOAN = {"loan_id": LOAN_ID, "due_date": "2030-01-01"}
-_OFFER_A = {"id": 1, "investor_id": INVESTOR_A, "bid_amount": 5000.0}
-_OFFER_B = {"id": 2, "investor_id": INVESTOR_B, "bid_amount": 3000.0}
+_OFFER_A = {"id": 1, "investor_id": INVESTOR_A, "bid_amount": 5000.0, "status": "PENDING"}
+_OFFER_B = {"id": 2, "investor_id": INVESTOR_B, "bid_amount": 3000.0, "status": "PENDING"}
 _DUE_DATE_FUTURE = "2030-01-01T00:00:00"  # far future — demo mode must override this
 
 
