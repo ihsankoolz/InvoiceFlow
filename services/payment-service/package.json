@@ -18,7 +18,8 @@
     "swagger-jsdoc": "^6.2.8",
     "uuid": "^9.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "prom-client": "^15.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

@@ -27,6 +27,7 @@ scrape_configs:
           - dlq-monitor:5014
           - acra-wrapper:5007
           - stripe-wrapper:5008
+          - payment-service:5004
     metrics_path: /metrics
     # Services that don't expose /metrics will be skipped automatically
 
