@@ -106,10 +106,13 @@ def _auction_wf_mock(offers, snipe_signals=0):
     activity_calls: list[tuple] = []
     child_calls: list[dict] = []
     snipe_remaining = [snipe_signals]
+    wf_ref = [None]
 
     async def fake_wait_condition(condition, *, timeout):
         if snipe_remaining[0] > 0:
             snipe_remaining[0] -= 1
+            if wf_ref[0] is not None:
+                wf_ref[0].extend_requested = True
             return
         raise asyncio.TimeoutError()
 
@@ -139,6 +142,7 @@ def _auction_wf_mock(offers, snipe_signals=0):
     mock.ParentClosePolicy = MagicMock()
     mock.ParentClosePolicy.ABANDON = "ABANDON"
 
+    mock._wf_ref = wf_ref
     return mock, activity_calls, child_calls
 
 
@@ -258,6 +262,7 @@ async def test_auction_demo_anti_snipe_still_works():
     with patch("workflows.auction_close.config", _demo_config(anti_snipe_secs=15)):
         with patch("workflows.auction_close.workflow", mock_wf):
             wf = AuctionCloseWorkflow()
+            mock_wf._wf_ref[0] = wf  # wire up so mock can set extend_requested
             wf.extend_requested = True  # pre-deliver signal
             await wf.run(INVOICE_TOKEN, bid_period_hours=48)
 
