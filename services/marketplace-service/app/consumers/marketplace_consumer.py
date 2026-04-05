@@ -10,6 +10,7 @@ Events handled:
                        assignments are silently ignored by SQLAlchemy until columns exist)
   auction.closed.*  — sets listing status to CLOSED
   auction.extended  — updates listing deadline to the new extended deadline
+  auction.expired   — sets listing status to EXPIRED (no bids received before deadline)
 """
 
 import logging
@@ -30,6 +31,7 @@ ROUTING_KEYS = [
     "bid.placed",
     "auction.closed.*",
     "auction.extended",
+    "auction.expired",
 ]
 
 
@@ -55,6 +57,9 @@ class MarketplaceEventConsumer(BaseConsumer):
 
         elif routing_key == "auction.extended":
             await self._on_auction_extended(body)
+
+        elif routing_key == "auction.expired":
+            await self._on_auction_expired(body)
 
     async def _on_bid_placed(self, body: dict[str, Any]) -> None:
         invoice_token = body.get("invoice_token")
@@ -96,6 +101,22 @@ class MarketplaceEventConsumer(BaseConsumer):
             listing.status = "CLOSED"
             db.commit()
             logger.info("auction.closed: listing %s marked CLOSED", invoice_token)
+
+    async def _on_auction_expired(self, body: dict[str, Any]) -> None:
+        invoice_token = body.get("invoice_token")
+        if not invoice_token:
+            return
+
+        with SessionLocal() as db:
+            listing = db.query(Listing).filter(
+                Listing.invoice_token == invoice_token
+            ).first()
+            if not listing:
+                logger.warning("auction.expired: listing not found for token %s", invoice_token)
+                return
+            listing.status = "EXPIRED"
+            db.commit()
+            logger.info("auction.expired: listing %s marked EXPIRED", invoice_token)
 
     async def _on_auction_extended(self, body: dict[str, Any]) -> None:
         invoice_token = body.get("invoice_token")
