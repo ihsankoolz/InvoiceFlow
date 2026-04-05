@@ -83,35 +83,46 @@ function SellerDashboard({ user }) {
   const [pageRef, pageInView] = useInView(0.01)
 
   const [invoices, setInvoices]           = useState([])
+  const [allLoans, setAllLoans]           = useState([])
   const [activeListings, setActiveListings] = useState([])
   const [upcomingLoans, setUpcomingLoans] = useState([])
   const [loansCount, setLoansCount]       = useState(0)
+  const [totalOutstanding, setTotalOutstanding] = useState(0)
   const [loading, setLoading]             = useState(true)
 
-  useEffect(() => {
+  const fetchSellerData = () => {
     if (!user) return
     Promise.allSettled([
       api.get(`/invoices?seller_id=${user.sub}`),
       api.get(`/loans?seller_id=${user.sub}`),
-    ]).then(([invoicesRes, loansRes]) => {
+      api.get(`/listings?seller_id=${user.sub}`),
+    ]).then(([invoicesRes, loansRes, listingsRes]) => {
       const allInvoices = invoicesRes.status === 'fulfilled' ? (invoicesRes.value.data?.invoices || invoicesRes.value.data || []) : []
       const loans       = loansRes.status === 'fulfilled' ? (loansRes.value.data?.loans || loansRes.value.data || []) : []
+      const listings    = listingsRes.status === 'fulfilled' ? (listingsRes.value.data || []) : []
       const active      = loans.filter(l => l.status === 'ACTIVE' || l.status === 'DUE')
       setInvoices(allInvoices)
-      setActiveListings(allInvoices.filter(i => i.status === 'LISTED').slice(0, 5))
+      setAllLoans(loans)
+      setActiveListings(listings.slice(0, 5))
       setLoansCount(active.length)
       setUpcomingLoans(active.slice(0, 3))
+      setTotalOutstanding(active.reduce((s, l) => s + Number(l.principal || 0), 0))
     }).finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchSellerData()
+    const interval = setInterval(fetchSellerData, 30000)
+    return () => clearInterval(interval)
   }, [user])
 
   // Derived performance stats
   const totalFinanced   = invoices.filter(i => ['FINANCED', 'ACCEPTED'].includes(i.status))
-  const totalRaised     = totalFinanced.reduce((s, i) => s + Number(i.amount || 0), 0)
+  const totalRaised     = allLoans.reduce((s, l) => s + Number(l.bid_amount || 0), 0)
   // Financing rate = financed / invoices that actually reached market (excludes DRAFT & REJECTED)
   const listedOrBeyond  = invoices.filter(i => ['LISTED', 'FINANCED', 'ACCEPTED', 'REPAID', 'DEFAULTED'].includes(i.status))
   const totalSubmitted  = listedOrBeyond.length
   const financingRate   = totalSubmitted > 0 ? Math.round((totalFinanced.length / totalSubmitted) * 100) : 0
-  const totalOutstanding = invoices.filter(i => i.status === 'LISTED').reduce((s, i) => s + Number(i.amount || 0), 0)
 
   function daysProgress(loan) {
     if (!loan.created_at || !loan.due_date) return { pct: 50, days: null }
@@ -216,7 +227,7 @@ function SellerDashboard({ user }) {
                 <div key={inv.id || i} className="border-b border-black/5 pb-4 last:border-0 flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <p className="font-['Lato'] font-medium text-sm text-ink">{inv.invoice_token || inv.id}</p>
-                    <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(inv.face_value)}</p>
+                    <p className="font-['Lato'] font-medium text-sm text-ink">{inv.current_bid ? fmt(inv.current_bid) : '—'}</p>
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="font-['Lato'] text-xs text-ink/40">{inv.debtor_name || '—'}</p>
@@ -269,7 +280,7 @@ function SellerDashboard({ user }) {
                         <p className="font-['Lato'] font-medium text-sm text-ink">{loan.invoice_token || `LOAN-${loan.id}`}</p>
                         <p className="font-['Lato'] text-xs text-ink/40 mt-0.5">Due {fmtDate(loan.due_date)}</p>
                       </div>
-                      <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(loan.amount || loan.face_value)}</p>
+                      <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(loan.principal)}</p>
                     </div>
                     <div className={`h-1.5 ${trackColor} rounded-full w-full`}>
                       <div className={`h-1.5 ${barColor} rounded-full`} style={{ width: `${100 - pct}%` }} />
@@ -313,7 +324,7 @@ function InvestorDashboard({ user }) {
   const [loansCount, setLoansCount]         = useState(0)
   const [loansLoading, setLoansLoading]     = useState(true)
 
-  useEffect(() => {
+  const fetchDashboardData = () => {
     if (!user) return
 
     Promise.allSettled([
@@ -364,6 +375,12 @@ function InvestorDashboard({ user }) {
       }
       setLoansLoading(false)
     })
+  }
+
+  useEffect(() => {
+    fetchDashboardData()
+    const interval = setInterval(fetchDashboardData, 30000)
+    return () => clearInterval(interval)
   }, [user])
 
   // Days left progress for a loan
@@ -580,7 +597,7 @@ function InvestorDashboard({ user }) {
                 const barColor = isUrgent ? 'bg-[#eeb300]' : 'bg-teal'
                 const trackColor = isUrgent ? 'bg-[#ffe8a4]' : 'bg-[#e0eae8]'
                 const daysColor = isUrgent ? 'text-[#eeb300]' : 'text-teal'
-                const totalPayout = Number(loan.amount || 0) + Number(loan.return_amount || loan.interest || 0)
+                const totalPayout = Number(loan.principal || 0) + Number(loan.penalty_amount || 0)
                 return (
                   <div key={loan.id || i} className="flex flex-col gap-2">
                     <div className="flex items-start justify-between">
@@ -589,9 +606,9 @@ function InvestorDashboard({ user }) {
                         <p className="font-['Lato'] text-xs text-ink/40 mt-0.5">Due {fmtDate(loan.due_date)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(totalPayout || loan.face_value)} total payout</p>
-                        {loan.return_amount != null && (
-                          <p className="font-['Lato'] text-xs text-ink/40">{fmt(loan.return_amount || loan.interest)} return</p>
+                        <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(totalPayout)} total payout</p>
+                        {Number(loan.penalty_amount) > 0 && (
+                          <p className="font-['Lato'] text-xs text-ink/40">{fmt(loan.penalty_amount)} penalty</p>
                         )}
                       </div>
                     </div>

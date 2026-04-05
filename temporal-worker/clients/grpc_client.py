@@ -40,7 +40,7 @@ class PaymentGRPCClient:
         return {"id": response.id, "status": response.status, "amount": response.amount}
 
     async def create_loan(self, investor_id: int, seller_id: int, invoice_token: str,
-                          principal: float, due_date: str) -> dict:
+                          principal: float, bid_amount: float, due_date: str) -> dict:
         """Call CreateLoan RPC."""
         from proto import payment_pb2
         stub = await self._get_stub()
@@ -49,6 +49,7 @@ class PaymentGRPCClient:
             investor_id=investor_id,
             seller_id=seller_id,
             principal=str(principal),
+            bid_amount=str(bid_amount),
             due_date=due_date,
             idempotency_key=f"loan-{invoice_token}",
         ))
@@ -56,6 +57,7 @@ class PaymentGRPCClient:
             "loan_id": response.loan_id,
             "status": response.status,
             "principal": response.principal,
+            "bid_amount": response.bid_amount,
             "due_date": response.due_date,
             "investor_id": response.investor_id,
             "seller_id": response.seller_id,
@@ -85,7 +87,6 @@ class PaymentGRPCClient:
             "due_date": response.due_date,
             "investor_id": response.investor_id,
             "seller_id": response.seller_id,
-            "invoice_token": response.invoice_token,
         }
 
     async def update_loan_status(self, loan_id: str, status: str) -> dict:

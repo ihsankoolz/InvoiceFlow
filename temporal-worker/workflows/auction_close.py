@@ -134,7 +134,7 @@ class AuctionCloseWorkflow:
         loan = await workflow.execute_activity(
             create_loan,
             args=[winner["investor_id"], invoice["seller_id"], invoice_token,
-                  winner["bid_amount"], invoice["due_date"]],
+                  invoice["amount"], winner["bid_amount"], invoice["due_date"]],
             **act_opts,
         )
 

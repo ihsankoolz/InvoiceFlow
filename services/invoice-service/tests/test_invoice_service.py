@@ -47,15 +47,15 @@ def _make_invoice_data(**overrides):
 class TestTokenGeneration:
     def test_format_with_seller_name(self):
         token = _generate_invoice_token(seller_id=1, seller_name="Acme Corp")
-        assert re.match(r"INV-ACMECORP-\d{8}-[A-Z0-9]{4}", token)
+        assert re.match(r"INV-ACMECORP-\d{8}-[A-Z0-9]{6}", token)
 
     def test_format_without_seller_name(self):
         token = _generate_invoice_token(seller_id=42)
-        assert re.match(r"INV-42-\d{8}-[A-Z0-9]{4}", token)
+        assert re.match(r"INV-42-\d{8}-[A-Z0-9]{6}", token)
 
     def test_seller_name_truncated_to_8_chars(self):
         token = _generate_invoice_token(seller_id=1, seller_name="VeryLongCompanyName")
-        assert re.match(r"INV-VERYLONG-\d{8}-[A-Z0-9]{4}", token)
+        assert re.match(r"INV-VERYLONG-\d{8}-[A-Z0-9]{6}", token)
 
     def test_uniqueness_across_50_tokens(self):
         tokens = {_generate_invoice_token(seller_id=1, seller_name="Acme") for _ in range(50)}
@@ -70,15 +70,15 @@ class TestTokenGeneration:
     def test_empty_seller_name_uses_id(self):
         token = _generate_invoice_token(seller_id=7, seller_name="")
         # Empty string → slug becomes empty → falls back to seller_id
-        assert re.match(r"INV-.*-\d{8}-[A-Z0-9]{4}", token)
+        assert re.match(r"INV-.*-\d{8}-[A-Z0-9]{6}", token)
 
     def test_numeric_seller_name(self):
         token = _generate_invoice_token(seller_id=1, seller_name="12345")
-        assert re.match(r"INV-12345-\d{8}-[A-Z0-9]{4}", token)
+        assert re.match(r"INV-12345-\d{8}-[A-Z0-9]{6}", token)
 
     def test_none_seller_name_uses_id(self):
         token = _generate_invoice_token(seller_id=99, seller_name=None)
-        assert re.match(r"INV-99-\d{8}-[A-Z0-9]{4}", token)
+        assert re.match(r"INV-99-\d{8}-[A-Z0-9]{6}", token)
 
 
 # ═══════════════════════════════════════════════════════════════

@@ -5,6 +5,7 @@
 
 const { v4: uuidv4 } = require('uuid');
 const Loan = require('../models/Loan');
+const WalletTransaction = require('../models/WalletTransaction');
 const walletService = require('./WalletService');
 const { sequelize } = require('../database');
 
@@ -36,6 +37,7 @@ class LoanService {
       investor_id: data.investor_id,
       seller_id: data.seller_id,
       principal: parseFloat(data.principal).toFixed(2),
+      bid_amount: parseFloat(data.bid_amount).toFixed(2),
       due_date: data.due_date,
       status: 'ACTIVE',
     });
@@ -80,7 +82,15 @@ class LoanService {
    * @returns {Promise<{success: boolean, message: string}>}
    */
   async releaseFundsToSeller(sellerId, amount, idempotencyKey) {
-    await walletService.creditWallet(sellerId, amount);
+    // Idempotency: skip if funds were already released with this key
+    if (idempotencyKey) {
+      const existing = await WalletTransaction.findOne({ where: { reference_id: idempotencyKey } });
+      if (existing) {
+        console.warn(`[idempotency] releaseFundsToSeller: duplicate key detected, skipping. key=${idempotencyKey}`);
+        return { success: true, message: `Already credited (idempotent). key=${idempotencyKey}` };
+      }
+    }
+    await walletService.creditWallet(sellerId, amount, null, idempotencyKey);
     return { success: true, message: `Credited ${amount} to seller ${sellerId}` };
   }
 

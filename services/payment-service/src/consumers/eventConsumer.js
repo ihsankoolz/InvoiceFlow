@@ -39,13 +39,13 @@ const SUBSCRIPTIONS = [
  * Handle bid.outbid — release previous bidder's escrow back to wallet.
  */
 async function handleOutbid(payload) {
-  const { invoice_token, outbid_investor_id } = payload;
+  const { invoice_token, previous_bidder_id } = payload;
   await EscrowService.releaseEscrow(
-    outbid_investor_id,
+    previous_bidder_id,
     invoice_token,
-    `release-outbid-${invoice_token}-${outbid_investor_id}`,
+    `release-outbid-${invoice_token}-${previous_bidder_id}`,
   );
-  console.log(`[payment-consumer] bid.outbid: released escrow for investor ${outbid_investor_id} on ${invoice_token}`);
+  console.log(`[payment-consumer] bid.outbid: released escrow for investor ${previous_bidder_id} on ${invoice_token}`);
 }
 
 /**

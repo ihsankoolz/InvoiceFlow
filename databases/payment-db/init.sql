@@ -28,6 +28,7 @@ CREATE TABLE loans (
     investor_id     INT NOT NULL,
     seller_id       INT NOT NULL,
     principal       DECIMAL(12,2) NOT NULL,
+    bid_amount      DECIMAL(12,2) NOT NULL,
     penalty_amount  DECIMAL(12,2) DEFAULT 0.00,
     status          ENUM('ACTIVE', 'DUE', 'REPAID', 'OVERDUE') DEFAULT 'ACTIVE',
     due_date        DATE NOT NULL,
