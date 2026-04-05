@@ -39,7 +39,7 @@ function fmtDate(str) {
   return new Date(utc).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
 }
 
-const STATUS_TABS = ['ALL', 'DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED', 'EXPIRED']
+const STATUS_TABS = ['ALL', 'DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED', 'REJECTED', 'EXPIRED']
 
 const STATUS_ORDER = { LISTED: 0, FINANCED: 1, DEFAULTED: 2, DRAFT: 3, REPAID: 4, REJECTED: 5, EXPIRED: 6 }
 
