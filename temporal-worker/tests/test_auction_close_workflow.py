@@ -97,17 +97,17 @@ def _build_mock(offers: list, snipe_signals: int = 0):
 
     # wait_condition is called once per anti-snipe loop iteration.
     # Raise TimeoutError to simulate "no signal in 5 min → close".
-    # If snipe_signals > 0, the first N calls return normally (signal arrived,
-    # flag already set), and the final call raises TimeoutError.
+    # If snipe_signals > 0, the first N calls return normally (signal arrived),
+    # and the final call raises TimeoutError.
     snipe_remaining = [snipe_signals]
+    wf_ref = [None]  # set by test to wire up extend_requested
 
     async def fake_wait_condition(condition, *, timeout):
         if snipe_remaining[0] > 0:
             snipe_remaining[0] -= 1
-            # Signal arrived: the workflow checks the flag at the top of the
-            # loop before calling wait_condition, so returning here means the
-            # flag was already True when we entered. The loop resets it and
-            # re-enters — this call represents that subsequent wait.
+            # Simulate signal arrival: set extend_requested so the while-loop continues
+            if wf_ref[0] is not None:
+                wf_ref[0].extend_requested = True
             return  # no timeout → loop will re-enter
         raise asyncio.TimeoutError()  # no signal → auction closes
 
@@ -143,6 +143,7 @@ def _build_mock(offers: list, snipe_signals: int = 0):
     mock.ParentClosePolicy = MagicMock()
     mock.ParentClosePolicy.ABANDON = "ABANDON"
 
+    mock._wf_ref = wf_ref
     return mock, activity_calls, child_calls
 
 
@@ -238,6 +239,7 @@ async def test_anti_snipe_one_signal_then_closes():
 
     with patch("workflows.auction_close.workflow", mock_wf):
         wf = AuctionCloseWorkflow()
+        mock_wf._wf_ref[0] = wf  # wire up so mock can set extend_requested
         # Simulate signal: set extend_requested before the loop checks it.
         wf.extend_requested = True
         await wf.run(INVOICE_TOKEN, bid_period_hours=1)

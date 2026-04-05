@@ -92,20 +92,18 @@ class AuctionCloseWorkflow:
             # Wait until deadline
             await workflow.sleep(deadline - workflow.now())
 
-        # Anti-snipe loop: keep extending while signals arrive
-        # CRITICAL: Check flag BEFORE resetting — a signal may have arrived during sleep_until
-        while True:
-            if not self.extend_requested:
-                try:
-                    await workflow.wait_condition(
-                        lambda: self.extend_requested,
-                        timeout=timedelta(seconds=config.ANTI_SNIPE_SECONDS),
-                    )
-                except asyncio.TimeoutError:
-                    # No signal in 5 minutes → auction closes
-                    break
-            # Signal was received — reset flag and loop for another 5-min window
+        # Anti-snipe loop: only extend if a bid arrived near the deadline
+        # CRITICAL: Check flag BEFORE resetting — a signal may have arrived during sleep
+        while self.extend_requested:
             self.extend_requested = False
+            try:
+                await workflow.wait_condition(
+                    lambda: self.extend_requested,
+                    timeout=timedelta(seconds=config.ANTI_SNIPE_SECONDS),
+                )
+            except asyncio.TimeoutError:
+                # No further signal in 5 minutes → auction closes
+                break
 
         # Fetch all bids
         offers = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)
