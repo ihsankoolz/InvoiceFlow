@@ -486,192 +486,136 @@ Escrow is released immediately on outbid rather than waiting for auction close, 
 
 These flows show every service interaction in order for each scenario. Steps labelled Xa/Xb/Xc occur **concurrently**.
 
-### Scenario 1 Flow: Business Lists Invoice for Auction
+## Scenario 1: Business Lists Invoice for Auction
 
 **Trigger:** Business clicks "List Invoice" in the React frontend.
 
-| Step | From | To | Call / Action | Technology | Notes |
-|------|------|----|---------------|------------|-------|
-| 1 | Business | React Frontend | Upload invoice PDF + fill form | Browser | |
+| Step | From | To | Action | Tech | Notes |
+|------|------|----|--------|------|-------|
+| 1 | Business | React Frontend | Upload PDF + fill form | Browser | |
 | 2 | React Frontend | KONG | `POST /api/invoices` (JWT + PDF multipart) | HTTPS | |
-| 3 | KONG | Invoice Orchestrator | Route to :5010 | REST/JSON | JWT validated by KONG |
-| 4 | Invoice Orchestrator | User Service | `GET /users/{user_id}` — check account_status is ACTIVE | HTTP (direct) | Rejects if DEFAULTED |
-| 5 | Invoice Orchestrator | Invoice Service | `POST /invoices` — create invoice record, extract PDF fields via pdfplumber, upload PDF to MinIO | HTTP (direct) | Invoice Service stores PDF in MinIO internally |
-| 6 | Invoice Service | MinIO | Store invoice PDF | S3 API :9000 | Internal to Invoice Service |
-| 7 | Invoice Service | Invoice Orchestrator | Returns invoice with extracted fields | HTTP response | |
-| 8 | Invoice Orchestrator | ACRA Wrapper | `POST /validate-uen` — validate debtor UEN | REST/JSON :5007 | |
-| 9 | ACRA Wrapper | data.gov.sg | ACRA UEN registry lookup (debtor) | HTTPS (external) | |
-| 10 | ACRA Wrapper | Invoice Orchestrator | Returns UEN validation result | REST response | |
-| 11a | *(If UEN invalid)* Invoice Orchestrator | Invoice Service | `PATCH /invoices/{token}` → status REJECTED | HTTP (direct) | Concurrent with 11b |
-| 11b | *(If UEN invalid)* Invoice Orchestrator | RabbitMQ | Publish `invoice.rejected` | AMQP | Concurrent with 11a |
-| 11c | *(If UEN invalid)* | | **Flow ends** | | |
-| 12 | Invoice Orchestrator | Marketplace Service | `POST /listings` — create listing with urgency level + deadline | HTTP (direct) | |
-| 13 | Invoice Orchestrator | Invoice Service | `PATCH /invoices/{token}` → status LISTED | HTTP (direct) | |
-| 14 | Invoice Orchestrator | Temporal Server | Start `AuctionCloseWorkflow` (ID: `auction-{invoice_token}`) | Temporal SDK | Durable timer begins |
-| 15 | Invoice Orchestrator | RabbitMQ | Publish `invoice.listed` | AMQP | |
-| 16a | RabbitMQ | Notification Service | Consume `invoice.listed` → email business confirmation + WebSocket push | AMQP | Concurrent with 16b |
-| 16b | RabbitMQ | Activity Log Bridge | Consume `invoice.listed` → relay to OutSystems Activity Log API | AMQP → HTTPS | Concurrent with 16a |
-| 17a | Notification Service | Resend | Send email | HTTPS (external) | Concurrent with 17b |
-| 17b | Notification Service | React Frontend | WebSocket push — invoice listed notification | WebSocket | Concurrent with 17a |
+| 3 | KONG | Invoice Orchestrator :5010 | Route | REST/JSON | JWT validated |
+| 4 | Invoice Orchestrator | User Service | `GET /users/{id}` — check account_status ACTIVE | HTTP | Rejects if DEFAULTED |
+| 5 | Invoice Orchestrator | Invoice Service | `POST /invoices` — create record, pdfplumber extract, upload to MinIO | HTTP | |
+| 6 | Invoice Service | MinIO | Store PDF | S3 :9000 | Internal to Invoice Service |
+| 7 | Invoice Orchestrator | ACRA Wrapper :5007 | `POST /validate-uen` — validate debtor UEN | REST/JSON | |
+| 8 | ACRA Wrapper | data.gov.sg | UEN registry lookup | HTTPS (external) | |
+| 9a | *(UEN invalid)* Invoice Orchestrator | Invoice Service | `PATCH /invoices/{token}` → REJECTED | HTTP | Concurrent with 9b |
+| 9b | *(UEN invalid)* Invoice Orchestrator | RabbitMQ | Publish `invoice.rejected` → **flow ends** | AMQP | Concurrent with 9a |
+| 10 | Invoice Orchestrator | Marketplace Service | `POST /listings` — create listing with urgency + deadline | HTTP | |
+| 11 | Invoice Orchestrator | Invoice Service | `PATCH /invoices/{token}` → LISTED | HTTP | |
+| 12 | Invoice Orchestrator | Temporal Server | Start `AuctionCloseWorkflow` (ID: `auction-{invoice_token}`) | Temporal SDK | Durable timer begins |
+| 13 | Invoice Orchestrator | RabbitMQ | Publish `invoice.listed` | AMQP | |
+| 14a | RabbitMQ | Notification Service | Consume `invoice.listed` → email + WebSocket push to business | AMQP | Concurrent with 14b |
+| 14b | RabbitMQ | Activity Log Bridge | Consume `invoice.listed` → relay to OutSystems | AMQP → HTTPS | Concurrent with 14a |
 
-**Temporal (background, after listing):**
+**AuctionCloseWorkflow (background, durable):**
 
-| Step | From | To | Call / Action | Technology |
-|------|------|----|---------------|------------|
-| T1 | Temporal Worker | Temporal Server | Poll `invoiceflow-queue` for AuctionCloseWorkflow tasks | Temporal SDK |
-| T2 | AuctionCloseWorkflow | — | Durable timer running for `bid_period_hours` | Temporal internal |
-| T3a | AuctionCloseWorkflow | RabbitMQ | At T-12h: publish `auction.closing.warning` | AMQP |
-| T3b | AuctionCloseWorkflow | RabbitMQ | At T-1h: publish `auction.closing.warning` | AMQP |
+| Step | Action |
+|------|--------|
+| T1 | Temporal Worker polls `invoiceflow-queue` |
+| T2 | Durable timer runs for `bid_period_hours` |
+| T3a | At T-12h: publish `auction.closing.warning` to RabbitMQ |
+| T3b | At T-1h: publish `auction.closing.warning` to RabbitMQ |
 
 ---
 
-### Scenario 2 Flow: Investor Bids on Invoice (with Anti-Snipe) and Wins Auction
+## Scenario 2: Investor Bids on Invoice (with Anti-Snipe) and Wins Auction
 
-This flow has three phases: (A) Wallet Top-Up, (B) Bidding with Anti-Snipe, (C) Auction Close.
+### Phase A: Wallet Top-Up via Stripe
 
-#### Phase A: Wallet Top-Up via Stripe
-
-| Step | From | To | Call / Action | Technology | Notes |
-|------|------|----|---------------|------------|-------|
+| Step | From | To | Action | Tech | Notes |
+|------|------|----|--------|------|-------|
 | A1 | Investor | React Frontend | Click "Top Up Wallet" | Browser | |
 | A2 | React Frontend | KONG | `POST /api/wallet/topup` | HTTPS | |
-| A3 | KONG | Bidding Orchestrator | Route to :5011 | REST/JSON | |
-| A4 | Bidding Orchestrator | Stripe Wrapper | `POST /create-checkout-session` (type=wallet_topup) | REST/JSON :5008 | |
+| A3 | KONG | Bidding Orchestrator :5011 | Route | REST/JSON | |
+| A4 | Bidding Orchestrator | Stripe Wrapper :5008 | `POST /create-checkout-session` (type=wallet_topup) | REST/JSON | |
 | A5 | Stripe Wrapper | Stripe | Create Checkout Session | HTTPS (external) | |
-| A6 | Stripe | Stripe Wrapper | Returns checkout URL | HTTPS response | |
-| A7 | Stripe Wrapper | Bidding Orchestrator | Returns checkout URL | REST response | |
-| A8 | Bidding Orchestrator | KONG | Returns checkout URL | REST response | |
-| A9 | KONG | React Frontend | Forwards checkout URL → redirect investor | REST response | |
-| A10 | Investor | Stripe | Completes payment on Stripe hosted checkout | Browser redirect | |
-| A11 | Stripe | KONG | Webhook `checkout.session.completed` | HTTPS (Stripe-Signature header) | |
-| A12 | KONG | Webhook Router | Route to :5013 | REST/JSON | |
-| A13 | Webhook Router | — | Verify Stripe-Signature HMAC | Internal | Rejects mismatches + replays >5 min |
+| A6–A9 | Stripe → Stripe Wrapper → Bidding Orchestrator → KONG → React Frontend | | Return checkout URL; redirect investor | REST chain | |
+| A10 | Investor | Stripe | Complete payment on hosted checkout | Browser | |
+| A11 | Stripe | KONG | Webhook `checkout.session.completed` (Stripe-Signature header) | HTTPS | |
+| A12 | KONG | Webhook Router :5013 | Route | REST/JSON | |
+| A13 | Webhook Router | — | Verify Stripe-Signature HMAC; reject mismatches/replays >5 min | Internal | |
 | A14 | Webhook Router | RabbitMQ | Publish `stripe.checkout.completed` (type=wallet_topup) | AMQP | |
 | A15 | RabbitMQ | Bidding Orchestrator | Consume `stripe.checkout.completed` (type=wallet_topup) | AMQP | |
 | A16 | Bidding Orchestrator | Temporal Server | Start `WalletTopUpWorkflow` (ID: `wallet-topup-{session_id}`) | Temporal SDK | Idempotent |
 | A17 | Temporal Worker | Payment Service | `CreditWallet` — credit investor wallet | gRPC :50051 | |
-| A18 | Temporal Worker | User Service | `GET /users/{id}` — fetch investor email | HTTP (direct) | |
+| A18 | Temporal Worker | User Service | `GET /users/{id}` — fetch investor email | HTTP | |
 | A19 | Temporal Worker | RabbitMQ | Publish `wallet.credited` | AMQP | |
-| A20a | RabbitMQ | Notification Service | Consume `wallet.credited` → email + WebSocket push to investor | AMQP | Concurrent with A20b |
-| A20b | RabbitMQ | Activity Log Bridge | Consume `wallet.credited` → relay to OutSystems | AMQP → HTTPS | Concurrent with A20a |
-| A21a | Notification Service | Resend | Send wallet credited confirmation email to investor | HTTPS (external) | Concurrent with A21b |
-| A21b | Notification Service | React Frontend | WebSocket push — wallet credited notification | WebSocket | Concurrent with A21a |
+| A20a | RabbitMQ | Notification Service | Consume → email + WebSocket push to investor | AMQP | Concurrent with A20b |
+| A20b | RabbitMQ | Activity Log Bridge | Consume → relay to OutSystems | AMQP → HTTPS | Concurrent with A20a |
 
-#### Phase B: Placing a Bid (with Anti-Snipe Extension)
+### Phase B: Placing a Bid (with Anti-Snipe Extension)
 
-| Step | From | To | Call / Action | Technology | Notes |
-|------|------|----|---------------|------------|-------|
-| B1 | Investor | React Frontend | Browse marketplace listings | Browser | |
-| B2 | React Frontend | KONG | `GET /api/listings` | HTTPS | |
-| B3 | KONG | Marketplace Service | Fetch listings from market_db read-model | REST/JSON :5002 | |
-| B4 | Marketplace Service | React Frontend | Returns filtered listings with current deadlines | REST response | |
-| B5 | Investor | React Frontend | Place bid on selected invoice | Browser | |
+| Step | From | To | Action | Tech | Notes |
+|------|------|----|--------|------|-------|
+| B1–B4 | Investor → React Frontend → KONG → Marketplace Service | | `GET /api/listings` → return listings with deadlines | HTTPS / REST | |
+| B5 | Investor | React Frontend | Place bid | Browser | |
 | B6 | React Frontend | KONG | `POST /api/bids` | HTTPS | |
-| B7 | KONG | Bidding Orchestrator | Route to :5011 | REST/JSON | |
-| B8 | Bidding Orchestrator | Bidding Service | `POST /bids` — validate + create bid, fetch previous highest bidder if any | HTTP (direct) | Returns previous highest bid if outbid occurred |
+| B7 | KONG | Bidding Orchestrator :5011 | Route | REST/JSON | |
+| B8 | Bidding Orchestrator | Bidding Service | `POST /bids` — validate + create bid, fetch previous highest bidder | HTTP | |
 | B9 | Bidding Orchestrator | Payment Service | `LockEscrow` — lock bid amount from investor wallet | gRPC :50051 | Idempotency key attached |
-| B10a | *(If outbid occurred)* Bidding Orchestrator | RabbitMQ | Publish `bid.outbid` (previous highest bidder info) | AMQP | Concurrent with B10b |
-| B10b | *(If outbid occurred)* RabbitMQ | Payment Service | Consume `bid.outbid` → release previous bidder's escrow back to wallet | AMQP (choreography) | Concurrent with B10a fan-out |
-| B10c | *(If outbid occurred)* RabbitMQ | Notification Service | Consume `bid.outbid` → notify outbid investor | AMQP | Concurrent with B10b |
-| B10d | *(If outbid occurred)* Notification Service | Resend | Send outbid email to previous highest bidder | HTTPS (external) | Concurrent with B10e |
-| B10e | *(If outbid occurred)* Notification Service | React Frontend | WebSocket push — outbid notification | WebSocket | Concurrent with B10d |
-| B11 | Bidding Orchestrator | Marketplace Service | `GET /listings/{id}` — check if auction is within final `ANTI_SNIPE_WINDOW_SECONDS` (default 300s) | HTTP (direct) | Compare current time vs deadline |
-| B12a | *(If within window)* Bidding Orchestrator | Temporal Server | Signal `extend_deadline` to `AuctionCloseWorkflow` (ID: `auction-{invoice_token}`) | Temporal SDK (signal) | Workflow restarts anti-snipe timer; concurrent with B12b and B12c |
-| B12b | *(If within window)* Bidding Orchestrator | Marketplace Service | `PATCH /listings/{id}` — update displayed deadline (+`ANTI_SNIPE_WINDOW_SECONDS`) | HTTP (direct) | Frontend reflects new deadline; concurrent with B12a and B12c |
-| B12c | *(If within window)* Bidding Orchestrator | RabbitMQ | Publish `auction.extended` | AMQP | Concurrent with B12a and B12b |
+| B10a | *(If outbid)* Bidding Orchestrator | RabbitMQ | Publish `bid.outbid` | AMQP | Concurrent with B10b fan-out |
+| B10b | *(If outbid)* RabbitMQ | Payment Service | Consume `bid.outbid` → release previous bidder's escrow to wallet | AMQP (choreography) | Concurrent with B10c |
+| B10c | *(If outbid)* RabbitMQ | Notification Service | Consume `bid.outbid` → notify outbid investor (email + WebSocket) | AMQP | Concurrent with B10b |
+| B11 | Bidding Orchestrator | Marketplace Service | `GET /listings/{id}` — check if within `ANTI_SNIPE_WINDOW_SECONDS` (default 300s) | HTTP | |
+| B12a | *(If within window)* Bidding Orchestrator | Temporal Server | Signal `extend_deadline` to `AuctionCloseWorkflow` — restart timer | Temporal SDK | Concurrent with B12b, B12c |
+| B12b | *(If within window)* Bidding Orchestrator | Marketplace Service | `PATCH /listings/{id}` — update displayed deadline (+300s) | HTTP | Concurrent with B12a, B12c |
+| B12c | *(If within window)* Bidding Orchestrator | RabbitMQ | Publish `auction.extended` | AMQP | Concurrent with B12a, B12b |
 | B13 | Bidding Orchestrator | RabbitMQ | Publish `bid.placed` | AMQP | |
-| B14a | RabbitMQ | Notification Service | Consume `bid.placed` → notify seller of new bid | AMQP | Concurrent with B14b |
-| B14b | RabbitMQ | Activity Log Bridge | Consume `bid.placed` → relay to OutSystems | AMQP → HTTPS | Concurrent with B14a |
-| B15a | Notification Service | Resend | Send new bid email to seller | HTTPS (external) | Concurrent with B15b |
-| B15b | Notification Service | React Frontend | WebSocket push — new bid notification to seller | WebSocket | Concurrent with B15a |
+| B14a | RabbitMQ | Notification Service | Consume `bid.placed` → notify seller (email + WebSocket) | AMQP | Concurrent with B14b |
+| B14b | RabbitMQ | Activity Log Bridge | Consume → relay to OutSystems | AMQP → HTTPS | Concurrent with B14a |
 
-#### Phase C: Auction Closes (Timer Expires)
+### Phase C: Auction Closes (Timer Expires)
 
-| Step | From | To | Call / Action | Technology | Notes |
-|------|------|----|---------------|------------|-------|
+| Step | From | To | Action | Tech | Notes |
+|------|------|----|--------|------|-------|
 | C1 | AuctionCloseWorkflow | — | Final 5-min timer expires with no `extend_deadline` signal | Temporal internal | Anti-snipe window passed |
-| C2 | Temporal Worker | Bidding Service | `GET /bids?invoice_token={token}` — fetch all offers | HTTP (direct) | |
-| C3 | *(If zero bids)* Temporal Worker | RabbitMQ | Publish `auction.expired` → **flow ends** | AMQP | |
-| C4 | Temporal Worker | Invoice Service | `verify_invoice_available` — confirm invoice still LISTED | HTTP (direct) | Step 1 |
-| C5 | Temporal Worker | Payment Service | `ConvertEscrowToLoan` — convert winner's escrowed funds | gRPC :50051 | Step 2 |
-| C6 | Temporal Worker | Payment Service | `CreateLoan` — create loan record with due_date | gRPC :50051 | Step 3 |
+| C2 | Temporal Worker | Bidding Service | `GET /bids?invoice_token={token}` — fetch all offers | HTTP | |
+| C3 | *(Zero bids)* Temporal Worker | RabbitMQ | Publish `auction.expired` → **flow ends** | AMQP | |
+| C4 | Temporal Worker | Invoice Service | `verify_invoice_available` — confirm still LISTED | HTTP | Step 1 |
+| C5 | Temporal Worker | Payment Service | `ConvertEscrowToLoan` — convert winner's escrow | gRPC :50051 | Step 2 |
+| C6 | Temporal Worker | Payment Service | `CreateLoan` — create loan with due_date | gRPC :50051 | Step 3 |
 | C7 | Temporal Worker | Temporal Server | Start `LoanMaturityWorkflow` as child (ID: `loan-{loan_id}`) | Temporal SDK | Step 4 — fire-and-forget |
 | C8 | Temporal Worker | Payment Service | `ReleaseFundsToSeller` — transfer principal to seller wallet | gRPC :50051 | Step 5 |
-| C9 | Temporal Worker | Invoice Service | `PATCH /invoices/{token}` → status FINANCED | HTTP (direct) | Step 6 |
-| C10 | Temporal Worker | Marketplace Service | `DELETE /listings/{id}` — delist | HTTP (direct) | Step 7 |
-| C11 | Temporal Worker | Bidding Service | `accept_offer` (winner) | HTTP (direct) | Step 8 |
-| C12 | Temporal Worker | Bidding Service | `reject_offer` (all losers — **parallel**) | HTTP (direct) | Step 9 |
-| C13 | Temporal Worker | RabbitMQ | Publish `auction.closed.winner` + `auction.closed.loser` (per loser) | AMQP | Step 10 — no escrow refund needed; already released on outbid |
-| C14a | RabbitMQ | Notification Service | Consume → email winner + each loser + seller | AMQP | Concurrent with C14b |
+| C9 | Temporal Worker | Invoice Service | `PATCH /invoices/{token}` → FINANCED | HTTP | Step 6 |
+| C10 | Temporal Worker | Marketplace Service | `DELETE /listings/{id}` — delist | HTTP | Step 7 |
+| C11 | Temporal Worker | Bidding Service | `accept_offer` (winner) | HTTP | Step 8 |
+| C12 | Temporal Worker | Bidding Service | `reject_offer` (all losers — **parallel**) | HTTP | Step 9 — no escrow refund; already released on outbid |
+| C13 | Temporal Worker | RabbitMQ | Publish `auction.closed.winner` + `auction.closed.loser` (per loser) | AMQP | Step 10 |
+| C14a | RabbitMQ | Notification Service | Consume → email winner + each loser + seller; WebSocket push | AMQP | Concurrent with C14b |
 | C14b | RabbitMQ | Activity Log Bridge | Consume → relay to OutSystems | AMQP → HTTPS | Concurrent with C14a |
-| C15a | Notification Service | Resend | Send auction result emails to winner, losers, and seller | HTTPS (external) | Concurrent with C15b |
-| C15b | Notification Service | React Frontend | WebSocket push — auction result notification to winner, losers, and seller | WebSocket | Concurrent with C15a |
 
 ---
 
-### Scenario 3 Flow: Loan Maturity and Business Default
+## Scenario 3: Loan Maturity and Business Default
 
-This flow has two branches: (A) Loan Comes Due + Repayment Window, then either (B) Business Repays or (C) Business Defaults.
+### Phase A: Loan Comes Due
 
-#### Phase A: Loan Maturity (Due Date Arrives)
-
-| Step | From | To | Call / Action | Technology | Notes |
-|------|------|----|---------------|------------|-------|
-| A1 | LoanMaturityWorkflow | — | Durable timer fires on `due_date` | Temporal internal | Could be days/weeks after auction |
-| A2 | Temporal Worker | Payment Service | `UpdateLoanStatus` → status DUE | gRPC :50051 | |
+| Step | From | To | Action | Tech | Notes |
+|------|------|----|--------|------|-------|
+| A1 | LoanMaturityWorkflow | — | Durable timer fires on `due_date` (days/weeks after auction) | Temporal internal | Child of AuctionCloseWorkflow |
+| A2 | Temporal Worker | Payment Service | `UpdateLoanStatus` → DUE | gRPC :50051 | |
 | A3 | Temporal Worker | RabbitMQ | Publish `loan.due` | AMQP | |
-| A4a | RabbitMQ | Notification Service | Consume `loan.due` → email business "your loan is due" + WebSocket push | AMQP | Concurrent with A4b |
-| A4b | RabbitMQ | Activity Log Bridge | Consume `loan.due` → relay to OutSystems | AMQP → HTTPS | Concurrent with A4a |
-| A5a | Notification Service | Resend | Send email | HTTPS (external) | Concurrent with A5b |
-| A5b | Notification Service | React Frontend | WebSocket push — loan due notification to business | WebSocket | Concurrent with A5a |
-| A6 | LoanMaturityWorkflow | — | Start repayment window timer (`DEMO_REPAYMENT_WINDOW_SECONDS` / `REPAYMENT_WINDOW_SECONDS`, default 86400s) | Temporal internal | 24h in production; set `DEMO_MODE=true` to shorten |
+| A4a | RabbitMQ | Notification Service | Consume `loan.due` → email business "loan is due" + WebSocket push | AMQP | Concurrent with A4b |
+| A4b | RabbitMQ | Activity Log Bridge | Consume → relay to OutSystems | AMQP → HTTPS | Concurrent with A4a |
+| A5 | LoanMaturityWorkflow | — | Start repayment window (`DEMO_REPAYMENT_WINDOW_SECONDS` / `REPAYMENT_WINDOW_SECONDS`, default 86400s) — if window expires unpaid, flow continues to Phase B | Temporal internal | |
 
-#### Phase B: Business Repays Successfully (within repayment window)
+### Phase B: Business Defaults (repayment window expires)
 
-| Step | From | To | Call / Action | Technology | Notes |
-|------|------|----|---------------|------------|-------|
-| B1 | Business | React Frontend | Click "Repay Loan" | Browser | |
-| B2 | React Frontend | KONG | `POST /api/loans/{id}/repay` | HTTPS | |
-| B3 | KONG | Loan Orchestrator | Route to :5012 | REST/JSON | |
-| B4 | Loan Orchestrator | Payment Service | `GetLoan` — fetch loan details | gRPC :50051 | |
-| B5 | Loan Orchestrator | Stripe Wrapper | `POST /create-checkout-session` (type=loan_repayment) | REST/JSON :5008 | |
-| B6 | Stripe Wrapper | Stripe | Create Checkout Session | HTTPS (external) | |
-| B7 | Stripe | Business | Business completes payment on Stripe hosted checkout | Browser redirect | |
-| B8 | Stripe | Business (browser) | Redirect to success URL (React frontend `/payment/success`) | Browser redirect | Frontend renders success page |
-| B9 | React Frontend | KONG | `POST /api/loans/{id}/confirm-repayment` with `{ stripe_session_id }` | HTTPS | Frontend calls confirm endpoint after redirect |
-| B10 | KONG | Loan Orchestrator | Route to :5012 | REST/JSON | |
-| B11 | Loan Orchestrator | Temporal Server | Start `LoanRepaymentWorkflow` (ID: `loan-repay-{loan_id}`) | Temporal SDK | |
-| B12 | Temporal Worker | Payment Service | `UpdateLoanStatus` → status REPAID | gRPC :50051 | |
-| B12a | Temporal Worker (LoanRepaymentWorkflow) | Temporal Server | Signal `repayment_confirmed` to `LoanMaturityWorkflow` (ID: `loan-{loan_id}`) | Temporal SDK (signal) | Causes maturity workflow to exit repayment window immediately |
-| B13 | Temporal Worker | Payment Service | `GetLoan` — fetch full loan details | gRPC :50051 | |
-| B14 | Temporal Worker | User Service | `GET /users/{id}` — fetch seller + investor emails | HTTP (direct) | |
-| B15 | Temporal Worker | RabbitMQ | Publish `loan.repaid` | AMQP | **Four-consumer choreography begins** |
-| B16a | RabbitMQ | Invoice Service | Consume `loan.repaid` (queue: `invoice_repaid_updates`) → mark invoice REPAID | AMQP | Consumer 1 — concurrent with B16b, B16c, B16d |
-| B16b | RabbitMQ | Payment Service | Consume `loan.repaid` (queue: `payment_repaid_updates`) → credit investor wallet | AMQP | Consumer 2 — concurrent with B16a, B16c, B16d |
-| B16c | RabbitMQ | User Service | Consume `loan.repaid` (queue: `user_repaid_updates`) → reset business account_status ACTIVE | AMQP | Consumer 3 — concurrent with B16a, B16b, B16d |
-| B16d | RabbitMQ | Notification Service | Consume `loan.repaid` (queue: `notification_repaid_updates`) → email both parties | AMQP | Consumer 4 — concurrent with B16a, B16b, B16c |
-| B17a | Notification Service | Resend | Send emails to business + investor | HTTPS (external) | Concurrent with B17b |
-| B17b | Notification Service | React Frontend | WebSocket push — loan repaid notification to business + investor | WebSocket | Concurrent with B17a |
-| B18 | RabbitMQ | Activity Log Bridge | Consume `loan.repaid` → relay to OutSystems | AMQP → HTTPS | |
-| B19 | LoanMaturityWorkflow | — | `repayment_confirmed` signal received → `wait_condition` exits early → **workflow ends cleanly** | Temporal internal | Signal sent at B12a |
-
-#### Phase C: Business Defaults (repayment window expires unpaid)
-
-| Step | From | To | Call / Action | Technology | Notes |
-|------|------|----|---------------|------------|-------|
-| C1 | LoanMaturityWorkflow | — | Repayment window timer expires | Temporal internal | |
-| C2 | Temporal Worker | Payment Service | `GetLoan` — check loan status, still DUE (not repaid) | gRPC :50051 | |
-| C3 | Temporal Worker | Payment Service | `UpdateLoanStatus` → status OVERDUE | gRPC :50051 | |
-| C4 | Temporal Worker | RabbitMQ | Publish `loan.overdue` | AMQP | **Four-consumer choreography begins** |
-| C5a | RabbitMQ | Invoice Service | Consume `loan.overdue` (queue: `invoice_loan_updates`) → mark invoice DEFAULTED | AMQP | Consumer 1 — concurrent with C5b, C5c, C5d |
-| C5b | RabbitMQ | Payment Service | Consume `loan.overdue` (queue: `payment_loan_updates`) → calculate 5% penalty | AMQP | Consumer 2 — concurrent with C5a, C5c, C5d |
-| C5c | RabbitMQ | User Service | Consume `loan.overdue` (queue: `user_loan_updates`) → set business account_status → DEFAULTED | AMQP | Consumer 3 — concurrent with C5a, C5b, C5d |
-| C5d | RabbitMQ | Notification Service | Consume `loan.overdue` (queue: `notification_loan_updates`) → email both parties | AMQP | Consumer 4 — concurrent with C5a, C5b, C5c |
-| C6a | Notification Service | Resend | Send emails to business + investor | HTTPS (external) | Concurrent with C6b |
-| C6b | Notification Service | React Frontend | WebSocket push — loan overdue/default notification to business + investor | WebSocket | Concurrent with C6a |
-| C7 | RabbitMQ | Activity Log Bridge | Consume `loan.overdue` → relay to OutSystems | AMQP → HTTPS | |
-| C8 | Temporal Worker | Marketplace Service | `DELETE /listings?seller_id={id}` — bulk delist all defaulting seller's active listings | HTTP (direct) | Prevents further auctions |
-| C9 | LoanMaturityWorkflow | — | **Workflow ends** | Temporal internal | |
+| Step | From | To | Action | Tech | Notes |
+|------|------|----|--------|------|-------|
+| B1 | LoanMaturityWorkflow | — | Repayment window timer expires unpaid | Temporal internal | Continues from Phase A |
+| B2 | Temporal Worker | Payment Service | `GetLoan` — confirm still DUE | gRPC :50051 | |
+| B3 | Temporal Worker | Payment Service | `UpdateLoanStatus` → OVERDUE | gRPC :50051 | |
+| B4 | Temporal Worker | RabbitMQ | Publish `loan.overdue` | AMQP | **Four-consumer choreography begins** |
+| B5a | RabbitMQ | Invoice Service | `invoice_loan_updates` → mark invoice DEFAULTED | AMQP | Consumer 1 — concurrent with B5b/c/d |
+| B5b | RabbitMQ | Payment Service | `payment_loan_updates` → calculate 5% penalty | AMQP | Consumer 2 — concurrent with B5a/c/d |
+| B5c | RabbitMQ | User Service | `user_loan_updates` → set business account_status → DEFAULTED | AMQP | Consumer 3 — concurrent with B5a/b/d |
+| B5d | RabbitMQ | Notification Service | `notification_loan_updates` → email both parties + WebSocket push | AMQP | Consumer 4 — concurrent with B5a/b/c |
+| B6 | RabbitMQ | Activity Log Bridge | Consume `loan.overdue` → relay to OutSystems | AMQP → HTTPS | |
+| B7 | Temporal Worker | Marketplace Service | `DELETE /listings?seller_id={id}` — bulk delist all defaulting seller's active listings | HTTP | Prevents further auctions |
+| B8 | LoanMaturityWorkflow | — | **Workflow ends** | Temporal internal | |
 
 ---
 
