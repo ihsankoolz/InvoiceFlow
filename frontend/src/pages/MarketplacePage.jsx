@@ -197,7 +197,7 @@ export default function MarketplacePage() {
 
   // Re-fetch bids when outbid WS message arrives
   useEffect(() => {
-    if (lastMessage?.type === 'bid.outbid') fetchBidIds()
+    if (lastMessage?.event_type === 'bid.outbid') fetchBidIds()
   }, [lastMessage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function load() {
