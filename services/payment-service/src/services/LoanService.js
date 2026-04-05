@@ -37,6 +37,7 @@ class LoanService {
       investor_id: data.investor_id,
       seller_id: data.seller_id,
       principal: parseFloat(data.principal).toFixed(2),
+      bid_amount: parseFloat(data.bid_amount).toFixed(2),
       due_date: data.due_date,
       status: 'ACTIVE',
     });
