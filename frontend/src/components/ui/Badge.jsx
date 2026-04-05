@@ -14,6 +14,7 @@ const STATUS_STYLES = {
   DEFAULTED: 'bg-red-50 text-red-700 border border-red-300',
   REJECTED:  'bg-red-50 text-red-700 border border-red-300',
   OVERDUE:   'bg-red-50 text-red-700 border border-red-300',
+  EXPIRED:   'bg-gray-100 text-gray-500 border border-gray-300',
   PENDING:   'bg-yellow-50 text-yellow-700 border border-yellow-300',
   DUE:       'bg-[#fff3e0] text-[#ff9500] border border-[#ff9500]/40',
 

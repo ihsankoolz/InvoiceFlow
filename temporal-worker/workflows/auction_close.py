@@ -112,6 +112,7 @@ class AuctionCloseWorkflow:
         if not offers:
             invoice_exp = await workflow.execute_activity(verify_invoice, args=[invoice_token], **act_opts)
             seller_exp = await workflow.execute_activity(get_user, args=[invoice_exp["seller_id"]], **act_opts)
+            await workflow.execute_activity(update_invoice_status, args=[invoice_token, "EXPIRED"], **act_opts)
             await workflow.execute_activity(
                 publish_event,
                 args=["auction.expired", {

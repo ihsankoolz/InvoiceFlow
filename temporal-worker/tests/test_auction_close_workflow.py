@@ -151,7 +151,7 @@ def _build_mock(offers: list, snipe_signals: int = 0):
 
 @pytest.mark.asyncio
 async def test_zero_bids_publishes_auction_expired():
-    """No bids → auction.expired published, financial settlement never runs."""
+    """No bids → invoice set to EXPIRED, auction.expired published, financial settlement never runs."""
     mock_wf, activity_calls, child_calls = _build_mock(offers=[])
 
     with patch("workflows.auction_close.workflow", mock_wf):
@@ -161,9 +161,17 @@ async def test_zero_bids_publishes_auction_expired():
     published = [args[0] for name, args in activity_calls if name == "publish_event"]
     assert "auction.expired" in published
 
+    # Invoice status must be set to EXPIRED before delist
+    names = [name for name, _ in activity_calls]
+    assert "update_invoice_status" in names
+    status_args = [args for name, args in activity_calls if name == "update_invoice_status"]
+    assert status_args[0] == [INVOICE_TOKEN, "EXPIRED"]
+    assert names.index("update_invoice_status") < names.index("delist_listing")
+
+    # Financial settlement must not run
     settlement_names = {
         "convert_escrow_to_loan", "create_loan", "release_funds_to_seller",
-        "update_invoice_status", "delist_listing", "accept_offer",
+        "accept_offer",
     }
     called_names = {name for name, _ in activity_calls}
     assert called_names.isdisjoint(settlement_names)
