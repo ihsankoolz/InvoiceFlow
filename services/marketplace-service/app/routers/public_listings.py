@@ -41,15 +41,19 @@ def _listing_to_dict(listing: Listing) -> dict:
 def get_listings(
     urgency_level: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
+    seller_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
 ):
     """
     Returns active marketplace listings from the read model.
-    Filters: urgency_level, search (matches invoice_token, debtor_name, debtor_uen).
+    Filters: urgency_level, search (matches invoice_token, debtor_name, debtor_uen), seller_id.
     Single DB query — no calls to invoice-service or bidding-service.
     """
     now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
     query = db.query(Listing).filter(Listing.status == "ACTIVE", Listing.deadline > now_utc)
+
+    if seller_id:
+        query = query.filter(Listing.seller_id == seller_id)
 
     if urgency_level and urgency_level != "ALL":
         query = query.filter(Listing.urgency_level == urgency_level)

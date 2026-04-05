@@ -95,13 +95,15 @@ function SellerDashboard({ user }) {
     Promise.allSettled([
       api.get(`/invoices?seller_id=${user.sub}`),
       api.get(`/loans?seller_id=${user.sub}`),
-    ]).then(([invoicesRes, loansRes]) => {
+      api.get(`/listings?seller_id=${user.sub}`),
+    ]).then(([invoicesRes, loansRes, listingsRes]) => {
       const allInvoices = invoicesRes.status === 'fulfilled' ? (invoicesRes.value.data?.invoices || invoicesRes.value.data || []) : []
       const loans       = loansRes.status === 'fulfilled' ? (loansRes.value.data?.loans || loansRes.value.data || []) : []
+      const listings    = listingsRes.status === 'fulfilled' ? (listingsRes.value.data || []) : []
       const active      = loans.filter(l => l.status === 'ACTIVE' || l.status === 'DUE')
       setInvoices(allInvoices)
       setAllLoans(loans)
-      setActiveListings(allInvoices.filter(i => i.status === 'LISTED').slice(0, 5))
+      setActiveListings(listings.slice(0, 5))
       setLoansCount(active.length)
       setUpcomingLoans(active.slice(0, 3))
       setTotalOutstanding(active.reduce((s, l) => s + Number(l.principal || 0), 0))
@@ -225,7 +227,7 @@ function SellerDashboard({ user }) {
                 <div key={inv.id || i} className="border-b border-black/5 pb-4 last:border-0 flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
                     <p className="font-['Lato'] font-medium text-sm text-ink">{inv.invoice_token || inv.id}</p>
-                    <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(inv.face_value)}</p>
+                    <p className="font-['Lato'] font-medium text-sm text-ink">{inv.current_bid ? fmt(inv.current_bid) : '—'}</p>
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="font-['Lato'] text-xs text-ink/40">{inv.debtor_name || '—'}</p>
