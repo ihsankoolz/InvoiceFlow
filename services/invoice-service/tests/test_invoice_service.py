@@ -3,12 +3,10 @@ from datetime import date
 from unittest.mock import MagicMock
 
 import pytest
-from fastapi import HTTPException
-
 from app.models.invoice import Invoice
 from app.schemas.invoice import InvoiceCreate
 from app.services.invoice_service import InvoiceService, _generate_invoice_token
-
+from fastapi import HTTPException
 
 # ═══════════════════════════════════════════════════════════════
 # Helpers
