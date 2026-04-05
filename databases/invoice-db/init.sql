@@ -11,7 +11,7 @@ CREATE TABLE invoices (
     due_date        DATE NOT NULL,
     currency        VARCHAR(3) DEFAULT 'SGD',
     pdf_url         VARCHAR(500),
-    status          ENUM('DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED', 'REJECTED') DEFAULT 'DRAFT',
+    status          ENUM('DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED', 'REJECTED', 'EXPIRED') DEFAULT 'DRAFT',
     extracted_data  JSON,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

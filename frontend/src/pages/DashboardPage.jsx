@@ -626,6 +626,12 @@ function InvestorDashboard({ user }) {
               })}
             </div>
           )}
+
+          {!loansLoading && loansCount > 0 && (
+            <Link to="/repayments" className="self-start font-['Lato'] text-sm text-ink/40 hover:text-ink transition-colors flex items-center gap-1 mt-auto">
+              View all repayments <ArrowRight size={13} />
+            </Link>
+          )}
         </div>
 
       </div>
