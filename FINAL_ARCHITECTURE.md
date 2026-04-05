@@ -593,7 +593,7 @@ These flows show every service interaction in order for each scenario. Steps lab
 | C5 | Temporal Worker | Payment Service | `ConvertEscrowToLoan` — convert winner's escrow | gRPC :50051 | Step 2 |
 | C6 | Temporal Worker | Payment Service | `CreateLoan` — create loan with principal=face_value (repayment amount) and bid_amount=winning bid (funds released to seller) | gRPC :50051 | Step 3 |
 | C7 | Temporal Worker | Temporal Server | Start `LoanMaturityWorkflow` as child (ID: `loan-{loan_id}`) | Temporal SDK | Step 4 — fire-and-forget |
-| C8 | Temporal Worker | Payment Service | `ReleaseFundsToSeller` — transfer principal to seller wallet | gRPC :50051 | Step 5 |
+| C8 | Temporal Worker | Payment Service | `ReleaseFundsToSeller` — transfer bid_amount (winning bid) to seller wallet | gRPC :50051 | Step 5 |
 | C9 | Temporal Worker | Invoice Service | `PATCH /invoices/{token}` → FINANCED | HTTP | Step 6 |
 | C10 | Temporal Worker | Marketplace Service | `DELETE /listings/{id}` — delist | HTTP | Step 7 |
 | C11 | Temporal Worker | Bidding Service | `accept_offer` (winner) | HTTP | Step 8 |
