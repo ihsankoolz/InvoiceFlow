@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Clock, ChevronDown, ArrowRight } from 'lucide-react'
+import { Search, Clock, ChevronDown, ArrowRight, Check } from 'lucide-react'
 import AppLayout from '../components/layout/AppLayout'
 import Badge from '../components/ui/Badge'
 import { fetchListings } from '../api/marketplace'
+import api from '../api/axios'
 import { useInView } from '../hooks/useInView'
 import { useAuth } from '../context/AuthContext'
 
@@ -60,7 +61,7 @@ function CountdownBadge({ deadline }) {
 }
 
 /* ── Listing card ── */
-function ListingCard({ listing, onBid, delay, inView, isInvestor }) {
+function ListingCard({ listing, onBid, delay, inView, isInvestor, hasBid }) {
   const ret = listing.current_bid ? calcReturn(listing.face_value, listing.current_bid) : null
   return (
     <div
@@ -121,9 +122,13 @@ function ListingCard({ listing, onBid, delay, inView, isInvestor }) {
         {isInvestor && (
           <button
             onClick={() => onBid(listing.id)}
-            className="mt-auto w-full bg-teal text-white rounded-[12px] px-4 py-3 font-['Lato'] font-semibold text-sm hover:opacity-90 active:scale-[0.97] active:opacity-100 transition-[transform,opacity] duration-100 flex items-center justify-center gap-2"
+            className={`mt-auto w-full rounded-[12px] px-4 py-3 font-['Lato'] font-semibold text-sm active:scale-[0.97] transition-[transform,opacity] duration-100 flex items-center justify-center gap-2 ${
+              hasBid
+                ? 'bg-[#e8f5e0] text-[#3e9b00] border border-[#3e9b00]/20'
+                : 'bg-teal text-white hover:opacity-90 active:opacity-100'
+            }`}
           >
-            Place Bid <ArrowRight size={14} />
+            {hasBid ? (<>Bid Placed <Check size={14} /></>) : (<>Place Bid <ArrowRight size={14} /></>)}
           </button>
         )}
       </div>
@@ -160,6 +165,7 @@ export default function MarketplacePage() {
   const [listings, setListings] = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
+  const [bidListingIds, setBidListingIds] = useState(new Set())
 
   const [urgency, setUrgency]   = useState('ALL')
   const [search, setSearch]     = useState('')
@@ -167,6 +173,22 @@ export default function MarketplacePage() {
 
   const [headerRef, headerInView] = useInView(0.05)
   const [gridRef, gridInView]     = useInView(0.05)
+
+  // Fetch listing IDs the investor has already bid on
+  useEffect(() => {
+    if (!isInvestor || !user?.sub) return
+    api.get(`/bids?investor_id=${user.sub}`)
+      .then((res) => {
+        const bids = res.data?.bids || res.data || []
+        const ids = new Set(
+          (Array.isArray(bids) ? bids : [])
+            .filter((b) => b.listing_id && b.status === 'PENDING')
+            .map((b) => b.listing_id)
+        )
+        setBidListingIds(ids)
+      })
+      .catch(() => {}) // silently ignore — button just defaults to "Place Bid"
+  }, [isInvestor, user?.sub])
 
   async function load() {
     setLoading(true)
@@ -275,6 +297,7 @@ export default function MarketplacePage() {
                   delay={i * 50}
                   inView={gridInView}
                   isInvestor={isInvestor}
+                  hasBid={bidListingIds.has(listing.id)}
                 />
               ))
           }

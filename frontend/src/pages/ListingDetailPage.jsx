@@ -125,6 +125,7 @@ export default function ListingDetailPage() {
   const [bidError, setBidError]   = useState('')
   const [bidSuccess, setBidSuccess] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
+  const [existingBid, setExistingBid] = useState(null)
 
   const [visible, setVisible]   = useState(false)
 
@@ -132,6 +133,20 @@ export default function ListingDetailPage() {
     const t = setTimeout(() => setVisible(true), 60)
     return () => clearTimeout(t)
   }, [])
+
+  // Check if the investor already has a bid on this listing
+  useEffect(() => {
+    if (!user || user.role !== 'INVESTOR') return
+    api.get(`/bids?investor_id=${user.sub}`)
+      .then((res) => {
+        const bids = res.data?.bids || res.data || []
+        const match = (Array.isArray(bids) ? bids : []).find(
+          (b) => String(b.listing_id) === String(id) && b.status === 'PENDING'
+        )
+        if (match) setExistingBid(match)
+      })
+      .catch(() => {})
+  }, [user, id])
 
   useEffect(() => {
     async function load() {
@@ -190,6 +205,7 @@ export default function ListingDetailPage() {
         investor_id: user.sub,
       })
       setBidSuccess('Bid placed successfully!')
+      setExistingBid({ amount: amount, bid_amount: amount })
       const updated = await fetchListing(id)
       if (updated) setListing(updated)
     } catch (e) {
@@ -376,6 +392,33 @@ export default function ListingDetailPage() {
                       </div>
                     )}
 
+                    {existingBid ? (
+                      <div className="space-y-4">
+                        <div className="px-4 py-3 rounded-lg bg-[#e8f5e0] border border-[#3e9b00]/20">
+                          <p className="font-['Lato'] text-sm text-[#3e9b00] font-medium">
+                            You have already placed a bid on this listing.
+                          </p>
+                          <p className="font-['Lato'] text-xs text-[#3e9b00]/70 mt-1">
+                            Your bid: {fmt(existingBid.amount || existingBid.bid_amount)}
+                          </p>
+                        </div>
+
+                        {/* Anti-snipe note */}
+                        <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-[#fff3e0]">
+                          <Shield size={14} className="text-[#ff9500] mt-0.5 flex-shrink-0" />
+                          <p className="font-['Lato'] text-xs text-ink/70">
+                            Bids in the last 5 minutes extend the auction by 5 minutes.
+                          </p>
+                        </div>
+
+                        <button
+                          disabled
+                          className="w-full bg-ink/10 text-ink/40 rounded-lg px-6 py-2.5 font-['Lato'] font-semibold cursor-not-allowed"
+                        >
+                          Bid Placed
+                        </button>
+                      </div>
+                    ) : (
                     <form onSubmit={handleBid} className="space-y-4">
                       <div>
                         <label className="block font-['Lato'] text-sm font-medium text-ink mb-1">
@@ -424,6 +467,7 @@ export default function ListingDetailPage() {
                         {bidLoading ? 'Placing bid…' : 'Place Bid'}
                       </button>
                     </form>
+                    )}
                   </>
                 ) : (
                   <div className="px-4 py-3 rounded-lg bg-[#fff3e0] border border-[#ff9500]/30">
