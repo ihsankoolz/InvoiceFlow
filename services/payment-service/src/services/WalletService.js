@@ -15,7 +15,7 @@ class WalletService {
    * @param {string|number} amount
    * @returns {Promise<Wallet>}
    */
-  async creditWallet(userId, amount, outerTransaction = null) {
+  async creditWallet(userId, amount, outerTransaction = null, referenceId = null) {
     const doCredit = async (t) => {
       const [wallet] = await Wallet.findOrCreate({
         where: { user_id: userId },
@@ -30,6 +30,7 @@ class WalletService {
         type: 'CREDIT',
         amount: parseFloat(amount).toFixed(2),
         description: 'WALLET_CREDIT',
+        reference_id: referenceId || null,
       }, { transaction: t });
       return wallet;
     };

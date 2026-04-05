@@ -85,7 +85,6 @@ class PaymentGRPCClient:
             "due_date": response.due_date,
             "investor_id": response.investor_id,
             "seller_id": response.seller_id,
-            "invoice_token": response.invoice_token,
         }
 
     async def update_loan_status(self, loan_id: str, status: str) -> dict:
