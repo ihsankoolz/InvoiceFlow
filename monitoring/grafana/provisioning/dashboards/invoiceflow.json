@@ -182,7 +182,7 @@
       "options": { "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "rabbitmq_queue_messages{queue!~\".*\\.dlq\"}",
+          "expr": "rabbitmq_queue_messages{queue!~\".*[.]dlq\"}",
           "legendFormat": "{{queue}}",
           "refId": "A"
         }
@@ -204,7 +204,7 @@
       "options": { "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "rabbitmq_queue_messages{queue=~\".*\\.dlq\"}",
+          "expr": "rabbitmq_queue_messages{queue=~\".*[.]dlq\"}",
           "legendFormat": "{{queue}}",
           "refId": "A"
         }
