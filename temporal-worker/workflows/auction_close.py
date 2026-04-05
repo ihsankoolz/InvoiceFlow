@@ -1,7 +1,6 @@
 """
-AuctionCloseWorkflow — handles auction timer, anti-snipe extension, and 10-step financial settlement.
+AuctionCloseWorkflow — handles auction timer, signal-based deadline extension, and 10-step financial settlement.
 
-CRITICAL: The anti-snipe loop MUST check the flag BEFORE resetting it.
 CRITICAL: LoanMaturityWorkflow MUST be started with start_child_workflow (fire-and-forget).
 """
 
@@ -91,19 +90,6 @@ class AuctionCloseWorkflow:
 
             # Wait until deadline
             await workflow.sleep(deadline - workflow.now())
-
-        # Anti-snipe loop: only extend if a bid arrived near the deadline
-        # CRITICAL: Check flag BEFORE resetting — a signal may have arrived during sleep
-        while self.extend_requested:
-            self.extend_requested = False
-            try:
-                await workflow.wait_condition(
-                    lambda: self.extend_requested,
-                    timeout=timedelta(seconds=config.ANTI_SNIPE_SECONDS),
-                )
-            except asyncio.TimeoutError:
-                # No further signal in 5 minutes → auction closes
-                break
 
         # Fetch all bids
         offers = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)

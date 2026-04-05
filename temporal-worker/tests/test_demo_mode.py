@@ -100,21 +100,11 @@ def _demo_config(auction_secs=90, loan_secs=90, repayment_secs=60, anti_snipe_se
 # Auction workflow helpers
 # ---------------------------------------------------------------------------
 
-def _auction_wf_mock(offers, snipe_signals=0):
+def _auction_wf_mock(offers):
     """Build a workflow mock for AuctionCloseWorkflow (same pattern as main test file)."""
     now_dt = datetime.now(timezone.utc)
     activity_calls: list[tuple] = []
     child_calls: list[dict] = []
-    snipe_remaining = [snipe_signals]
-    wf_ref = [None]
-
-    async def fake_wait_condition(condition, *, timeout):
-        if snipe_remaining[0] > 0:
-            snipe_remaining[0] -= 1
-            if wf_ref[0] is not None:
-                wf_ref[0].extend_requested = True
-            return
-        raise asyncio.TimeoutError()
 
     async def fake_execute_activity(fn, *, args, **kwargs):
         name = getattr(fn, "_mock_name", None) or getattr(fn, "__name__", str(fn))
@@ -137,12 +127,10 @@ def _auction_wf_mock(offers, snipe_signals=0):
     mock.now.return_value = now_dt
     mock.sleep = AsyncMock()
     mock.execute_activity = fake_execute_activity
-    mock.wait_condition = AsyncMock(side_effect=fake_wait_condition)
     mock.start_child_workflow = fake_start_child_workflow
     mock.ParentClosePolicy = MagicMock()
     mock.ParentClosePolicy.ABANDON = "ABANDON"
 
-    mock._wf_ref = wf_ref
     return mock, activity_calls, child_calls
 
 
@@ -252,25 +240,6 @@ async def test_auction_demo_settlement_executes_correctly():
     published = [args[0] for name, args in activity_calls if name == "publish_event"]
     assert "auction.closed.winner" in published
     assert "auction.closed.loser" in published
-
-
-@pytest.mark.asyncio
-async def test_auction_demo_anti_snipe_still_works():
-    """Demo mode: anti-snipe loop still extends auction and closes on second timeout."""
-    mock_wf, activity_calls, _ = _auction_wf_mock(offers=[_OFFER_A], snipe_signals=1)
-
-    with patch("workflows.auction_close.config", _demo_config(anti_snipe_secs=15)):
-        with patch("workflows.auction_close.workflow", mock_wf):
-            wf = AuctionCloseWorkflow()
-            mock_wf._wf_ref[0] = wf  # wire up so mock can set extend_requested
-            wf.extend_requested = True  # pre-deliver signal
-            await wf.run(INVOICE_TOKEN, bid_period_hours=48)
-
-    # wait_condition called twice: once returning (signal), once raising TimeoutError
-    assert mock_wf.wait_condition.call_count == 2
-
-    names = {name for name, _ in activity_calls}
-    assert "accept_offer" in names
 
 
 @pytest.mark.asyncio

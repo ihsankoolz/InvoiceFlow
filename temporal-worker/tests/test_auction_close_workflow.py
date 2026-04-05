@@ -1,16 +1,14 @@
 """
 Workflow-level tests for AuctionCloseWorkflow.
 
-Tests run instantly — workflow.sleep, workflow.wait_condition, and
-workflow.now are all mocked so no real timers fire.
-start_child_workflow is also mocked so LoanMaturityWorkflow is never
-actually started (it has its own test file).
+Tests run instantly — workflow.sleep and workflow.now are all mocked
+so no real timers fire. start_child_workflow is also mocked so
+LoanMaturityWorkflow is never actually started (it has its own test file).
 
-Four scenarios:
+Three scenarios:
   1. Zero bids        — auction expires with no bids → auction.expired published, no settlement
   2. Winner + losers  — 10-step settlement executes in correct order
-  3. Anti-snipe loop  — extend_deadline signal extends timer; second expiry closes auction
-  4. Loser escrow     — losing bidder's escrow released, winner's escrow not touched
+  3. Loser escrow     — losing bidder's escrow released, winner's escrow not touched
 """
 
 import asyncio
@@ -83,33 +81,15 @@ _OFFER_B = {"id": 2, "investor_id": INVESTOR_B, "bid_amount": 3000.0, "status": 
 # Mock builder
 # ---------------------------------------------------------------------------
 
-def _build_mock(offers: list, snipe_signals: int = 0):
+def _build_mock(offers: list):
     """
     Build a patched workflow module and tracking lists.
 
-    offers        — what get_offers returns during settlement (empty = no bids)
-    snipe_signals — how many extend_deadline signals arrive before auction closes.
-                    Each signal causes one extra iteration of the anti-snipe loop.
+    offers — what get_offers returns during settlement (empty = no bids)
     """
     now_dt = datetime.now(timezone.utc)
     activity_calls: list[tuple] = []
     child_calls: list[dict] = []
-
-    # wait_condition is called once per anti-snipe loop iteration.
-    # Raise TimeoutError to simulate "no signal in 5 min → close".
-    # If snipe_signals > 0, the first N calls return normally (signal arrived),
-    # and the final call raises TimeoutError.
-    snipe_remaining = [snipe_signals]
-    wf_ref = [None]  # set by test to wire up extend_requested
-
-    async def fake_wait_condition(condition, *, timeout):
-        if snipe_remaining[0] > 0:
-            snipe_remaining[0] -= 1
-            # Simulate signal arrival: set extend_requested so the while-loop continues
-            if wf_ref[0] is not None:
-                wf_ref[0].extend_requested = True
-            return  # no timeout → loop will re-enter
-        raise asyncio.TimeoutError()  # no signal → auction closes
 
     async def fake_execute_activity(fn, *, args, **kwargs):
         name = getattr(fn, "_mock_name", None) or getattr(fn, "__name__", str(fn))
@@ -138,12 +118,10 @@ def _build_mock(offers: list, snipe_signals: int = 0):
     mock.now.return_value = now_dt
     mock.sleep = AsyncMock()
     mock.execute_activity = fake_execute_activity
-    mock.wait_condition = AsyncMock(side_effect=fake_wait_condition)
     mock.start_child_workflow = fake_start_child_workflow
     mock.ParentClosePolicy = MagicMock()
     mock.ParentClosePolicy.ABANDON = "ABANDON"
 
-    mock._wf_ref = wf_ref
     return mock, activity_calls, child_calls
 
 
@@ -222,40 +200,7 @@ async def test_settlement_executes_in_correct_order():
 
 
 # ---------------------------------------------------------------------------
-# Test 3: Anti-snipe — one signal extends timer, auction closes on second expiry
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_anti_snipe_one_signal_then_closes():
-    """
-    extend_deadline signal causes the loop to iterate once more.
-    The auction closes on the subsequent timeout with no further signals.
-    Settlement still completes correctly.
-    """
-    mock_wf, activity_calls, child_calls = _build_mock(
-        offers=[_OFFER_A, _OFFER_B],
-        snipe_signals=1,
-    )
-
-    with patch("workflows.auction_close.workflow", mock_wf):
-        wf = AuctionCloseWorkflow()
-        mock_wf._wf_ref[0] = wf  # wire up so mock can set extend_requested
-        # Simulate signal: set extend_requested before the loop checks it.
-        wf.extend_requested = True
-        await wf.run(INVOICE_TOKEN, bid_period_hours=1)
-
-    # wait_condition was called twice: once returning (signal path), once raising TimeoutError
-    assert mock_wf.wait_condition.call_count == 2
-
-    # Settlement still ran
-    names = {name for name, _ in activity_calls}
-    assert "accept_offer" in names
-    assert "create_loan" in names
-    assert len(child_calls) == 1
-
-
-# ---------------------------------------------------------------------------
-# Test 4: Loser escrow released, winner escrow not released
+# Test 3: Loser escrow released, winner escrow not released
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
