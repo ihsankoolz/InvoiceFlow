@@ -540,21 +540,22 @@ This flow has three phases: (A) Wallet Top-Up, (B) Bidding with Anti-Snipe, (C) 
 | A5 | Stripe Wrapper | Stripe | Create Checkout Session | HTTPS (external) | |
 | A6 | Stripe | Stripe Wrapper | Returns checkout URL | HTTPS response | |
 | A7 | Stripe Wrapper | Bidding Orchestrator | Returns checkout URL | REST response | |
-| A8 | Bidding Orchestrator | React Frontend | Returns checkout URL → redirect investor | REST response | |
-| A9 | Investor | Stripe | Completes payment on Stripe hosted checkout | Browser redirect | |
-| A10 | Stripe | KONG | Webhook `checkout.session.completed` | HTTPS (Stripe-Signature header) | |
-| A11 | KONG | Webhook Router | Route to :5013 | REST/JSON | |
-| A12 | Webhook Router | — | Verify Stripe-Signature HMAC | Internal | Rejects mismatches + replays >5 min |
-| A13 | Webhook Router | RabbitMQ | Publish `stripe.checkout.completed` (type=wallet_topup) | AMQP | |
-| A14 | RabbitMQ | Bidding Orchestrator | Consume `stripe.checkout.completed` (type=wallet_topup) | AMQP | |
-| A15 | Bidding Orchestrator | Temporal Server | Start `WalletTopUpWorkflow` (ID: `wallet-topup-{session_id}`) | Temporal SDK | Idempotent |
-| A16 | Temporal Worker | Payment Service | `CreditWallet` — credit investor wallet | gRPC :50051 | |
-| A17 | Temporal Worker | User Service | `GET /users/{id}` — fetch investor email | HTTP (direct) | |
-| A18 | Temporal Worker | RabbitMQ | Publish `wallet.credited` | AMQP | |
-| A19a | RabbitMQ | Notification Service | Consume `wallet.credited` → email + WebSocket push to investor | AMQP | Concurrent with A19b |
-| A19b | RabbitMQ | Activity Log Bridge | Consume `wallet.credited` → relay to OutSystems | AMQP → HTTPS | Concurrent with A19a |
-| A20a | Notification Service | Resend | Send wallet credited confirmation email to investor | HTTPS (external) | Concurrent with A20b |
-| A20b | Notification Service | React Frontend | WebSocket push — wallet credited notification | WebSocket | Concurrent with A20a |
+| A8 | Bidding Orchestrator | KONG | Returns checkout URL | REST response | |
+| A9 | KONG | React Frontend | Forwards checkout URL → redirect investor | REST response | |
+| A10 | Investor | Stripe | Completes payment on Stripe hosted checkout | Browser redirect | |
+| A11 | Stripe | KONG | Webhook `checkout.session.completed` | HTTPS (Stripe-Signature header) | |
+| A12 | KONG | Webhook Router | Route to :5013 | REST/JSON | |
+| A13 | Webhook Router | — | Verify Stripe-Signature HMAC | Internal | Rejects mismatches + replays >5 min |
+| A14 | Webhook Router | RabbitMQ | Publish `stripe.checkout.completed` (type=wallet_topup) | AMQP | |
+| A15 | RabbitMQ | Bidding Orchestrator | Consume `stripe.checkout.completed` (type=wallet_topup) | AMQP | |
+| A16 | Bidding Orchestrator | Temporal Server | Start `WalletTopUpWorkflow` (ID: `wallet-topup-{session_id}`) | Temporal SDK | Idempotent |
+| A17 | Temporal Worker | Payment Service | `CreditWallet` — credit investor wallet | gRPC :50051 | |
+| A18 | Temporal Worker | User Service | `GET /users/{id}` — fetch investor email | HTTP (direct) | |
+| A19 | Temporal Worker | RabbitMQ | Publish `wallet.credited` | AMQP | |
+| A20a | RabbitMQ | Notification Service | Consume `wallet.credited` → email + WebSocket push to investor | AMQP | Concurrent with A20b |
+| A20b | RabbitMQ | Activity Log Bridge | Consume `wallet.credited` → relay to OutSystems | AMQP → HTTPS | Concurrent with A20a |
+| A21a | Notification Service | Resend | Send wallet credited confirmation email to investor | HTTPS (external) | Concurrent with A21b |
+| A21b | Notification Service | React Frontend | WebSocket push — wallet credited notification | WebSocket | Concurrent with A21a |
 
 #### Phase B: Placing a Bid (with Anti-Snipe Extension)
 
