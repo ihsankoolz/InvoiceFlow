@@ -32,7 +32,8 @@ function useLiveCountdown(deadline) {
   useEffect(() => {
     function calc() {
       if (!deadline) return
-      const diff = new Date(deadline) - Date.now()
+      const iso = deadline.endsWith('Z') || deadline.includes('+') ? deadline : deadline + 'Z'
+      const diff = new Date(iso) - Date.now()
       if (diff <= 0) { setParts({ days: 0, hours: 0, minutes: 0, seconds: 0, ended: true }); return }
       setParts({
         days:    Math.floor(diff / 86400000),

@@ -121,6 +121,7 @@ class AuctionCloseWorkflow:
                 }],
                 **act_opts,
             )
+            await workflow.execute_activity(delist_listing, args=[invoice_token], **act_opts)
             return
 
         winner = max(offers, key=lambda o: o["bid_amount"])
