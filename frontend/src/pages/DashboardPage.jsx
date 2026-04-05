@@ -88,7 +88,7 @@ function SellerDashboard({ user }) {
   const [loansCount, setLoansCount]       = useState(0)
   const [loading, setLoading]             = useState(true)
 
-  useEffect(() => {
+  const fetchSellerData = () => {
     if (!user) return
     Promise.allSettled([
       api.get(`/invoices?seller_id=${user.sub}`),
@@ -102,6 +102,12 @@ function SellerDashboard({ user }) {
       setLoansCount(active.length)
       setUpcomingLoans(active.slice(0, 3))
     }).finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    fetchSellerData()
+    const interval = setInterval(fetchSellerData, 30000)
+    return () => clearInterval(interval)
   }, [user])
 
   // Derived performance stats
@@ -313,7 +319,7 @@ function InvestorDashboard({ user }) {
   const [loansCount, setLoansCount]         = useState(0)
   const [loansLoading, setLoansLoading]     = useState(true)
 
-  useEffect(() => {
+  const fetchDashboardData = () => {
     if (!user) return
 
     Promise.allSettled([
@@ -364,6 +370,12 @@ function InvestorDashboard({ user }) {
       }
       setLoansLoading(false)
     })
+  }
+
+  useEffect(() => {
+    fetchDashboardData()
+    const interval = setInterval(fetchDashboardData, 30000)
+    return () => clearInterval(interval)
   }, [user])
 
   // Days left progress for a loan

@@ -14,6 +14,7 @@ from activities.payment_activities import (
     create_loan,
     credit_wallet,
     get_loan_grpc,
+    release_escrow,
     release_funds_to_seller,
     update_loan_status_grpc,
 )
@@ -43,7 +44,7 @@ async def main():
         activities=[
             verify_invoice, update_invoice_status, get_user,
             get_offers, accept_offer, reject_offer,
-            convert_escrow_to_loan, create_loan, release_funds_to_seller,
+            convert_escrow_to_loan, create_loan, release_escrow, release_funds_to_seller,
             get_loan_grpc, update_loan_status_grpc, credit_wallet,
             delist_listing, bulk_delist,
             publish_event,
