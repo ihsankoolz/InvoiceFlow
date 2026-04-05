@@ -648,13 +648,32 @@ services:
   # FRONTEND (placeholder)
   # ============================================================
 
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     kong:
-  #       condition: service_healthy
+  frontend:
+    build: ./frontend
+    expose:
+      - "8080"
+    depends_on:
+      kong:
+        condition: service_healthy
+
+  # ============================================================
+  # REVERSE PROXY (Nginx — SSL termination + routing)
+  # ============================================================
+
+  nginx:
+    image: nginx:stable-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt/live/ec2-52-77-224-181.ap-southeast-1.compute.amazonaws.com/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
+      - /etc/letsencrypt/live/ec2-52-77-224-181.ap-southeast-1.compute.amazonaws.com/privkey.pem:/etc/nginx/certs/privkey.pem:ro
+      - /etc/letsencrypt/archive:/etc/letsencrypt/archive:ro
+    depends_on:
+      - frontend
+      - kong
+      - notification-service
 
 volumes:
   user-db-data:
