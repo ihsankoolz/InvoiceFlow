@@ -582,7 +582,7 @@ These flows show every service interaction in order for each scenario. Steps lab
 | B15a | Notification Service | Resend | Send new bid email to seller | HTTPS (external) | Concurrent with B15b |
 | B15b | Notification Service | React Frontend | WebSocket push — new bid notification to seller | WebSocket | Concurrent with B15a |
 
-#### Phase C: Auction Closes (Timer Expires)
+### Phase C: Auction Closes (Timer Expires)
 
 | Step | From | To | Action | Tech | Notes |
 |------|------|----|--------|------|-------|
