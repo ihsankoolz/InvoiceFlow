@@ -69,7 +69,8 @@ export default function WalletPage() {
     // Connect to notification service WebSocket for live balance updates
     let cancelled = false
     try {
-      const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/${user.sub}`)
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/${user.sub}`)
       wsRef.current = ws
       ws.onopen = () => {
         if (cancelled) ws.close()
