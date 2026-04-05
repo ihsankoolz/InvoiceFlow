@@ -597,11 +597,11 @@ These flows show every service interaction in order for each scenario. Steps lab
 | C9 | Temporal Worker | Invoice Service | `PATCH /invoices/{token}` → FINANCED | HTTP | Step 6 |
 | C10 | Temporal Worker | Marketplace Service | `DELETE /listings/{id}` — delist | HTTP | Step 7 |
 | C11 | Temporal Worker | Bidding Service | `accept_offer` (winner) | HTTP | Step 8 |
-| C12 | Temporal Worker | RabbitMQ | Publish `auction.closed.winner` + `auction.closed.loser` (per loser) | AMQP | Step 10 |
-| C13a | RabbitMQ | Notification Service | Consume `auction.closed.*` | AMQP | Concurrent with C14b |
-| C13b | RabbitMQ | Activity Log Bridge | Consume → relay to OutSystems | AMQP → HTTPS | Concurrent with C14a |
-| C14a | Notification Service | Resend | Send auction result emails to winner, losers, and seller | HTTPS (external) | Concurrent with C15b |
-| C14b | Notification Service | React Frontend | WebSocket push — auction result notification | WebSocket | Concurrent with C15a |
+| C12 | Temporal Worker | Bidding Service | `reject_offer` (all losers — **parallel**) | HTTP | Step 9 |
+| C12b | Temporal Worker | Payment Service | `ReleaseEscrow` (PENDING losers only — **parallel**) | gRPC :50051 | OUTBID losers already had escrow released during bid placement (2B); only investors whose bids were never the highest remain PENDING with locked escrow at settlement |
+| C13 | Temporal Worker | RabbitMQ | Publish `auction.closed.winner` + `auction.closed.loser` (per loser) | AMQP | Step 10 |
+| C14a | RabbitMQ | Notification Service | Consume → email winner + each loser + seller; WebSocket push | AMQP | Concurrent with C14b |
+| C14b | RabbitMQ | Activity Log Bridge | Consume → relay to OutSystems | AMQP → HTTPS | Concurrent with C14a |
 
 ---
 
