@@ -46,7 +46,7 @@ const Loan = sequelize.define('Loan', {
     defaultValue: 'ACTIVE',
   },
   due_date: {
-    type: DataTypes.DATEONLY,
+    type: DataTypes.DATE,
     allowNull: false,
   },
 }, {

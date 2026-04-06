@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel
@@ -10,7 +10,7 @@ class InvoiceCreate(BaseModel):
     debtor_name: Optional[str] = None
     debtor_uen: str
     amount: float
-    due_date: date
+    due_date: datetime
 
 
 class InvoiceResponse(BaseModel):
@@ -20,7 +20,7 @@ class InvoiceResponse(BaseModel):
     debtor_name: Optional[str]
     debtor_uen: str
     amount: float
-    due_date: date
+    due_date: datetime
     currency: str
     pdf_url: Optional[str]
     status: str

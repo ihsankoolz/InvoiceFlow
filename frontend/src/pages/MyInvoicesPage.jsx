@@ -39,6 +39,12 @@ function fmtDate(str) {
   return new Date(utc).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
 }
 
+function fmtDateTime(str) {
+  if (!str) return '—'
+  const utc = /Z|[+-]\d{2}:\d{2}$/.test(str) ? str : str + 'Z'
+  return new Date(utc).toLocaleString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Singapore' })
+}
+
 const STATUS_TABS = ['ALL', 'DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED', 'REJECTED', 'EXPIRED']
 
 const STATUS_ORDER = { LISTED: 0, FINANCED: 1, DEFAULTED: 2, DRAFT: 3, REPAID: 4, REJECTED: 5, EXPIRED: 6 }
@@ -216,7 +222,7 @@ export default function MyInvoicesPage() {
                           ) : (
                             <div>
                               <p className="text-[10px] text-ink/35 uppercase tracking-wide leading-none mb-0.5">Due date</p>
-                              {fmtDate(inv.due_date)}
+                              {fmtDateTime(inv.due_date)}
                             </div>
                           )}
                         </td>

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -7,7 +7,7 @@ class ListInvoiceRequest(BaseModel):
     seller_id: int
     debtor_uen: str
     amount: float
-    due_date: date
+    due_date: datetime
     bid_period_hours: float = 48
 
 

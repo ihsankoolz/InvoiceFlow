@@ -37,6 +37,12 @@ function fmtDate(str) {
   return new Date(utc).toLocaleDateString('en-SG', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Singapore' })
 }
 
+function fmtDateTime(str) {
+  if (!str) return '—'
+  const utc = /Z|[+-]\d{2}:\d{2}$/.test(str) ? str : str + 'Z'
+  return new Date(utc).toLocaleString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Singapore' })
+}
+
 function timeAgo(str) {
   if (!str) return ''
   const diff = Date.now() - new Date(str).getTime()
@@ -279,7 +285,7 @@ function SellerDashboard({ user }) {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="font-['Lato'] font-medium text-sm text-ink">{loan.invoice_token || `LOAN-${loan.id}`}</p>
-                        <p className="font-['Lato'] text-xs text-ink/40 mt-0.5">Due {fmtDate(loan.due_date)}</p>
+                        <p className="font-['Lato'] text-xs text-ink/40 mt-0.5">Due {fmtDateTime(loan.due_date)}</p>
                       </div>
                       <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(loan.principal)}</p>
                     </div>
@@ -628,7 +634,7 @@ function InvestorDashboard({ user }) {
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="font-['Lato'] font-medium text-sm text-ink">{loan.invoice_token || `LOAN-${loan.id}`}</p>
-                        <p className="font-['Lato'] text-xs text-ink/40 mt-0.5">Due {fmtDate(loan.due_date)}</p>
+                        <p className="font-['Lato'] text-xs text-ink/40 mt-0.5">Due {fmtDateTime(loan.due_date)}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(totalPayout)} total payout</p>

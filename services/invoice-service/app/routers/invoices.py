@@ -1,10 +1,12 @@
+from datetime import datetime as datetime_type
+from datetime import timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.invoice import InvoiceResponse, InvoiceStatusUpdate
+from app.schemas.invoice import InvoiceCreate, InvoiceResponse, InvoiceStatusUpdate
 from app.services.invoice_service import InvoiceService
 from app.services.pdf_extractor import PDFExtractor
 
@@ -39,9 +41,12 @@ async def create_invoice(
     """Create a new invoice with an uploaded PDF file."""
     service = InvoiceService(db)
     pdf_bytes = await pdf_file.read()
-    from datetime import date as date_type
-
-    from app.schemas.invoice import InvoiceCreate
+    # Parse ISO datetime string (date-only "YYYY-MM-DD" or full "YYYY-MM-DDTHH:MM:SS[±TZ]").
+    # Timezone-aware strings are converted to UTC; naive strings are treated as UTC.
+    # Stored as UTC-naive in MySQL DATETIME.
+    _dt = datetime_type.fromisoformat(due_date)
+    if _dt.tzinfo is not None:
+        _dt = _dt.astimezone(timezone.utc).replace(tzinfo=None)
 
     data = InvoiceCreate(
         seller_id=seller_id,
@@ -49,7 +54,7 @@ async def create_invoice(
         debtor_name=debtor_name or None,
         debtor_uen=debtor_uen,
         amount=amount,
-        due_date=date_type.fromisoformat(due_date),
+        due_date=_dt,
     )
     invoice = service.create_invoice(data, pdf_bytes)
     return invoice

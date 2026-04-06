@@ -1,5 +1,5 @@
 import re
-from datetime import date
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -34,7 +34,7 @@ def _make_invoice_data(**overrides):
         debtor_name="Test Debtor",
         debtor_uen="200012345K",
         amount=1000.0,
-        due_date=date(2026, 12, 31),
+        due_date=datetime(2026, 12, 31, 0, 0, 0),
     )
     defaults.update(overrides)
     return InvoiceCreate(**defaults)
@@ -114,13 +114,13 @@ class TestCreateInvoice:
             seller_id=42,
             debtor_uen="199900001A",
             amount=50000.0,
-            due_date=date(2027, 6, 15),
+            due_date=datetime(2027, 6, 15, 0, 0, 0),
         )
         invoice = service.create_invoice(data, pdf_bytes=b"")
         assert invoice.seller_id == 42
         assert invoice.debtor_uen == "199900001A"
         assert float(invoice.amount) == 50000.0
-        assert invoice.due_date == date(2027, 6, 15)
+        assert invoice.due_date == datetime(2027, 6, 15, 0, 0, 0)
         assert invoice.currency == "SGD"
 
     def test_stores_extracted_data_as_json(self, db):
@@ -315,7 +315,7 @@ class TestInvoiceRouter:
             debtor_name="API Debtor",
             debtor_uen="200012345K",
             amount=5000.0,
-            due_date=date(2026, 12, 31),
+            due_date=datetime(2026, 12, 31, 0, 0, 0),
             currency="SGD",
             pdf_url="http://minio/test.pdf",
             status="DRAFT",
@@ -347,7 +347,7 @@ class TestInvoiceRouter:
             debtor_name="Another",
             debtor_uen="200012345K",
             amount=3000.0,
-            due_date=date(2026, 12, 31),
+            due_date=datetime(2026, 12, 31, 0, 0, 0),
             currency="SGD",
             pdf_url="http://minio/test2.pdf",
             status="DRAFT",
@@ -425,7 +425,7 @@ class TestInvoiceRouter:
                 debtor_name=f"Debtor {i}",
                 debtor_uen="200012345K",
                 amount=1000.0 * (i + 1),
-                due_date=date(2026, 12, 31),
+                due_date=datetime(2026, 12, 31, 0, 0, 0),
                 currency="SGD",
                 pdf_url="http://minio/test.pdf",
                 status=status,
@@ -448,7 +448,7 @@ class TestInvoiceRouter:
                 debtor_name="Debtor",
                 debtor_uen="200012345K",
                 amount=1000.0,
-                due_date=date(2026, 12, 31),
+                due_date=datetime(2026, 12, 31, 0, 0, 0),
                 currency="SGD",
                 pdf_url="http://minio/test.pdf",
                 status="DRAFT",

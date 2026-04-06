@@ -32,10 +32,10 @@ function fmt(n) {
   return `$${Number(n).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-function fmtDate(str) {
+function fmtDateTime(str) {
   if (!str) return '—'
   const utc = /Z|[+-]\d{2}:\d{2}$/.test(str) ? str : str + 'Z'
-  return new Date(utc).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
+  return new Date(utc).toLocaleString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Singapore' })
 }
 
 const STATUS_TABS = ['ALL', 'ACTIVE', 'DUE', 'OVERDUE', 'REPAID']
@@ -203,7 +203,7 @@ export default function LoansPage() {
                       </div>
                       <div className="flex justify-between text-sm font-['Lato']">
                         <span className="text-ink/50">Due date</span>
-                        <span className="text-ink">{fmtDate(loan.due_date)}</span>
+                        <span className="text-ink">{fmtDateTime(loan.due_date)}</span>
                       </div>
                       {isOverdue && loan.penalty_amount && (
                         <div className="flex justify-between text-sm font-['Lato']">

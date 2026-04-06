@@ -8,7 +8,7 @@ CREATE TABLE invoices (
     debtor_name     VARCHAR(255),
     debtor_uen      VARCHAR(20) NOT NULL,
     amount          DECIMAL(12,2) NOT NULL,
-    due_date        DATE NOT NULL,
+    due_date        DATETIME NOT NULL,
     currency        VARCHAR(3) DEFAULT 'SGD',
     pdf_url         VARCHAR(500),
     status          ENUM('DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED', 'REJECTED', 'EXPIRED') DEFAULT 'DRAFT',

@@ -65,7 +65,8 @@ export default function ListInvoicePage() {
       if (data.debtor_name) setDebtorName(data.debtor_name)
       if (data.debtor_uen) setDebtorUen(data.debtor_uen)
       if (data.amount) setFaceValue(String(data.amount))
-      if (data.due_date) setDueDate(data.due_date)
+      // PDF extraction returns date-only ("YYYY-MM-DD"); pad to datetime-local format
+      if (data.due_date) setDueDate(data.due_date.length === 10 ? data.due_date + 'T00:00' : data.due_date)
     } catch {
       // extraction is best-effort; silent failure is fine
     } finally {
@@ -95,6 +96,7 @@ export default function ListInvoicePage() {
     if (!minimumBid || Number(minimumBid) <= 0) return 'Minimum bid must be a positive number.'
     if (Number(minimumBid) > Number(faceValue)) return 'Minimum bid cannot exceed face value.'
     if (!dueDate) return 'Invoice due date is required.'
+    // new Date(datetimeLocalValue) treats the value as local browser time — correct for comparison
     if (new Date(dueDate) <= new Date()) return 'Due date must be in the future.'
     const totalMinutes = Number(bidHours) * 60 + Number(bidMinutes)
     if (totalMinutes < 1) return 'Bid period must be at least 1 minute.'
@@ -116,7 +118,8 @@ export default function ListInvoicePage() {
       formData.append('debtor_uen', debtorUen.trim())
       formData.append('face_value', faceValue)
       formData.append('minimum_bid', minimumBid)
-      formData.append('due_date', dueDate)
+      // Convert datetime-local value (browser local time) to UTC ISO string for backend storage
+      formData.append('due_date', new Date(dueDate).toISOString())
       const bidPeriodHours = (Number(bidHours) + Number(bidMinutes) / 60).toFixed(4)
       formData.append('bid_period_hours', bidPeriodHours)
       formData.append('urgency_level', urgency)
@@ -312,13 +315,19 @@ export default function ListInvoicePage() {
                   {/* Invoice due date */}
                   <div>
                     <label className="block font-['Lato'] text-sm font-medium text-ink mb-1">
-                      Invoice due date
+                      Invoice due date &amp; time
                     </label>
                     <input
-                      type="date"
+                      type="datetime-local"
                       value={dueDate}
                       onChange={(e) => setDueDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
+                      min={(() => {
+                        // Compute current local time in "YYYY-MM-DDTHH:MM" format for the min attribute
+                        const now = new Date()
+                        return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+                          .toISOString()
+                          .slice(0, 16)
+                      })()}
                       className="w-full border border-ink/30 rounded-lg px-4 py-2.5 font-['Lato'] text-ink bg-white focus:outline-none focus:border-ink transition-colors"
                     />
                   </div>
