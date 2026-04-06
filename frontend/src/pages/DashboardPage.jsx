@@ -324,6 +324,7 @@ function InvestorDashboard({ user }) {
   const [upcomingLoans, setUpcomingLoans]   = useState([])
   const [loansCount, setLoansCount]         = useState(0)
   const [loansLoading, setLoansLoading]     = useState(true)
+  const [loanBalance, setLoanBalance]       = useState(0)
 
   const fetchDashboardData = () => {
     if (!user) return
@@ -372,8 +373,9 @@ function InvestorDashboard({ user }) {
         active.sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
         setLoansCount(active.length)
         setUpcomingLoans(active.slice(0, 3))
+        setLoanBalance(active.reduce((s, l) => s + Number(l.principal || 0), 0))
       } else {
-        setUpcomingLoans([]); setLoansCount(0)
+        setUpcomingLoans([]); setLoansCount(0); setLoanBalance(0)
       }
       setLoansLoading(false)
     })
@@ -417,31 +419,42 @@ function InvestorDashboard({ user }) {
             <p className="font-['Lato'] font-semibold text-xs text-ink uppercase tracking-wider">Total Assets</p>
             {walletLoading
               ? <div className="h-10 w-36 bg-ink/10 rounded animate-pulse" />
-              : <p className="font-['Lato'] font-bold text-[32px] text-ink leading-none">{fmt((walletBalance ?? 0) + lockedBalance)}</p>
+              : <p className="font-['Lato'] font-bold text-[32px] text-ink leading-none">{fmt((walletBalance ?? 0) + lockedBalance + loanBalance)}</p>
             }
             {/* Progress bar */}
             <div>
               {(() => {
-                const total = (walletBalance ?? 0) + lockedBalance
-                const walletPct = total > 0 ? (walletBalance ?? 0) / total * 100 : 100
+                const total = (walletBalance ?? 0) + lockedBalance + loanBalance
+                const walletPct  = total > 0 ? (walletBalance ?? 0) / total * 100 : 100
+                const escrowPct  = total > 0 ? lockedBalance / total * 100 : 0
+                const loanPct    = total > 0 ? loanBalance / total * 100 : 0
                 return (
-                  <div className="relative h-1.5 bg-[#e0eae8] rounded-full w-full group/bar">
+                  <div className="relative h-1.5 bg-[#e0eae8] rounded-full w-full">
                     {/* Green segment — wallet available */}
                     <div
-                      className="absolute left-0 top-0 h-1.5 bg-teal rounded-full group/green peer"
+                      className="absolute left-0 top-0 h-1.5 bg-teal rounded-l-full group/green"
                       style={{ width: `${walletPct}%` }}
                     >
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-ink text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/green:opacity-100 transition-opacity pointer-events-none">
-                        {fmt(walletBalance)} available
+                        {fmt(walletBalance ?? 0)} available
                       </div>
                     </div>
-                    {/* Grey segment — locked in bids (hover target) */}
+                    {/* Grey segment — locked in escrow */}
                     <div
-                      className="absolute top-0 h-1.5 rounded-r-full group/grey"
-                      style={{ left: `${walletPct}%`, right: 0 }}
+                      className="absolute top-0 h-1.5 bg-[#b0c4c0] group/grey"
+                      style={{ left: `${walletPct}%`, width: `${escrowPct}%` }}
                     >
-                      <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-ink text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/grey:opacity-100 transition-opacity pointer-events-none">
-                        {fmt(lockedBalance)} locked
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-ink text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/grey:opacity-100 transition-opacity pointer-events-none">
+                        {fmt(lockedBalance)} in escrow
+                      </div>
+                    </div>
+                    {/* Yellow segment — with seller as loan */}
+                    <div
+                      className="absolute top-0 h-1.5 bg-amber-400 rounded-r-full group/loan"
+                      style={{ left: `${walletPct + escrowPct}%`, width: `${loanPct}%` }}
+                    >
+                      <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-ink text-white text-xs rounded whitespace-nowrap opacity-0 group-hover/loan:opacity-100 transition-opacity pointer-events-none">
+                        {fmt(loanBalance)} with seller
                       </div>
                     </div>
                   </div>
@@ -453,8 +466,12 @@ function InvestorDashboard({ user }) {
                   <span className="font-['Lato'] text-xs text-ink">Wallet Balance</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[#e0eae8]" />
+                  <div className="w-2 h-2 rounded-full bg-[#b0c4c0]" />
                   <span className="font-['Lato'] text-xs text-ink">Locked in Bids</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="font-['Lato'] text-xs text-ink">With Seller</span>
                 </div>
               </div>
             </div>
