@@ -28,6 +28,20 @@ async def _fetch_listing_by_token(token: str) -> dict | None:
     return None
 
 
+async def _fetch_invoice_by_token(token: str) -> dict | None:
+    """Fetch invoice data directly; used as fallback when listing is delisted."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(
+                f"{config.INVOICE_SERVICE_URL}/invoices/{token}"
+            )
+            if r.status_code == 200:
+                return r.json()
+    except Exception:
+        pass
+    return None
+
+
 async def _fetch_all_bids_for_invoice(token: str) -> list:
     """Fetch all PENDING bids for an invoice to determine highest bidder."""
     try:
@@ -73,6 +87,14 @@ async def list_bids(
     )
     listing_map: dict = {t: listing for t, listing in zip(tokens, listings_list) if listing}
 
+    # For tokens where the listing was delisted (auction closed), fall back to invoice service
+    missing_tokens = [t for t in tokens if t not in listing_map]
+    if missing_tokens:
+        invoice_list = await asyncio.gather(*[_fetch_invoice_by_token(t) for t in missing_tokens])
+        invoice_map: dict = {t: inv for t, inv in zip(missing_tokens, invoice_list) if inv}
+    else:
+        invoice_map: dict = {}
+
     # Build a map of invoice_token → highest bid_amount among all PENDING bids
     highest_map: dict = {}
     for token, invoice_bids in zip(tokens, all_bids_list):
@@ -84,15 +106,30 @@ async def list_bids(
     for bid in bids:
         token = bid.get("invoice_token")
         listing = listing_map.get(token)
+        invoice = invoice_map.get(token)
         my_amount = float(bid.get("bid_amount") or 0)
         highest = highest_map.get(token, my_amount)
         is_leading = bid.get("status") == "PENDING" and my_amount >= highest
+
+        if listing:
+            face_value = listing["amount"]
+            deadline = listing["deadline"]
+            listing_id = listing["id"]
+        elif invoice:
+            face_value = invoice["amount"]
+            deadline = invoice["due_date"]
+            listing_id = None
+        else:
+            face_value = None
+            deadline = None
+            listing_id = None
+
         enriched.append({
             **bid,
             "amount": bid.get("bid_amount"),
-            "face_value": listing["amount"] if listing else None,
-            "deadline": listing["deadline"] if listing else None,
-            "listing_id": listing["id"] if listing else None,
+            "face_value": face_value,
+            "deadline": deadline,
+            "listing_id": listing_id,
             "is_leading": is_leading,
         })
 
