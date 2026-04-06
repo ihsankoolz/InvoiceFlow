@@ -43,6 +43,12 @@ class StripeService:
         if data.loan_id:
             metadata["loan_id"] = data.loan_id
 
+        # Append ?type= so the success/cancel pages know which flow completed
+        sep = "&" if "?" in config.STRIPE_SUCCESS_URL else "?"
+        success_url = f"{config.STRIPE_SUCCESS_URL}{sep}type={data.type}"
+        cancel_sep = "&" if "?" in config.STRIPE_CANCEL_URL else "?"
+        cancel_url = f"{config.STRIPE_CANCEL_URL}{cancel_sep}type={data.type}"
+
         session = stripe.checkout.Session.create(
             mode="payment",
             line_items=[
@@ -55,8 +61,8 @@ class StripeService:
                     "quantity": 1,
                 }
             ],
-            success_url=config.STRIPE_SUCCESS_URL,
-            cancel_url=config.STRIPE_CANCEL_URL,
+            success_url=success_url,
+            cancel_url=cancel_url,
             metadata=metadata,
         )
 
