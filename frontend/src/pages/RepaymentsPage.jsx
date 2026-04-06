@@ -40,8 +40,8 @@ function fmtDate(str) {
 
 function fmtDateTime(str) {
   if (!str) return '—'
-  const utc = /Z|[+-]\d{2}:\d{2}$/.test(str) ? str : str + 'Z'
-  return new Date(utc).toLocaleString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Singapore' })
+  const dateOnly = str.split('T')[0]
+  return new Date(dateOnly + 'T00:00:00').toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 const STATUS_TABS = ['ALL', 'ACTIVE', 'DUE', 'OVERDUE', 'REPAID']
