@@ -25,6 +25,7 @@ class Invoice(Base):
             "DEFAULTED",
             "REJECTED",
             "EXPIRED",
+            "DELISTED",
             name="invoice_status",
         ),
         default="DRAFT",
