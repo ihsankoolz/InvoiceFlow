@@ -73,7 +73,7 @@ class ListingService:
 
     def bulk_delete_by_seller(self, seller_id: int) -> dict:
         listings = self.db.query(Listing).filter(Listing.seller_id == seller_id).all()
-        invoice_tokens = [l.invoice_token for l in listings]
+        invoice_tokens = [listing.invoice_token for listing in listings]
         for listing in listings:
             self.db.delete(listing)
         self.db.commit()
