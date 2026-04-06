@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.config import JWT_ALGORITHM, JWT_EXPIRY_HOURS, JWT_SECRET
 from app.models.user import User
 from app.schemas import TokenResponse, UserCreate
+from app.services.uen_validator import UENValidator
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -34,8 +35,12 @@ class UserService:
         if existing:
             raise HTTPException(status_code=409, detail="Email already registered")
 
-        if data.role == "SELLER" and not data.uen:
-            raise HTTPException(status_code=422, detail="UEN is required for SELLER role")
+        if data.role == "SELLER":
+            if not data.uen:
+                raise HTTPException(status_code=422, detail="UEN is required for SELLER role")
+            is_valid = await UENValidator.validate_uen(data.uen)
+            if not is_valid:
+                raise HTTPException(status_code=422, detail="Invalid UEN: not found in ACRA registry")
 
         password_hash = pwd_context.hash(data.password)
 
