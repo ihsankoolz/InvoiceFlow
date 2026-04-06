@@ -428,6 +428,8 @@ services:
       TEMPORAL_HOST: temporal:7233
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       USER_SERVICE_URL: http://user-service:5000
+      DEMO_MODE: "true"
+      DEMO_ANTI_SNIPE_WINDOW_SECONDS: "30"
     volumes:
       - ./shared:/app/shared
     depends_on:
