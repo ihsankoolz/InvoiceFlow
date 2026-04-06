@@ -34,8 +34,8 @@ function fmt(n) {
 
 function fmtDate(str) {
   if (!str) return '—'
-  const dateOnly = str.split('T')[0]
-  return new Date(dateOnly + 'T00:00:00').toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' })
+  const utc = /Z|[+-]\d{2}:\d{2}$/.test(str) ? str : str + 'Z'
+  return new Date(utc).toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' })
 }
 
 const STATUS_TABS = ['ALL', 'ACTIVE', 'DUE', 'OVERDUE', 'REPAID']
