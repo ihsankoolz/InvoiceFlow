@@ -40,8 +40,8 @@ function fmtDate(str) {
 
 function fmtDateTime(str) {
   if (!str) return '—'
-  const utc = /Z|[+-]\d{2}:\d{2}$/.test(str) ? str : str + 'Z'
-  return new Date(utc).toLocaleString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Singapore' })
+  const dateOnly = str.split('T')[0]
+  return new Date(dateOnly + 'T00:00:00').toLocaleDateString('en-SG', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 const STATUS_TABS = ['ALL', 'ACTIVE', 'DUE', 'OVERDUE', 'REPAID']
@@ -53,9 +53,6 @@ export default function RepaymentsPage() {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState('')
   const [activeTab, setActiveTab] = useState('ALL')
-  const [repayingId, setRepayingId] = useState(null)
-  const [repayError, setRepayError] = useState('')
-
   const [headerRef, headerInView] = useInView(0.05)
   const [gridRef, gridInView]     = useInView(0.05)
 
@@ -76,25 +73,6 @@ export default function RepaymentsPage() {
     }
     load()
   }, [user])
-
-  async function handleRepay(loanId) {
-    setRepayError('')
-    setRepayingId(loanId)
-    try {
-      const res = await api.post(`/loans/${loanId}/repay`)
-      const url = res.data?.checkout_url || res.data?.url
-      if (url) {
-        window.location.href = url
-      } else {
-        setRepayError('No checkout URL returned.')
-      }
-    } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || e.message || 'Repayment failed.'
-      setRepayError(msg)
-    } finally {
-      setRepayingId(null)
-    }
-  }
 
   const filtered = activeTab === 'ALL' ? loans : loans.filter((l) => l.status === activeTab)
   const sorted = [...filtered].sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
@@ -144,9 +122,9 @@ export default function RepaymentsPage() {
         </div>
 
         {/* Error */}
-        {(error || repayError) && (
+        {error && (
           <div className="mb-5 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 font-['Lato'] text-sm">
-            {error || repayError}
+            {error}
           </div>
         )}
 
@@ -174,7 +152,6 @@ export default function RepaymentsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {sorted.map((loan, i) => {
                 const isOverdue = loan.status === 'OVERDUE'
-                const isDue     = loan.status === 'DUE'
 
                 return (
                   <div
@@ -229,20 +206,6 @@ export default function RepaymentsPage() {
                       </div>
                     )}
 
-                    {/* Repay button (DUE or OVERDUE) */}
-                    {(isDue || isOverdue) && (
-                      <button
-                        onClick={() => handleRepay(loan.id)}
-                        disabled={repayingId === loan.id}
-                        className={`w-full rounded-lg px-4 py-2.5 font-['Lato'] font-semibold text-sm transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed ${
-                          isOverdue
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : 'bg-teal text-white hover:opacity-90'
-                        }`}
-                      >
-                        {repayingId === loan.id ? 'Redirecting…' : 'Repay Now'}
-                      </button>
-                    )}
                   </div>
                 )
               })}
