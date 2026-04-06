@@ -225,7 +225,7 @@ export default function LoansPage() {
                     {/* Repay button (DUE or OVERDUE) */}
                     {(isDue || isOverdue) && (
                       <button
-                        onClick={() => handleRepay(loan.id)}
+                        onClick={() => handleRepay(loan.loan_id)}
                         disabled={repayingId === loan.id}
                         className={`w-full rounded-lg px-4 py-2.5 font-['Lato'] font-semibold text-sm transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed ${
                           isOverdue

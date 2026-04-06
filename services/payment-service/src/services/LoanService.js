@@ -13,7 +13,7 @@ const VALID_TRANSITIONS = {
   ACTIVE: ['DUE'],
   DUE: ['REPAID', 'OVERDUE'],
   REPAID: [],
-  OVERDUE: [],
+  OVERDUE: ['REPAID'],
 };
 
 class LoanService {
