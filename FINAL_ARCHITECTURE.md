@@ -159,7 +159,7 @@ Composite services orchestrate atomic services via direct HTTP (inside Docker ne
 
 | Service | Port | Technology | Database | Notes |
 |---------|------|------------|----------|-------|
-| User Service | :5000 | Python / FastAPI | user_db (MySQL :3306) | Registration, login, JWT, account status. Calls data.gov.sg directly for seller UEN validation at registration. Also a RabbitMQ consumer for `loan.repaid` and `loan.overdue` (account status updates via choreography) |
+| User Service | :5000 | Python / FastAPI | user_db (MySQL :3306) | Registration, login, JWT, account status. UEN is stored at registration but not validated. Also a RabbitMQ consumer for `loan.repaid` and `loan.overdue` (account status updates via choreography) |
 | Invoice Service | :5001 | Python / FastAPI | invoice_db (MySQL :3307) | Invoice CRUD, PDF upload, pdfplumber, MinIO storage, status tracking. Also a RabbitMQ consumer for `loan.repaid` and `loan.overdue` |
 | Marketplace Service | :5002 | Python / FastAPI | market_db (MySQL :3308) | Listings read-model, urgency levels, filtering. Denormalises `current_bid` and `bid_count` from events |
 | Bidding Service | :5003 | Python / FastAPI | bidding_db (MySQL :3309) | Bid CRUD, offer accept/reject/outbid management |
@@ -200,7 +200,7 @@ Note: Stripe Wrapper handles **outbound** calls only (creating checkout sessions
 
 | Service | Purpose | Called By |
 |---------|---------|----------|
-| data.gov.sg | ACRA UEN registry (seller + debtor validation) | User Service (seller UEN at registration, direct), ACRA Wrapper (debtor UEN per invoice) |
+| data.gov.sg | ACRA UEN registry (debtor validation) | ACRA Wrapper (debtor UEN per invoice) |
 | Stripe | Payment processing, hosted checkout, webhooks | Stripe Wrapper (outbound checkout sessions), Stripe → Nginx → KONG → Webhook Router (inbound webhook) |
 | Resend | Transactional email delivery | Notification Service (built-in, no wrapper) |
 
@@ -275,12 +275,6 @@ Stripe webhook safeguards: Webhook Router recomputes the Stripe-Signature using 
 |---|------|-----------|------------|
 | 12 | ACRA UEN lookup (debtor) | ACRA Wrapper → data.gov.sg | HTTPS (external) |
 | 13 | Stripe API calls (outbound only) | Stripe Wrapper → Stripe | HTTPS (external) |
-
-### Atomics → External APIs (direct)
-
-| # | Call | From → To | Technology |
-|---|------|-----------|------------|
-| 14 | ACRA UEN lookup (seller at registration) | User Service → data.gov.sg | HTTPS (external, direct — ACRA Wrapper not involved) |
 
 ### Composites → Atomics (direct HTTP inside Docker network)
 
@@ -679,7 +673,7 @@ Schema migrations are managed with **Alembic** for all Python/SQLAlchemy service
 | Message Broker | RabbitMQ :5672 (AMQP, topic exchange `invoiceflow_events`); dead-letter queues via `x-dead-letter-exchange` |
 | Workflow Engine | Temporal Server :7233 + Worker (Python SDK) + UI :8088 |
 | Payments | Stripe (external) via Stripe Wrapper (outbound) and Webhook Router → RabbitMQ (inbound) |
-| UEN Validation | User Service → data.gov.sg (seller at registration), ACRA Wrapper → data.gov.sg (debtor per invoice) |
+| UEN Validation | ACRA Wrapper → data.gov.sg (debtor UEN per invoice only) |
 | Email | Resend (inside Notification Service) |
 | Tracing | OpenTelemetry (OTLP HTTP) → Tempo :3200 |
 | Metrics | Prometheus :9090 → Grafana :3001 |
