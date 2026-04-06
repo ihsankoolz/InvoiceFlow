@@ -40,7 +40,7 @@ async def test_update_loan_status_grpc():
         result = await update_loan_status_grpc("loan-123", "OVERDUE")
 
     assert result["status"] == "OVERDUE"
-    mock_client.update_loan_status.assert_called_once_with(loan_id="loan-123", status="OVERDUE")
+    mock_client.update_loan_status.assert_called_once_with(loan_id="loan-123", status="OVERDUE", grace_end="")
 
 
 @pytest.mark.asyncio
