@@ -93,6 +93,18 @@ InvoiceFlow uses [Resend](https://resend.com) to send transactional emails (outb
 
 All other variables (service URLs, DB hostnames, RabbitMQ, MinIO, Temporal addresses) are pre-set to Docker Compose service names and work out of the box.
 
+#### OutSystems Activity Log
+
+InvoiceFlow streams activity events to an external OutSystems instance. You can log in to view the activity log at any time — no local setup required.
+
+**URL:** https://personal-xowqm3b2.outsystemscloud.com/ActivityLog/ActivityEvents
+
+**Credentials:**
+- Username: `invoiceflow`
+- Password: `testing1`
+
+Role-based access is enabled — these credentials give you read access to all logged activity events.
+
 ### Optional / local-dev variables
 
 ```bash
@@ -188,6 +200,7 @@ docker compose up --build       # re-creates databases from init.sql
 | **RabbitMQ Management** | http://localhost:15672 | guest / guest |
 | **Temporal UI** | http://localhost:8088 | Monitor workflows |
 | **MinIO Console** | http://localhost:9001 | minioadmin / minioadmin |
+| **OutSystems Activity Log** | https://personal-xowqm3b2.outsystemscloud.com/ActivityLog/ActivityEvents | invoiceflow / testing1 |
 | User Service | http://localhost:5000/docs | Swagger UI |
 | Invoice Service | http://localhost:5001/docs | Swagger UI |
 | Marketplace Service | http://localhost:5002/docs | REST Swagger |
