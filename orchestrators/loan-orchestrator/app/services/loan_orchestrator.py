@@ -32,8 +32,8 @@ class LoanOrchestrator:
         # ── Step 1: Get loan details ───────────────────────────────────────
         loan = await self.grpc_client.get_loan(loan_id)
 
-        # ── Step 2: Verify loan is DUE ─────────────────────────────────────
-        if loan["status"] != "DUE":
+        # ── Step 2: Verify loan is repayable ──────────────────────────────
+        if loan["status"] not in ("DUE", "OVERDUE"):
             raise HTTPException(
                 status_code=400,
                 detail=f"Loan {loan_id} is not due for repayment (status: {loan['status']})",

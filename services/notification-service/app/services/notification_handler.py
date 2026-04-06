@@ -75,15 +75,24 @@ EVENT_MAPPING = {
         ),
     },
     "auction.closed.winner": {
-        "template": "auction_winner.html",
-        "subject": "Auction closed - you won!",
-        "get_recipients": lambda p: (
-            [
-                {"email": p.get("winner_email"), "user_id": p.get("winner_id")},
-                {"email": p.get("seller_email"), "user_id": p.get("seller_id")},
-            ],
-            [str(p.get("winner_id")), str(p.get("seller_id"))],
-        ),
+        "groups": [
+            {
+                "template": "auction_winner.html",
+                "subject": "Auction closed - you won!",
+                "get_recipients": lambda p: (
+                    [{"email": p.get("winner_email"), "user_id": p.get("winner_id")}],
+                    [str(p.get("winner_id"))],
+                ),
+            },
+            {
+                "template": "auction_closed_seller.html",
+                "subject": "Your auction has closed — a winner has been selected",
+                "get_recipients": lambda p: (
+                    [{"email": p.get("seller_email"), "user_id": p.get("seller_id")}],
+                    [str(p.get("seller_id"))],
+                ),
+            },
+        ]
     },
     "auction.closed.loser": {
         "template": "auction_loser.html",
@@ -162,43 +171,47 @@ class NotificationHandler:
         if not mapping:
             return
 
-        email_targets, ws_targets = mapping["get_recipients"](payload)
-        template = mapping["template"]
-        subject = mapping["subject"]
+        # Support per-recipient-group configs (different template/subject per group)
+        groups = mapping.get("groups") or [mapping]
 
-        # Render the email HTML
-        html_body = EmailService.render_template(template, payload)
-
-        # Send emails to all targets
-        for target in email_targets:
-            if target.get("email"):
-                await self.email_service.send_email(target["email"], subject, html_body)
-
-        # Push via WebSocket
-        ws_message = {
-            "event_type": event_type,
-            "message": subject,
-            "payload": payload,
-        }
-        await self._ws_manager.broadcast_to_users(ws_targets, ws_message)
-
-        # Persist notification for each unique user
         from app.database import SessionLocal
         from app.models.notification import Notification
 
         seen_user_ids = set()
         with SessionLocal() as db:
-            for target in email_targets:
-                uid = target.get("user_id")
-                if uid and uid not in seen_user_ids:
-                    seen_user_ids.add(uid)
-                    db.add(Notification(
-                        id=str(uuid.uuid4()),
-                        user_id=uid,
-                        event_type=event_type,
-                        message=subject,
-                        payload=payload,
-                        is_read=False,
-                        created_at=datetime.now(timezone.utc),
-                    ))
+            for group in groups:
+                email_targets, ws_targets = group["get_recipients"](payload)
+                template = group["template"]
+                subject = group["subject"]
+
+                # Render the email HTML
+                html_body = EmailService.render_template(template, payload)
+
+                # Send emails to all targets
+                for target in email_targets:
+                    if target.get("email"):
+                        await self.email_service.send_email(target["email"], subject, html_body)
+
+                # Push via WebSocket with the subject tailored to this group
+                ws_message = {
+                    "event_type": event_type,
+                    "message": subject,
+                    "payload": payload,
+                }
+                await self._ws_manager.broadcast_to_users(ws_targets, ws_message)
+
+                # Persist notification for each unique user
+                for target in email_targets:
+                    uid = target.get("user_id")
+                    if uid and uid not in seen_user_ids:
+                        seen_user_ids.add(uid)
+                        db.add(Notification(
+                            id=str(uuid.uuid4()),
+                            user_id=uid,
+                            event_type=event_type,
+                            message=subject,
+                            payload=payload,
+                            is_read=False,
+                            created_at=datetime.now(timezone.utc),
+                        ))
             db.commit()
