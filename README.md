@@ -60,6 +60,7 @@ docker compose ps
 | Bidding Service | http://localhost:5003/docs | Swagger UI |
 | Payment Service | http://localhost:5004/docs | Swagger UI (REST read-only) |
 | Notification Service | http://localhost:5005/docs | Swagger UI |
+| User Orchestrator | http://localhost:5015/docs | Swagger UI |
 | Invoice Orchestrator | http://localhost:5010/docs | Swagger UI |
 | Bidding Orchestrator | http://localhost:5011/docs | Swagger UI |
 | Loan Orchestrator | http://localhost:5012/docs | Swagger UI |
@@ -80,6 +81,7 @@ invoiceflow/
 │   ├── payment-service/         # :5004/:50051  Node.js/Express + gRPC · payment_db
 │   └── notification-service/    # :5005  Python/FastAPI + WebSocket
 ├── orchestrators/               # Composite services (no direct DB access)
+│   ├── user-orchestrator/       # :5015  Registration — UEN validation → account creation
 │   ├── invoice-orchestrator/    # :5010  Scenario 1 — invoice listing flow
 │   ├── bidding-orchestrator/    # :5011  Scenario 2 — bidding, escrow, Stripe, anti-snipe
 │   └── loan-orchestrator/       # :5012  Scenario 3 — loan repayment flow
@@ -113,6 +115,9 @@ Frontend (React)
       │
       ▼
 KONG API Gateway :8000   ← JWT validation, rate limiting, CORS, routing
+      │
+      ├─→ User Orchestrator :5015      → ACRA Wrapper (seller UEN validation)
+      │                                 → User Service (account creation)
       │
       ├─→ Invoice Orchestrator :5010   → Invoice Service, Marketplace Service, ACRA Wrapper
       │                                 → Temporal (start AuctionCloseWorkflow)
