@@ -15,10 +15,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 _STUBBED_MODS = [
-    "grpc", "tenacity",
-    "clients", "clients.grpc_client", "clients.http_client",
-    "activities", "activities.payment_activities",
-    "activities.invoice_activities", "activities.rabbitmq_activities",
+    "grpc",
+    "tenacity",
+    "clients",
+    "clients.grpc_client",
+    "clients.http_client",
+    "activities",
+    "activities.payment_activities",
+    "activities.invoice_activities",
+    "activities.rabbitmq_activities",
 ]
 _previously_present = {m for m in _STUBBED_MODS if m in sys.modules}
 for _mod in _STUBBED_MODS:
@@ -54,6 +59,7 @@ _LOAN = {
 # Mock builder
 # ---------------------------------------------------------------------------
 
+
 def _build_mock(signal_raises=False):
     activity_calls: list[tuple] = []
     signal_calls: list[str] = []
@@ -88,6 +94,7 @@ def _build_mock(signal_raises=False):
 # Test 1: Happy path — all 5 steps in correct order
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_happy_path_executes_all_steps_in_order():
     """All 5 workflow steps run: mark REPAID → signal → fetch loan → fetch users → publish."""
@@ -112,6 +119,7 @@ async def test_happy_path_executes_all_steps_in_order():
 # Test 2: Loan status set to REPAID
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_loan_marked_repaid():
     """update_loan_status_grpc is called with REPAID status."""
@@ -121,7 +129,9 @@ async def test_loan_marked_repaid():
         wf = LoanRepaymentWorkflow()
         await wf.run(LOAN_ID, STRIPE_SESSION)
 
-    repaid_calls = [(name, args) for name, args in activity_calls if name == "update_loan_status_grpc"]
+    repaid_calls = [
+        (name, args) for name, args in activity_calls if name == "update_loan_status_grpc"
+    ]
     assert len(repaid_calls) == 1
     assert repaid_calls[0][1] == [LOAN_ID, "REPAID"]
 
@@ -129,6 +139,7 @@ async def test_loan_marked_repaid():
 # ---------------------------------------------------------------------------
 # Test 3: repayment_confirmed signal sent to LoanMaturityWorkflow
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_repayment_confirmed_signal_sent():
@@ -147,6 +158,7 @@ async def test_repayment_confirmed_signal_sent():
 # Test 4: Signal exception swallowed if maturity workflow already completed
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_signal_exception_is_swallowed():
     """If LoanMaturityWorkflow already completed, signalling raises — workflow must not fail."""
@@ -164,6 +176,7 @@ async def test_signal_exception_is_swallowed():
 # ---------------------------------------------------------------------------
 # Test 5: loan.repaid event payload contains correct fields
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_loan_repaid_event_payload():

@@ -22,7 +22,11 @@ def calculate_urgency(due_date_str: str) -> str:
     - MEDIUM: <= 30 days
     - LOW: > 30 days
     """
-    due_date = datetime.fromisoformat(due_date_str).date() if isinstance(due_date_str, str) else due_date_str
+    due_date = (
+        datetime.fromisoformat(due_date_str).date()
+        if isinstance(due_date_str, str)
+        else due_date_str
+    )
     days_until_due = (due_date - datetime.utcnow().date()).days
     if days_until_due <= 7:
         return "CRITICAL"
@@ -59,9 +63,18 @@ class InvoiceOrchestrator:
         self.publisher = publisher
         self.temporal_client = temporal_client
 
-    async def list_invoice(self, seller_id: int, debtor_uen: str, face_value: float,
-                           minimum_bid: float, due_date: str, bid_period_hours: float,
-                           pdf_file, debtor_name: str = None, urgency_level: str = 'MEDIUM') -> dict:
+    async def list_invoice(
+        self,
+        seller_id: int,
+        debtor_uen: str,
+        face_value: float,
+        minimum_bid: float,
+        due_date: str,
+        bid_period_hours: float,
+        pdf_file,
+        debtor_name: str = None,
+        urgency_level: str = "MEDIUM",
+    ) -> dict:
         """Full Scenario 1 orchestration — 8-step flow."""
 
         # Step 1: Check seller account is ACTIVE
@@ -95,12 +108,15 @@ class InvoiceOrchestrator:
                 f"{config.INVOICE_SERVICE_URL}/invoices/{invoice['invoice_token']}/status",
                 json={"status": "REJECTED"},
             )
-            await self.publisher.publish("invoice.rejected", {
-                "invoice_token": invoice["invoice_token"],
-                "seller_id": seller_id,
-                "seller_email": user["email"],
-                "reason": "Invalid debtor UEN",
-            })
+            await self.publisher.publish(
+                "invoice.rejected",
+                {
+                    "invoice_token": invoice["invoice_token"],
+                    "seller_id": seller_id,
+                    "seller_email": user["email"],
+                    "reason": "Invalid debtor UEN",
+                },
+            )
             raise HTTPException(status_code=400, detail="Invalid debtor UEN")
 
         # Step 5: Create marketplace listing (include read-model fields at creation time)
@@ -134,13 +150,16 @@ class InvoiceOrchestrator:
         )
 
         # Step 8: Publish invoice.listed event
-        await self.publisher.publish("invoice.listed", {
-            "invoice_token": invoice["invoice_token"],
-            "seller_id": seller_id,
-            "seller_email": user["email"],
-            "amount": face_value,
-            "deadline": listing["deadline"],
-        })
+        await self.publisher.publish(
+            "invoice.listed",
+            {
+                "invoice_token": invoice["invoice_token"],
+                "seller_id": seller_id,
+                "seller_email": user["email"],
+                "amount": face_value,
+                "deadline": listing["deadline"],
+            },
+        )
 
         return {
             "invoice_token": invoice["invoice_token"],

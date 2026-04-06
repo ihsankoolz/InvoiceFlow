@@ -26,7 +26,9 @@ async def test_verify_invoice_not_listed_raises():
 @pytest.mark.asyncio
 async def test_update_invoice_status():
     with patch("activities.invoice_activities.http_client") as mock_client:
-        mock_client.patch = AsyncMock(return_value={"invoice_token": "tok-abc", "status": "FINANCED"})
+        mock_client.patch = AsyncMock(
+            return_value={"invoice_token": "tok-abc", "status": "FINANCED"}
+        )
         result = await update_invoice_status("tok-abc", "FINANCED")
 
     assert result["status"] == "FINANCED"

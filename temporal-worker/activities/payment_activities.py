@@ -20,8 +20,14 @@ async def convert_escrow_to_loan(investor_id: int, invoice_token: str) -> dict:
 
 
 @activity.defn
-async def create_loan(investor_id: int, seller_id: int, invoice_token: str,
-                      principal: float, bid_amount: float, due_date: str) -> dict:
+async def create_loan(
+    investor_id: int,
+    seller_id: int,
+    invoice_token: str,
+    principal: float,
+    bid_amount: float,
+    due_date: str,
+) -> dict:
     """Create a loan record via gRPC CreateLoan RPC. Returns loan dict with loan_id and due_date."""
     return await grpc_client.create_loan(
         investor_id=investor_id,

@@ -23,7 +23,9 @@ async def verify_invoice(invoice_token: str) -> dict:
     """Verify invoice exists and is in LISTED status."""
     response = await http_client.get(f"{config.INVOICE_SERVICE_URL}/invoices/{invoice_token}")
     if response["status"] != "LISTED":
-        raise ApplicationError(f"Invoice {invoice_token} is not available (status: {response['status']})")
+        raise ApplicationError(
+            f"Invoice {invoice_token} is not available (status: {response['status']})"
+        )
     return response
 
 

@@ -18,9 +18,9 @@ def _generate_invoice_token(seller_id: int, seller_name: str = None) -> str:
     e.g. INV-ACMECORP-20260331-K8X2AB
     """
     date_str = datetime.utcnow().strftime("%Y%m%d")
-    suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
     if seller_name:
-        slug = re.sub(r'[^A-Z0-9]', '', seller_name.upper())[:8]
+        slug = re.sub(r"[^A-Z0-9]", "", seller_name.upper())[:8]
     else:
         slug = str(seller_id)
     return f"INV-{slug}-{date_str}-{suffix}"
@@ -54,7 +54,7 @@ class InvoiceService:
             due_date=data.due_date,
             pdf_url=pdf_url,
             status="DRAFT",  # Initial status per architecture
-            extracted_data=extracted_data
+            extracted_data=extracted_data,
         )
 
         self.db.add(invoice)

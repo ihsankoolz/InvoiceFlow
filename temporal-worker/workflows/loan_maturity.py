@@ -55,20 +55,27 @@ class LoanMaturityWorkflow:
         # Step 2: Mark loan DUE
         await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "DUE"], **act_opts)
         loan_due = await workflow.execute_activity(get_loan_grpc, args=[loan_id], **act_opts)
-        seller_due = await workflow.execute_activity(get_user, args=[loan_due["seller_id"]], **act_opts)
+        seller_due = await workflow.execute_activity(
+            get_user, args=[loan_due["seller_id"]], **act_opts
+        )
         await workflow.execute_activity(
             publish_event,
-            args=["loan.due", {
-                "loan_id": loan_id,
-                "seller_id": loan_due["seller_id"],
-                "seller_email": seller_due["email"],
-            }],
+            args=[
+                "loan.due",
+                {
+                    "loan_id": loan_id,
+                    "seller_id": loan_due["seller_id"],
+                    "seller_email": seller_due["email"],
+                },
+            ],
             **act_opts,
         )
 
         # Step 3: Wait for repayment window — exits early if repayment_confirmed signal arrives
         repayment_window = timedelta(
-            seconds=config.DEMO_REPAYMENT_WINDOW_SECONDS if config.DEMO_MODE else config.REPAYMENT_WINDOW_SECONDS
+            seconds=config.DEMO_REPAYMENT_WINDOW_SECONDS
+            if config.DEMO_MODE
+            else config.REPAYMENT_WINDOW_SECONDS
         )
         await workflow.wait_condition(
             lambda: self._repayment_confirmed,
@@ -84,19 +91,28 @@ class LoanMaturityWorkflow:
             return  # Repaid (signal may have been missed but status is correct)
 
         # Step 5: Mark OVERDUE + publish event + bulk delist
-        await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "OVERDUE"], **act_opts)
-        seller_over = await workflow.execute_activity(get_user, args=[loan["seller_id"]], **act_opts)
-        investor_over = await workflow.execute_activity(get_user, args=[loan["investor_id"]], **act_opts)
+        await workflow.execute_activity(
+            update_loan_status_grpc, args=[loan_id, "OVERDUE"], **act_opts
+        )
+        seller_over = await workflow.execute_activity(
+            get_user, args=[loan["seller_id"]], **act_opts
+        )
+        investor_over = await workflow.execute_activity(
+            get_user, args=[loan["investor_id"]], **act_opts
+        )
         await workflow.execute_activity(
             publish_event,
-            args=["loan.overdue", {
-                "loan_id": loan_id,
-                "invoice_token": loan.get("invoice_token", ""),
-                "seller_id": loan["seller_id"],
-                "seller_email": seller_over["email"],
-                "investor_id": loan["investor_id"],
-                "investor_email": investor_over["email"],
-            }],
+            args=[
+                "loan.overdue",
+                {
+                    "loan_id": loan_id,
+                    "invoice_token": loan.get("invoice_token", ""),
+                    "seller_id": loan["seller_id"],
+                    "seller_email": seller_over["email"],
+                    "investor_id": loan["investor_id"],
+                    "investor_email": investor_over["email"],
+                },
+            ],
             **act_opts,
         )
         await workflow.execute_activity(bulk_delist, args=[loan["seller_id"]], **act_opts)

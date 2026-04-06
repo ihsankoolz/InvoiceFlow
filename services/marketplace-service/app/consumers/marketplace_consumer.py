@@ -63,9 +63,7 @@ class MarketplaceEventConsumer(BaseConsumer):
             return
 
         with SessionLocal() as db:
-            listing = db.query(Listing).filter(
-                Listing.invoice_token == invoice_token
-            ).first()
+            listing = db.query(Listing).filter(Listing.invoice_token == invoice_token).first()
             if not listing:
                 logger.warning("bid.placed: listing not found for token %s", invoice_token)
                 return
@@ -78,8 +76,12 @@ class MarketplaceEventConsumer(BaseConsumer):
             existing_count = getattr(listing, "bid_count", None) or 0
             listing.bid_count = existing_count + 1
             db.commit()
-            logger.debug("bid.placed: updated listing %s bid_count=%s current_bid=%s",
-                         invoice_token, listing.bid_count, bid_amount)
+            logger.debug(
+                "bid.placed: updated listing %s bid_count=%s current_bid=%s",
+                invoice_token,
+                listing.bid_count,
+                bid_amount,
+            )
 
     async def _on_auction_closed(self, body: dict[str, Any]) -> None:
         invoice_token = body.get("invoice_token")
@@ -87,9 +89,7 @@ class MarketplaceEventConsumer(BaseConsumer):
             return
 
         with SessionLocal() as db:
-            listing = db.query(Listing).filter(
-                Listing.invoice_token == invoice_token
-            ).first()
+            listing = db.query(Listing).filter(Listing.invoice_token == invoice_token).first()
             if not listing:
                 logger.warning("auction.closed: listing not found for token %s", invoice_token)
                 return
@@ -110,13 +110,12 @@ class MarketplaceEventConsumer(BaseConsumer):
             return
 
         with SessionLocal() as db:
-            listing = db.query(Listing).filter(
-                Listing.invoice_token == invoice_token
-            ).first()
+            listing = db.query(Listing).filter(Listing.invoice_token == invoice_token).first()
             if not listing:
                 logger.warning("auction.extended: listing not found for token %s", invoice_token)
                 return
             listing.deadline = new_deadline
             db.commit()
-            logger.info("auction.extended: listing %s deadline updated to %s",
-                        invoice_token, new_deadline)
+            logger.info(
+                "auction.extended: listing %s deadline updated to %s", invoice_token, new_deadline
+            )

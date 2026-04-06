@@ -38,7 +38,10 @@ app = FastAPI(
     version="1.0.0",
     openapi_tags=[
         {"name": "Invoices", "description": "Create, retrieve, and update invoice records"},
-        {"name": "Status", "description": "Invoice status transitions (LISTED, REJECTED, FINANCED, REPAID, DEFAULTED)"},
+        {
+            "name": "Status",
+            "description": "Invoice status transitions (LISTED, REJECTED, FINANCED, REPAID, DEFAULTED)",
+        },
         {"name": "Health", "description": "Health check"},
     ],
     lifespan=lifespan,

@@ -12,7 +12,10 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     openapi_tags=[
-        {"name": "UEN Validation", "description": "Validate Singapore UENs against the ACRA public registry"},
+        {
+            "name": "UEN Validation",
+            "description": "Validate Singapore UENs against the ACRA public registry",
+        },
         {"name": "Health", "description": "Health check"},
     ],
 )

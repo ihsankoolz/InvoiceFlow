@@ -25,7 +25,9 @@ def _listing_to_dict(listing: Listing) -> dict:
         "invoice_token": listing.invoice_token,
         "seller_id": listing.seller_id,
         "debtor_uen": listing.debtor_uen,
-        "face_value": float(listing.face_value) if listing.face_value is not None else float(listing.amount),
+        "face_value": float(listing.face_value)
+        if listing.face_value is not None
+        else float(listing.amount),
         "minimum_bid": float(listing.minimum_bid),
         "current_bid": float(listing.current_bid) if listing.current_bid is not None else None,
         "bid_count": listing.bid_count or 0,

@@ -42,6 +42,7 @@ async def test_publish_event_calls_exchange():
 @pytest.mark.asyncio
 async def test_publish_event_serializes_payload():
     import json
+
     mock_aio_pika, exchange = _make_aio_pika_mock()
 
     captured = {}

@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.consumers.stripe_consumer import LoanStripeConsumer
+
     consumer = LoanStripeConsumer()
     try:
         await consumer.start()
@@ -29,7 +30,10 @@ app = FastAPI(
     version="1.0.0",
     openapi_tags=[
         {"name": "Loans", "description": "List loans by investor or seller"},
-        {"name": "Repayment", "description": "Initiate and confirm loan repayment — Scenario 3 repayment flow"},
+        {
+            "name": "Repayment",
+            "description": "Initiate and confirm loan repayment — Scenario 3 repayment flow",
+        },
         {"name": "Health", "description": "Health check"},
     ],
     lifespan=lifespan,

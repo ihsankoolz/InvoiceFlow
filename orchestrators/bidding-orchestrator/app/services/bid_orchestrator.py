@@ -58,9 +58,7 @@ class BidOrchestrator:
         except Exception as e:
             # Rollback: delete the orphaned bid
             try:
-                await self.http_client.delete(
-                    f"{config.BIDDING_SERVICE_URL}/bids/{bid['id']}"
-                )
+                await self.http_client.delete(f"{config.BIDDING_SERVICE_URL}/bids/{bid['id']}")
             except Exception:
                 pass
             # Also release escrow in case payment service deducted funds before erroring
@@ -157,7 +155,9 @@ class BidOrchestrator:
                 )
                 bidders = []
                 for o in current_offers:
-                    u = await self.http_client.get(f"{config.USER_SERVICE_URL}/users/{o['investor_id']}")
+                    u = await self.http_client.get(
+                        f"{config.USER_SERVICE_URL}/users/{o['investor_id']}"
+                    )
                     bidders.append({"user_id": o["investor_id"], "email": u["email"]})
                 seller_info = await self.http_client.get(
                     f"{config.USER_SERVICE_URL}/users/{listing['seller_id']}"
@@ -212,9 +212,7 @@ class BidOrchestrator:
                 pass
             # Delete the orphaned bid record
             try:
-                await self.http_client.delete(
-                    f"{config.BIDDING_SERVICE_URL}/bids/{bid['id']}"
-                )
+                await self.http_client.delete(f"{config.BIDDING_SERVICE_URL}/bids/{bid['id']}")
             except Exception:
                 pass
             raise HTTPException(status_code=500, detail=f"Bid placement failed: {str(e)}")

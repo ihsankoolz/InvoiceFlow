@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.consumers.stripe_consumer import StripeWebhookConsumer
+
     consumer = StripeWebhookConsumer()
     try:
         await consumer.start()
@@ -28,7 +29,10 @@ app = FastAPI(
     description="Orchestrates wallet top-up (via Stripe) and bid placement (with anti-snipe extension). Entry point from KONG for all investor bidding actions.",
     version="1.0.0",
     openapi_tags=[
-        {"name": "Bidding", "description": "Place bids and list bids — full Scenario 2B orchestration"},
+        {
+            "name": "Bidding",
+            "description": "Place bids and list bids — full Scenario 2B orchestration",
+        },
         {"name": "Wallet", "description": "Wallet balance, top-up, and transaction history"},
         {"name": "Health", "description": "Health check"},
     ],

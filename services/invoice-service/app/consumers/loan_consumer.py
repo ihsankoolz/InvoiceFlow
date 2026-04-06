@@ -52,7 +52,9 @@ class LoanEventConsumer:
                 with SessionLocal() as db:
                     service = InvoiceService(db)
                     service.update_status(invoice_token, "REPAID")
-                    logger.info(f"Invoice {invoice_token} status updated to REPAID via choreography.")
+                    logger.info(
+                        f"Invoice {invoice_token} status updated to REPAID via choreography."
+                    )
             except Exception as e:
                 logger.error(f"Error processing loan.repaid: {e}")
 
@@ -69,7 +71,9 @@ class LoanEventConsumer:
                 with SessionLocal() as db:
                     service = InvoiceService(db)
                     service.update_status(invoice_token, "DEFAULTED")
-                    logger.info(f"Invoice {invoice_token} status updated to DEFAULTED via choreography.")
+                    logger.info(
+                        f"Invoice {invoice_token} status updated to DEFAULTED via choreography."
+                    )
             except Exception as e:
                 logger.error(f"Error processing loan.overdue: {e}")
 

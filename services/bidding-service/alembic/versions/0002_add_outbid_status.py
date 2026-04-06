@@ -4,6 +4,7 @@ Revision ID: 0002
 Revises: 0001
 Create Date: 2026-04-01 00:02:00.000000
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -30,6 +31,8 @@ def downgrade() -> None:
         "bids",
         "status",
         type_=sa.Enum("PENDING", "ACCEPTED", "REJECTED", "CANCELLED", name="bid_status"),
-        existing_type=sa.Enum("PENDING", "ACCEPTED", "REJECTED", "CANCELLED", "OUTBID", name="bid_status"),
+        existing_type=sa.Enum(
+            "PENDING", "ACCEPTED", "REJECTED", "CANCELLED", "OUTBID", name="bid_status"
+        ),
         existing_nullable=True,
     )

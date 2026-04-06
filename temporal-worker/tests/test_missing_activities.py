@@ -12,13 +12,19 @@ from activities.payment_activities import release_escrow
 # get_user
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_get_user_returns_user_dict():
     """get_user calls User Service and returns the user dict."""
     with patch("activities.invoice_activities.http_client") as mock_client:
-        mock_client.get = AsyncMock(return_value={
-            "id": 42, "email": "investor@test.com", "full_name": "Test User", "role": "INVESTOR",
-        })
+        mock_client.get = AsyncMock(
+            return_value={
+                "id": 42,
+                "email": "investor@test.com",
+                "full_name": "Test User",
+                "role": "INVESTOR",
+            }
+        )
         result = await get_user(42)
 
     assert result["id"] == 42
@@ -39,6 +45,7 @@ async def test_get_user_passes_correct_url_for_different_id():
 # ---------------------------------------------------------------------------
 # release_escrow
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_release_escrow_calls_grpc_with_correct_args():

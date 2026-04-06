@@ -15,6 +15,7 @@ async def lifespan(app: FastAPI):
     consumer = None
     try:
         from app.consumers.marketplace_consumer import MarketplaceEventConsumer
+
         consumer = MarketplaceEventConsumer()
         await consumer.start()
         logger.info("MarketplaceEventConsumer started.")
@@ -30,8 +31,14 @@ app = FastAPI(
     description="Manages auction listings. Internal CRUD endpoints for orchestrators + public read-model endpoints for the frontend via KONG.",
     version="1.0.0",
     openapi_tags=[
-        {"name": "Listings", "description": "Internal CRUD — used by orchestrators and Temporal Worker"},
-        {"name": "Public Listings", "description": "Read-model endpoints — used by frontend via KONG/Nginx"},
+        {
+            "name": "Listings",
+            "description": "Internal CRUD — used by orchestrators and Temporal Worker",
+        },
+        {
+            "name": "Public Listings",
+            "description": "Read-model endpoints — used by frontend via KONG/Nginx",
+        },
         {"name": "Health", "description": "Health check"},
     ],
     lifespan=lifespan,

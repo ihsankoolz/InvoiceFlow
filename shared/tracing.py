@@ -26,9 +26,7 @@ def setup_tracing(service_name: str) -> None:
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-        endpoint = os.getenv(
-            "OTEL_EXPORTER_OTLP_ENDPOINT", "http://tempo:4318/v1/traces"
-        )
+        endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://tempo:4318/v1/traces")
         resource = Resource.create({"service.name": service_name})
         provider = TracerProvider(resource=resource)
         provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
@@ -37,4 +35,6 @@ def setup_tracing(service_name: str) -> None:
         HTTPXClientInstrumentor().instrument()
         logger.info("OpenTelemetry tracing configured for '%s' → %s", service_name, endpoint)
     except ImportError:
-        logger.debug("opentelemetry packages not installed — tracing disabled for '%s'", service_name)
+        logger.debug(
+            "opentelemetry packages not installed — tracing disabled for '%s'", service_name
+        )

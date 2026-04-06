@@ -54,18 +54,25 @@ class AuctionCloseWorkflow:
             t12h = deadline - timedelta(hours=12)
             if t12h > workflow.now():
                 await workflow.sleep(t12h - workflow.now())
-                offers_12h = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)
+                offers_12h = await workflow.execute_activity(
+                    get_offers, args=[invoice_token], **act_opts
+                )
                 bidders_12h = []
                 for o in offers_12h:
-                    u = await workflow.execute_activity(get_user, args=[o["investor_id"]], **act_opts)
+                    u = await workflow.execute_activity(
+                        get_user, args=[o["investor_id"]], **act_opts
+                    )
                     bidders_12h.append({"user_id": o["investor_id"], "email": u["email"]})
                 await workflow.execute_activity(
                     publish_event,
-                    args=["auction.closing.warning", {
-                        "invoice_token": invoice_token,
-                        "hours_remaining": 12,
-                        "bidders": bidders_12h,
-                    }],
+                    args=[
+                        "auction.closing.warning",
+                        {
+                            "invoice_token": invoice_token,
+                            "hours_remaining": 12,
+                            "bidders": bidders_12h,
+                        },
+                    ],
                     **act_opts,
                 )
 
@@ -73,18 +80,25 @@ class AuctionCloseWorkflow:
             t1h = deadline - timedelta(hours=1)
             if t1h > workflow.now():
                 await workflow.sleep(t1h - workflow.now())
-                offers_1h = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)
+                offers_1h = await workflow.execute_activity(
+                    get_offers, args=[invoice_token], **act_opts
+                )
                 bidders_1h = []
                 for o in offers_1h:
-                    u = await workflow.execute_activity(get_user, args=[o["investor_id"]], **act_opts)
+                    u = await workflow.execute_activity(
+                        get_user, args=[o["investor_id"]], **act_opts
+                    )
                     bidders_1h.append({"user_id": o["investor_id"], "email": u["email"]})
                 await workflow.execute_activity(
                     publish_event,
-                    args=["auction.closing.warning", {
-                        "invoice_token": invoice_token,
-                        "hours_remaining": 1,
-                        "bidders": bidders_1h,
-                    }],
+                    args=[
+                        "auction.closing.warning",
+                        {
+                            "invoice_token": invoice_token,
+                            "hours_remaining": 1,
+                            "bidders": bidders_1h,
+                        },
+                    ],
                     **act_opts,
                 )
 
@@ -94,16 +108,25 @@ class AuctionCloseWorkflow:
         # Fetch all bids
         offers = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)
         if not offers:
-            invoice_exp = await workflow.execute_activity(verify_invoice, args=[invoice_token], **act_opts)
-            seller_exp = await workflow.execute_activity(get_user, args=[invoice_exp["seller_id"]], **act_opts)
-            await workflow.execute_activity(update_invoice_status, args=[invoice_token, "EXPIRED"], **act_opts)
+            invoice_exp = await workflow.execute_activity(
+                verify_invoice, args=[invoice_token], **act_opts
+            )
+            seller_exp = await workflow.execute_activity(
+                get_user, args=[invoice_exp["seller_id"]], **act_opts
+            )
+            await workflow.execute_activity(
+                update_invoice_status, args=[invoice_token, "EXPIRED"], **act_opts
+            )
             await workflow.execute_activity(
                 publish_event,
-                args=["auction.expired", {
-                    "invoice_token": invoice_token,
-                    "seller_id": invoice_exp["seller_id"],
-                    "seller_email": seller_exp["email"],
-                }],
+                args=[
+                    "auction.expired",
+                    {
+                        "invoice_token": invoice_token,
+                        "seller_id": invoice_exp["seller_id"],
+                        "seller_email": seller_exp["email"],
+                    },
+                ],
                 **act_opts,
             )
             await workflow.execute_activity(delist_listing, args=[invoice_token], **act_opts)
@@ -119,8 +142,14 @@ class AuctionCloseWorkflow:
         )
         loan = await workflow.execute_activity(
             create_loan,
-            args=[winner["investor_id"], invoice["seller_id"], invoice_token,
-                  invoice["amount"], winner["bid_amount"], invoice["due_date"]],
+            args=[
+                winner["investor_id"],
+                invoice["seller_id"],
+                invoice_token,
+                invoice["amount"],
+                winner["bid_amount"],
+                invoice["due_date"],
+            ],
             **act_opts,
         )
 
@@ -138,51 +167,66 @@ class AuctionCloseWorkflow:
             args=[invoice["seller_id"], winner["bid_amount"], invoice_token],
             **act_opts,
         )
-        await workflow.execute_activity(update_invoice_status, args=[invoice_token, "FINANCED"], **act_opts)
+        await workflow.execute_activity(
+            update_invoice_status, args=[invoice_token, "FINANCED"], **act_opts
+        )
         await workflow.execute_activity(delist_listing, args=[invoice_token], **act_opts)
         await workflow.execute_activity(accept_offer, args=[winner["id"]], **act_opts)
 
         # Reject all losers and release their escrow in parallel.
         # OUTBID losers already had escrow released during bid placement (2B) — only release PENDING losers.
-        await asyncio.gather(*[
-            workflow.execute_activity(reject_offer, args=[o["id"]], **act_opts)
-            for o in losers
-        ])
+        await asyncio.gather(
+            *[workflow.execute_activity(reject_offer, args=[o["id"]], **act_opts) for o in losers]
+        )
         pending_losers = [o for o in losers if o["status"] == "PENDING"]
-        await asyncio.gather(*[
-            workflow.execute_activity(
-                release_escrow,
-                args=[o["investor_id"], invoice_token, f"release-loser-{o['id']}"],
-                **act_opts,
-            )
-            for o in pending_losers
-        ])
+        await asyncio.gather(
+            *[
+                workflow.execute_activity(
+                    release_escrow,
+                    args=[o["investor_id"], invoice_token, f"release-loser-{o['id']}"],
+                    **act_opts,
+                )
+                for o in pending_losers
+            ]
+        )
 
         # Fetch emails for outcome events
-        winner_user = await workflow.execute_activity(get_user, args=[winner["investor_id"]], **act_opts)
-        seller_user = await workflow.execute_activity(get_user, args=[invoice["seller_id"]], **act_opts)
+        winner_user = await workflow.execute_activity(
+            get_user, args=[winner["investor_id"]], **act_opts
+        )
+        seller_user = await workflow.execute_activity(
+            get_user, args=[invoice["seller_id"]], **act_opts
+        )
 
         # Publish outcome events
         await workflow.execute_activity(
             publish_event,
-            args=["auction.closed.winner", {
-                "invoice_token": invoice_token,
-                "winner_id": winner["investor_id"],
-                "winner_email": winner_user["email"],
-                "seller_id": invoice["seller_id"],
-                "seller_email": seller_user["email"],
-                "loan_id": loan["loan_id"],
-            }],
+            args=[
+                "auction.closed.winner",
+                {
+                    "invoice_token": invoice_token,
+                    "winner_id": winner["investor_id"],
+                    "winner_email": winner_user["email"],
+                    "seller_id": invoice["seller_id"],
+                    "seller_email": seller_user["email"],
+                    "loan_id": loan["loan_id"],
+                },
+            ],
             **act_opts,
         )
         for loser in losers:
-            loser_user = await workflow.execute_activity(get_user, args=[loser["investor_id"]], **act_opts)
+            loser_user = await workflow.execute_activity(
+                get_user, args=[loser["investor_id"]], **act_opts
+            )
             await workflow.execute_activity(
                 publish_event,
-                args=["auction.closed.loser", {
-                    "invoice_token": invoice_token,
-                    "loser_id": loser["investor_id"],
-                    "loser_email": loser_user["email"],
-                }],
+                args=[
+                    "auction.closed.loser",
+                    {
+                        "invoice_token": invoice_token,
+                        "loser_id": loser["investor_id"],
+                        "loser_email": loser_user["email"],
+                    },
+                ],
                 **act_opts,
             )
