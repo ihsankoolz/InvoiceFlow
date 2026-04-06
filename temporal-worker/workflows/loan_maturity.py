@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from temporalio import workflow
 
 with workflow.unsafe.imports_passed_through():
-    from activities.invoice_activities import get_user
+    from activities.invoice_activities import get_user, update_invoice_status
     from activities.marketplace_activities import bulk_delist
     from activities.payment_activities import get_loan_grpc, update_loan_status_grpc
     from activities.rabbitmq_activities import publish_event
@@ -130,4 +130,8 @@ class LoanMaturityWorkflow:
             ],
             **act_opts,
         )
-        await workflow.execute_activity(bulk_delist, args=[loan["seller_id"]], **act_opts)
+        delist_result = await workflow.execute_activity(bulk_delist, args=[loan["seller_id"]], **act_opts)
+        for token in (delist_result or {}).get("invoice_tokens", []):
+            await workflow.execute_activity(
+                update_invoice_status, args=[token, "DELISTED"], **act_opts
+            )

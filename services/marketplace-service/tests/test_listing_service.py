@@ -330,16 +330,18 @@ class TestBulkDeleteBySeller:
         service.create_listing(_make_listing_data(invoice_token="INV-S1-B", seller_id=10))
         service.create_listing(_make_listing_data(invoice_token="INV-S2-A", seller_id=20))
 
-        count = service.bulk_delete_by_seller(10)
-        assert count == 2
+        result = service.bulk_delete_by_seller(10)
+        assert result["deleted_count"] == 2
+        assert set(result["invoice_tokens"]) == {"INV-S1-A", "INV-S1-B"}
         assert service.get_listing_by_token("INV-S1-A") is None
         assert service.get_listing_by_token("INV-S1-B") is None
         assert service.get_listing_by_token("INV-S2-A") is not None
 
     def test_bulk_delete_no_matches_returns_zero(self, db):
         service = ListingService(db)
-        count = service.bulk_delete_by_seller(999)
-        assert count == 0
+        result = service.bulk_delete_by_seller(999)
+        assert result["deleted_count"] == 0
+        assert result["invoice_tokens"] == []
 
 
 # ═══════════════════════════════════════════════════════════════

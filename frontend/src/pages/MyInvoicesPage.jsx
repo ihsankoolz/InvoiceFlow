@@ -40,9 +40,9 @@ function fmtDateTime(str) {
 }
 
 
-const STATUS_TABS = ['ALL', 'DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED', 'REJECTED', 'EXPIRED']
+const STATUS_TABS = ['ALL', 'DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED', 'DELISTED', 'REJECTED', 'EXPIRED']
 
-const STATUS_ORDER = { LISTED: 0, FINANCED: 1, DEFAULTED: 2, DRAFT: 3, REPAID: 4, REJECTED: 5, EXPIRED: 6 }
+const STATUS_ORDER = { LISTED: 0, FINANCED: 1, DEFAULTED: 2, DELISTED: 3, DRAFT: 4, REPAID: 5, REJECTED: 6, EXPIRED: 7 }
 
 /** Within FINANCED rows, DUE loans surface before ACTIVE ones */
 function loanStatusOrder(inv) {
