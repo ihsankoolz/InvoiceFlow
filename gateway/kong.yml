@@ -15,7 +15,24 @@ consumers:
         algorithm: HS256
 
 services:
-  # --- Auth (no JWT) ---
+  # --- User Orchestrator: registration (no JWT — public signup endpoint) ---
+  # More specific path (/api/auth/register) takes priority over auth-service (/api/auth)
+  - name: user-orchestrator
+    url: http://user-orchestrator:5015
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 10
+          policy: local
+    routes:
+      - name: auth-register
+        paths:
+          - /api/auth/register
+        methods:
+          - POST
+        strip_path: false
+
+  # --- Auth: login only (no JWT) — /api/auth prefix, strip to /login for user-service ---
   - name: auth-service
     url: http://user-service:5000
     plugins:

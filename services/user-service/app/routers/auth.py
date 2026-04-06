@@ -9,10 +9,10 @@ router = APIRouter(tags=["Auth"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=201)
-async def register(data: UserCreate, db: Session = Depends(get_db)):
-    """Register a new user. If the role is SELLER, the UEN is validated via data.gov.sg."""
+def register(data: UserCreate, db: Session = Depends(get_db)):
+    """Register a new user. UEN validation for SELLER accounts is handled by the user-orchestrator."""
     service = UserService(db)
-    return await service.create_user(data)
+    return service.create_user(data)
 
 
 @router.post("/login", response_model=TokenResponse)

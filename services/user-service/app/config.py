@@ -5,4 +5,3 @@ JWT_SECRET: str = os.getenv("JWT_SECRET", "your-jwt-secret-change-in-production"
 JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRY_HOURS: int = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
 RABBITMQ_URL: str = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672")
-ACRA_WRAPPER_URL: str = os.getenv("ACRA_WRAPPER_URL", "http://acra-wrapper:5007")

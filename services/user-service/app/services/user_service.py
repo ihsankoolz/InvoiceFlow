@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.config import JWT_ALGORITHM, JWT_EXPIRY_HOURS, JWT_SECRET
 from app.models.user import User
 from app.schemas import TokenResponse, UserCreate
-from app.services.uen_validator import UENValidator
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -19,12 +18,15 @@ class UserService:
     def __init__(self, db: Session):
         self.db = db
 
-    async def create_user(self, data: UserCreate) -> User:
-        """Hash the password, validate UEN if the user is a SELLER, and persist to the database.
+    def create_user(self, data: UserCreate) -> User:
+        """Hash the password and persist the user to the database.
+
+        UEN validation for SELLER accounts is handled by the user-orchestrator
+        before this method is called.
 
         Steps:
             1. Check if email already exists; raise 409 if so.
-            2. If role is SELLER and uen is provided, call UENValidator.validate_uen.
+            2. If role is SELLER, ensure UEN field is present.
             3. Hash the password using bcrypt.
             4. Create the User record and commit.
 
@@ -35,12 +37,8 @@ class UserService:
         if existing:
             raise HTTPException(status_code=409, detail="Email already registered")
 
-        if data.role == "SELLER":
-            if not data.uen:
-                raise HTTPException(status_code=422, detail="UEN is required for SELLER role")
-            is_valid = await UENValidator.validate_uen(data.uen)
-            if not is_valid:
-                raise HTTPException(status_code=422, detail="Invalid UEN: not found in ACRA registry")
+        if data.role == "SELLER" and not data.uen:
+            raise HTTPException(status_code=422, detail="UEN is required for SELLER role")
 
         password_hash = pwd_context.hash(data.password)
 
