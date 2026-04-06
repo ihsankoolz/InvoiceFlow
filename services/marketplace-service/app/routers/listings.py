@@ -41,8 +41,8 @@ def bulk_delete_listings(seller_id: int = Query(...), db: Session = Depends(get_
     Called by Temporal Worker at step B8 of Scenario 3 (business default).
     """
     service = ListingService(db)
-    deleted_count = service.bulk_delete_by_seller(seller_id)
-    return {"deleted_count": deleted_count}
+    result = service.bulk_delete_by_seller(seller_id)
+    return result
 
 
 @router.get("/by-token/{invoice_token}", response_model=ListingResponse)

@@ -32,4 +32,4 @@ class InvoiceResponse(BaseModel):
 
 
 class InvoiceStatusUpdate(BaseModel):
-    status: Literal["DRAFT", "LISTED", "FINANCED", "REPAID", "DEFAULTED", "REJECTED", "EXPIRED"]
+    status: Literal["DRAFT", "LISTED", "FINANCED", "REPAID", "DEFAULTED", "REJECTED", "EXPIRED", "DELISTED"]
