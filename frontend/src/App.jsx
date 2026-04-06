@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { NotificationProvider } from './context/NotificationContext'
 import ToastContainer from './components/notifications/ToastContainer'
@@ -16,6 +16,12 @@ import LoansPage from './pages/LoansPage'
 import RepaymentsPage from './pages/RepaymentsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import PaymentSuccessPage from './pages/PaymentSuccessPage'
+
+function PaymentCancelRedirect() {
+  const [searchParams] = useSearchParams()
+  const to = searchParams.get('type') === 'loan_repayment' ? '/loans' : '/wallet'
+  return <Navigate to={to} replace />
+}
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -72,7 +78,7 @@ function AppRoutes() {
 
       {/* Stripe payment return routes */}
       <Route path="/payment/success" element={<PaymentSuccessPage />} />
-      <Route path="/payment/cancel"  element={<Navigate to="/wallet" replace />} />
+      <Route path="/payment/cancel"  element={<PaymentCancelRedirect />} />
 
       {/* Catch-all: redirect to landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
