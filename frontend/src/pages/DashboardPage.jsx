@@ -233,7 +233,13 @@ function SellerDashboard({ user }) {
               activeListings.map((inv, i) => (
                 <div key={inv.id || i} className="border-b border-black/5 pb-4 last:border-0 flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
-                    <p className="font-['Lato'] font-medium text-sm text-ink">{inv.invoice_token || inv.id}</p>
+                    {inv.id ? (
+                      <Link to={`/marketplace/${inv.id}`} className="font-['Lato'] font-medium text-sm text-ink hover:text-teal hover:underline transition-colors duration-100">
+                        {inv.invoice_token || inv.id}
+                      </Link>
+                    ) : (
+                      <p className="font-['Lato'] font-medium text-sm text-ink">{inv.invoice_token || inv.id}</p>
+                    )}
                     <p className="font-['Lato'] font-medium text-sm text-ink">{inv.current_bid ? fmt(inv.current_bid) : '—'}</p>
                   </div>
                   <div className="flex items-center justify-between">
