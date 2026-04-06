@@ -4,11 +4,14 @@ Tests for UserService.create_user, get_user, and update_status.
 Covers the critical registration paths that were previously untested:
 - Duplicate email rejection
 - SELLER missing UEN
+- SELLER with invalid UEN (mocked ACRA call)
 - Successful INVESTOR registration
 - Successful SELLER registration
 - get_user 404
 - update_status happy path and 404
 """
+
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from app.models.user import User
@@ -74,6 +77,21 @@ async def test_create_seller_without_uen_raises_422(db):
 
 
 # ---------------------------------------------------------------------------
+# create_user — SELLER with invalid UEN
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_create_seller_invalid_uen_raises_422(db):
+    service = UserService(db)
+
+    with patch("app.services.user_service.UENValidator.validate_uen", new=AsyncMock(return_value=False)):
+        with pytest.raises(HTTPException) as exc_info:
+            await service.create_user(_make_data(role="SELLER", uen="INVALID123"))
+    assert exc_info.value.status_code == 422
+    assert "Invalid UEN" in exc_info.value.detail
+
+
+# ---------------------------------------------------------------------------
 # create_user — successful INVESTOR registration
 # ---------------------------------------------------------------------------
 
@@ -96,9 +114,10 @@ async def test_create_investor_success(db):
 async def test_create_seller_success(db):
     service = UserService(db)
 
-    user = await service.create_user(
-        _make_data(email="seller@test.com", role="SELLER", uen="200509501E")
-    )
+    with patch("app.services.user_service.UENValidator.validate_uen", new=AsyncMock(return_value=True)):
+        user = await service.create_user(
+            _make_data(email="seller@test.com", role="SELLER", uen="200509501E")
+        )
 
     assert user.role == "SELLER"
     assert user.uen == "200509501E"
