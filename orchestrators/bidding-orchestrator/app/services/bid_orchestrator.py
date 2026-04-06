@@ -20,7 +20,10 @@ from app.services.http_client import HTTPClient
 from app.services.rabbitmq_publisher import RabbitMQPublisher
 from app.temporal.client import TemporalClient
 
-ANTI_SNIPE_WINDOW = timedelta(seconds=config.ANTI_SNIPE_WINDOW_SECONDS)
+
+def _anti_snipe_window() -> timedelta:
+    secs = config.DEMO_ANTI_SNIPE_WINDOW_SECONDS if config.DEMO_MODE else config.ANTI_SNIPE_WINDOW_SECONDS
+    return timedelta(seconds=secs)
 
 
 class BidOrchestrator:
@@ -133,8 +136,9 @@ class BidOrchestrator:
                 deadline = deadline.replace(tzinfo=timezone.utc)
             now = datetime.now(tz=timezone.utc)
 
-            if deadline - now <= ANTI_SNIPE_WINDOW:
-                new_deadline = now + ANTI_SNIPE_WINDOW
+            anti_snipe_window = _anti_snipe_window()
+            if deadline - now <= anti_snipe_window:
+                new_deadline = now + anti_snipe_window
                 new_deadline_iso = new_deadline.isoformat()
 
                 # Signal AuctionCloseWorkflow to reset its 5-min timer
