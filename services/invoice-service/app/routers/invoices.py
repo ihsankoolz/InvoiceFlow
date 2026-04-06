@@ -1,4 +1,5 @@
-from datetime import datetime as datetime_type, timezone
+from datetime import datetime as datetime_type
+from datetime import timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
