@@ -6,6 +6,7 @@ import Badge from '../components/ui/Badge'
 import api from '../api/axios'
 import { fetchListing } from '../api/marketplace'
 import { useAuth } from '../context/AuthContext'
+import { useNotifications } from '../context/NotificationContext'
 
 /* ── Animation ── */
 function fadeUp(visible, delay = 0) {
@@ -115,6 +116,7 @@ export default function ListingDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { lastMessage } = useNotifications()
 
   const [listing, setListing]   = useState(null)
   const [loading, setLoading]   = useState(true)
@@ -164,7 +166,36 @@ export default function ListingDetailPage() {
       }
     }
     load()
+
+    // Poll every 5s to detect auction close (listing deleted → 404)
+    const poll = setInterval(async () => {
+      try {
+        const data = await fetchListing(id)
+        if (data) setListing(data)
+      } catch {
+        // 404 — listing was deleted (auction closed/expired)
+        setListing((prev) => prev ? { ...prev, deadline: new Date(0).toISOString() } : prev)
+        clearInterval(poll)
+      }
+    }, 5000)
+    return () => clearInterval(poll)
   }, [id])
+
+  // React to WebSocket auction events immediately instead of waiting for the next poll
+  useEffect(() => {
+    if (!lastMessage || !listing) return
+    const type = lastMessage.event_type || ''
+    const token = lastMessage.payload?.invoice_token
+    if (token && token !== listing.invoice_token) return
+
+    if (type === 'auction.extended') {
+      fetchListing(id).then(data => { if (data) setListing(data) }).catch(() => {})
+    } else if (type === 'auction.closed.winner' || type === 'auction.closed.loser' || type === 'auction.expired') {
+      fetchListing(id).catch(() => {
+        setListing(prev => prev ? { ...prev, deadline: new Date(0).toISOString() } : prev)
+      })
+    }
+  }, [lastMessage])
 
   const estimatedReturn = (() => {
     if (!listing || !bidAmount) return null
