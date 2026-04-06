@@ -15,7 +15,12 @@ router = APIRouter()
 
 @router.post("/invoices/extract", tags=["Invoices"])
 async def extract_invoice_fields(pdf_file: UploadFile = File(...)):
-    """Extract fields from an invoice PDF without creating an invoice."""
+    """
+    Extract structured fields from an invoice PDF without persisting anything.
+
+    Uses pdfplumber to parse debtor_name, debtor_uen, amount, and due_date.
+    Called by the invoice-orchestrator to pre-populate the listing form.
+    """
     pdf_bytes = await pdf_file.read()
     extractor = PDFExtractor()
     extracted = extractor.extract_fields(pdf_bytes)
@@ -38,7 +43,13 @@ async def create_invoice(
     pdf_file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    """Create a new invoice with an uploaded PDF file."""
+    """
+    Create a new invoice record with an uploaded PDF.
+
+    Extracts fields via pdfplumber, stores PDF in MinIO, persists invoice to invoice_db.
+    Called by Invoice Orchestrator at step 5 of Scenario 1.
+    Initial status is PENDING.
+    """
     service = InvoiceService(db)
     pdf_bytes = await pdf_file.read()
     # Parse ISO datetime string (date-only "YYYY-MM-DD" or full "YYYY-MM-DDTHH:MM:SS[±TZ]").
@@ -62,14 +73,22 @@ async def create_invoice(
 
 @router.get("/invoices/{invoice_token}", response_model=InvoiceResponse, tags=["Invoices"])
 def get_invoice(invoice_token: str, db: Session = Depends(get_db)):
-    """Retrieve a single invoice by its token."""
+    """
+    Retrieve a single invoice by its unique token.
+
+    Returns 404 if the token does not exist.
+    """
     service = InvoiceService(db)
     return service.get_invoice(invoice_token)
 
 
 @router.get("/invoices", response_model=List[InvoiceResponse], tags=["Invoices"])
 def list_invoices_by_seller(seller_id: int, db: Session = Depends(get_db)):
-    """List all invoices belonging to a specific seller."""
+    """
+    List all invoices belonging to a specific seller.
+
+    Returns an empty list if the seller has no invoices.
+    """
     service = InvoiceService(db)
     return service.get_invoices_by_seller(seller_id)
 
@@ -80,6 +99,12 @@ def update_invoice_status(
     body: InvoiceStatusUpdate,
     db: Session = Depends(get_db),
 ):
-    """Update the status of an invoice."""
+    """
+    Transition an invoice to a new status.
+
+    Valid transitions: PENDING→LISTED, PENDING→REJECTED, LISTED→FINANCED,
+    FINANCED→REPAID, FINANCED→DEFAULTED.
+    Called by Invoice Orchestrator (steps 9a, 11) and Temporal Worker (steps C9, B16a).
+    """
     service = InvoiceService(db)
     return service.update_status(invoice_token, body.status)

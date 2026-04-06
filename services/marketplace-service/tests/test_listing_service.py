@@ -29,6 +29,7 @@ def _make_listing_data(**overrides):
 # CREATE
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestCreateListing:
     def test_create_listing(self, db):
         service = ListingService(db)
@@ -94,6 +95,7 @@ class TestCreateListing:
 # GET ALL LISTINGS (filtering & ordering)
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestGetAllListings:
     def test_returns_active_only_by_default(self, db):
         service = ListingService(db)
@@ -138,7 +140,9 @@ class TestGetAllListings:
     def test_excludes_expired_deadlines(self, db):
         service = ListingService(db)
         service.create_listing(
-            _make_listing_data(invoice_token="INV-PAST", deadline=datetime.now(timezone.utc) - timedelta(hours=1))
+            _make_listing_data(
+                invoice_token="INV-PAST", deadline=datetime.now(timezone.utc) - timedelta(hours=1)
+            )
         )
         service.create_listing(
             _make_listing_data(invoice_token="INV-FUTURE", deadline=_deadline(5))
@@ -186,6 +190,7 @@ class TestGetAllListings:
 # GET SINGLE LISTING
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestGetListing:
     def test_get_existing_listing(self, db):
         service = ListingService(db)
@@ -203,6 +208,7 @@ class TestGetListing:
 # GET BY TOKEN
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestGetListingByToken:
     def test_get_existing_token(self, db):
         service = ListingService(db)
@@ -219,6 +225,7 @@ class TestGetListingByToken:
 # ═══════════════════════════════════════════════════════════════
 # UPDATE
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestUpdateListing:
     def test_update_current_bid_and_bid_count(self, db):
@@ -281,6 +288,7 @@ class TestUpdateListing:
 # DELETE
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestDeleteListing:
     def test_delete_existing_listing(self, db):
         service = ListingService(db)
@@ -297,6 +305,7 @@ class TestDeleteListing:
 # DELETE BY TOKEN
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestDeleteListingByToken:
     def test_delete_by_token(self, db):
         service = ListingService(db)
@@ -312,6 +321,7 @@ class TestDeleteListingByToken:
 # ═══════════════════════════════════════════════════════════════
 # BULK DELETE BY SELLER
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestBulkDeleteBySeller:
     def test_bulk_delete_removes_all_seller_listings(self, db):
@@ -335,6 +345,7 @@ class TestBulkDeleteBySeller:
 # ═══════════════════════════════════════════════════════════════
 # ROUTER / API ENDPOINTS (internal CRUD)
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestListingsRouter:
     def _create_via_api(self, client, **overrides):
@@ -429,6 +440,7 @@ class TestListingsRouter:
 # ═══════════════════════════════════════════════════════════════
 # PUBLIC LISTINGS ROUTER (/api/listings — frontend-facing)
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestPublicListingsRouter:
     def _seed_listing(self, client, **overrides):
@@ -542,7 +554,9 @@ class TestPublicListingsRouter:
         assert resp.status_code == 404
 
     def test_response_includes_read_model_fields(self, client):
-        create_resp = self._seed_listing(client, invoice_token="INV-RM", face_value=10000.0, debtor_name="RM Corp")
+        create_resp = self._seed_listing(
+            client, invoice_token="INV-RM", face_value=10000.0, debtor_name="RM Corp"
+        )
         listing_id = create_resp.json()["id"]
         client.patch(f"/listings/{listing_id}", json={"current_bid": 8000.0, "bid_count": 5})
 
@@ -570,6 +584,7 @@ class TestPublicListingsRouter:
 # ═══════════════════════════════════════════════════════════════
 # HEALTH ENDPOINT
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestHealthEndpoint:
     def test_health_endpoint(self, client):

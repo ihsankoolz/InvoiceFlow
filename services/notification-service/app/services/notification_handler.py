@@ -69,7 +69,11 @@ EVENT_MAPPING = {
         "subject": "Auction deadline has been extended",
         "get_recipients": lambda p: (
             [{"email": b.get("email"), "user_id": b.get("user_id")} for b in p.get("bidders", [])]
-            + ([{"email": p["seller_email"], "user_id": p["seller_id"]}] if p.get("seller_id") and p.get("seller_email") else []),
+            + (
+                [{"email": p["seller_email"], "user_id": p["seller_id"]}]
+                if p.get("seller_id") and p.get("seller_email")
+                else []
+            ),
             [str(b.get("user_id")) for b in p.get("bidders", [])]
             + ([str(p["seller_id"])] if p.get("seller_id") else []),
         ),
@@ -205,13 +209,15 @@ class NotificationHandler:
                     uid = target.get("user_id")
                     if uid and uid not in seen_user_ids:
                         seen_user_ids.add(uid)
-                        db.add(Notification(
-                            id=str(uuid.uuid4()),
-                            user_id=uid,
-                            event_type=event_type,
-                            message=subject,
-                            payload=payload,
-                            is_read=False,
-                            created_at=datetime.now(timezone.utc),
-                        ))
+                        db.add(
+                            Notification(
+                                id=str(uuid.uuid4()),
+                                user_id=uid,
+                                event_type=event_type,
+                                message=subject,
+                                payload=payload,
+                                is_read=False,
+                                created_at=datetime.now(timezone.utc),
+                            )
+                        )
             db.commit()

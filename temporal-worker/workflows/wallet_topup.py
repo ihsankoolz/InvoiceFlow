@@ -25,10 +25,13 @@ class WalletTopUpWorkflow:
         investor = await workflow.execute_activity(get_user, args=[user_id], **act_opts)
         await workflow.execute_activity(
             publish_event,
-            args=["wallet.credited", {
-                "investor_id": user_id,
-                "investor_email": investor["email"],
-                "amount": amount,
-            }],
+            args=[
+                "wallet.credited",
+                {
+                    "investor_id": user_id,
+                    "investor_email": investor["email"],
+                    "amount": amount,
+                },
+            ],
             **act_opts,
         )

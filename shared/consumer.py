@@ -43,9 +43,7 @@ class BaseConsumer(ABC):
         dlq_exchange = await self._channel.declare_exchange(
             DLQ_EXCHANGE_NAME, aio_pika.ExchangeType.TOPIC, durable=True
         )
-        dlq_queue = await self._channel.declare_queue(
-            f"{self.queue_name}.dlq", durable=True
-        )
+        dlq_queue = await self._channel.declare_queue(f"{self.queue_name}.dlq", durable=True)
         for key in self.routing_keys:
             await dlq_queue.bind(dlq_exchange, routing_key=key)
 

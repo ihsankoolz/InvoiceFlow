@@ -51,10 +51,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Notification Service",
-    description="Listens for all events via RabbitMQ and sends email (Resend) + WebSocket notifications.",
+    description="Listens for all events via RabbitMQ and sends email (Resend) + real-time WebSocket notifications to the frontend via Nginx.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    openapi_tags=[
+        {"name": "Notifications", "description": "Fetch and manage notification records"},
+        {"name": "Health", "description": "Health check"},
+    ],
     lifespan=lifespan,
 )
 Instrumentator().instrument(app).expose(app)
@@ -77,7 +81,13 @@ async def health():
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
-    """WebSocket endpoint for real-time push notifications to frontend."""
+    """
+    WebSocket connection for real-time push notifications.
+
+    The frontend connects here after login. The Notification Service pushes
+    events (invoice.listed, bid.placed, wallet.credited, loan.due, etc.)
+    through Nginx to this endpoint as they are consumed from RabbitMQ.
+    """
     await ws_manager.connect(str(user_id), websocket)
     try:
         while True:

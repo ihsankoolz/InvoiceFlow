@@ -17,7 +17,15 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Bidding Service", lifespan=lifespan)
+app = FastAPI(
+    title="Bidding Service",
+    description="Manages bid records for invoice auctions. Called internally by the Bidding Orchestrator and Temporal Worker.",
+    version="1.0.0",
+    openapi_tags=[
+        {"name": "Bids", "description": "Bid creation, retrieval, and status transitions"},
+    ],
+    lifespan=lifespan,
+)
 Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(

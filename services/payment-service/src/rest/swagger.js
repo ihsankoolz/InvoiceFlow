@@ -47,11 +47,22 @@ const options = {
       '/loans': {
         get: {
           tags: ['Loans'],
-          summary: 'Get loans by investor',
+          summary: 'Get loans by investor or seller',
           parameters: [
-            { name: 'investor_id', in: 'query', required: true, schema: { type: 'integer' } },
+            { name: 'investor_id', in: 'query', required: false, schema: { type: 'integer' } },
+            { name: 'seller_id', in: 'query', required: false, schema: { type: 'integer' } },
           ],
           responses: { 200: { description: 'List of loans' } },
+        },
+      },
+      '/transactions': {
+        get: {
+          tags: ['Wallets'],
+          summary: 'Get wallet transaction history',
+          parameters: [
+            { name: 'user_id', in: 'query', required: true, schema: { type: 'integer' } },
+          ],
+          responses: { 200: { description: 'List of transactions' } },
         },
       },
       '/escrows': {
@@ -73,6 +84,8 @@ const swaggerSpec = swaggerJsdoc(options);
 
 function setupSwagger(app) {
   app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  // Add this line:
+  app.get('/openapi.json', (req, res) => res.json(swaggerSpec));
 }
 
 module.exports = { setupSwagger };

@@ -33,7 +33,16 @@ async def lifespan(app: FastAPI):
         logger.info("LoanEventConsumer background task cancelled.")
 
 
-app = FastAPI(title="User Service", lifespan=lifespan)
+app = FastAPI(
+    title="User Service",
+    description="Manages user accounts, authentication, and account status (ACTIVE/DEFAULTED).",
+    version="1.0.0",
+    openapi_tags=[
+        {"name": "Auth", "description": "Register and login endpoints"},
+        {"name": "Users", "description": "User lookup and status management"},
+    ],
+    lifespan=lifespan,
+)
 Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(

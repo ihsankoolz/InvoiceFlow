@@ -23,6 +23,7 @@ class EventConsumer:
         self.channel = None
         # Import here to allow ws_manager injection before handler is used
         from app.services.notification_handler import NotificationHandler
+
         self._handler = NotificationHandler(websocket_manager=websocket_manager)
 
     async def start(self) -> None:

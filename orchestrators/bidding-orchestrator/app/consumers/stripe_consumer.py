@@ -51,7 +51,9 @@ class StripeWebhookConsumer(BaseConsumer):
             return
 
         workflow_id = f"wallet-topup-{session_id}"
-        logger.info("Starting WalletTopUpWorkflow %s for user %s amount %s", workflow_id, user_id, amount)
+        logger.info(
+            "Starting WalletTopUpWorkflow %s for user %s amount %s", workflow_id, user_id, amount
+        )
 
         await self._temporal.start_workflow(
             workflow_name="WalletTopUpWorkflow",

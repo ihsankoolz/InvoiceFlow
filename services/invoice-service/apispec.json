@@ -1,0 +1,509 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Invoice Service",
+    "description": "Manages invoice upload, PDF extraction via pdfplumber, MinIO PDF storage, and invoice status lifecycle.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Endpoint that serves Prometheus metrics.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health Check",
+        "description": "Health check endpoint.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/extract": {
+      "post": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Extract Invoice Fields",
+        "description": "Extract structured fields from an invoice PDF without persisting anything.\n\nUses pdfplumber to parse debtor_name, debtor_uen, amount, and due_date.\nCalled by the invoice-orchestrator to pre-populate the listing form.",
+        "operationId": "extract_invoice_fields_invoices_extract_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_extract_invoice_fields_invoices_extract_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices": {
+      "post": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Create Invoice",
+        "description": "Create a new invoice record with an uploaded PDF.\n\nExtracts fields via pdfplumber, stores PDF in MinIO, persists invoice to invoice_db.\nCalled by Invoice Orchestrator at step 5 of Scenario 1.\nInitial status is PENDING.",
+        "operationId": "create_invoice_invoices_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_invoice_invoices_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "List Invoices By Seller",
+        "description": "List all invoices belonging to a specific seller.\n\nReturns an empty list if the seller has no invoices.",
+        "operationId": "list_invoices_by_seller_invoices_get",
+        "parameters": [
+          {
+            "name": "seller_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Seller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvoiceResponse"
+                  },
+                  "title": "Response List Invoices By Seller Invoices Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_token}": {
+      "get": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Get Invoice",
+        "description": "Retrieve a single invoice by its unique token.\n\nReturns 404 if the token does not exist.",
+        "operationId": "get_invoice_invoices__invoice_token__get",
+        "parameters": [
+          {
+            "name": "invoice_token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invoice Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_token}/status": {
+      "patch": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Update Invoice Status",
+        "description": "Transition an invoice to a new status.\n\nValid transitions: PENDING→LISTED, PENDING→REJECTED, LISTED→FINANCED,\nFINANCED→REPAID, FINANCED→DEFAULTED.\nCalled by Invoice Orchestrator (steps 9a, 11) and Temporal Worker (steps C9, B16a).",
+        "operationId": "update_invoice_status_invoices__invoice_token__status_patch",
+        "parameters": [
+          {
+            "name": "invoice_token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invoice Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceStatusUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_create_invoice_invoices_post": {
+        "properties": {
+          "seller_id": {
+            "type": "integer",
+            "title": "Seller Id"
+          },
+          "seller_name": {
+            "type": "string",
+            "title": "Seller Name"
+          },
+          "debtor_name": {
+            "type": "string",
+            "title": "Debtor Name"
+          },
+          "debtor_uen": {
+            "type": "string",
+            "title": "Debtor Uen"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "due_date": {
+            "type": "string",
+            "title": "Due Date"
+          },
+          "pdf_file": {
+            "type": "string",
+            "format": "binary",
+            "title": "Pdf File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seller_id",
+          "debtor_uen",
+          "amount",
+          "due_date",
+          "pdf_file"
+        ],
+        "title": "Body_create_invoice_invoices_post"
+      },
+      "Body_extract_invoice_fields_invoices_extract_post": {
+        "properties": {
+          "pdf_file": {
+            "type": "string",
+            "format": "binary",
+            "title": "Pdf File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pdf_file"
+        ],
+        "title": "Body_extract_invoice_fields_invoices_extract_post"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "InvoiceResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "invoice_token": {
+            "type": "string",
+            "title": "Invoice Token"
+          },
+          "seller_id": {
+            "type": "integer",
+            "title": "Seller Id"
+          },
+          "debtor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Debtor Name"
+          },
+          "debtor_uen": {
+            "type": "string",
+            "title": "Debtor Uen"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Due Date"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "pdf_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Url"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "extracted_data": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted Data"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "invoice_token",
+          "seller_id",
+          "debtor_name",
+          "debtor_uen",
+          "amount",
+          "due_date",
+          "currency",
+          "pdf_url",
+          "status",
+          "extracted_data",
+          "created_at"
+        ],
+        "title": "InvoiceResponse"
+      },
+      "InvoiceStatusUpdate": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "LISTED",
+              "FINANCED",
+              "REPAID",
+              "DEFAULTED",
+              "REJECTED",
+              "EXPIRED"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "InvoiceStatusUpdate"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Invoices",
+      "description": "Create, retrieve, and update invoice records"
+    },
+    {
+      "name": "Status",
+      "description": "Invoice status transitions (LISTED, REJECTED, FINANCED, REPAID, DEFAULTED)"
+    },
+    {
+      "name": "Health",
+      "description": "Health check"
+    }
+  ]
+}

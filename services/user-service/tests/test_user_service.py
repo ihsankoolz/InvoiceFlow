@@ -50,6 +50,7 @@ def _seed_user(db, email="existing@test.com", role="INVESTOR"):
 # create_user — duplicate email
 # ---------------------------------------------------------------------------
 
+
 def test_create_user_duplicate_email_raises_409(db):
     _seed_user(db, email="taken@test.com")
     service = UserService(db)
@@ -63,6 +64,7 @@ def test_create_user_duplicate_email_raises_409(db):
 # create_user — SELLER without UEN
 # ---------------------------------------------------------------------------
 
+
 def test_create_seller_without_uen_raises_422(db):
     service = UserService(db)
 
@@ -75,6 +77,7 @@ def test_create_seller_without_uen_raises_422(db):
 # ---------------------------------------------------------------------------
 # create_user — successful INVESTOR registration
 # ---------------------------------------------------------------------------
+
 
 def test_create_investor_success(db):
     service = UserService(db)
@@ -90,11 +93,10 @@ def test_create_investor_success(db):
 # create_user — successful SELLER registration (UEN validation done by orchestrator)
 # ---------------------------------------------------------------------------
 
+
 def test_create_seller_success(db):
     service = UserService(db)
-    user = service.create_user(
-        _make_data(email="seller@test.com", role="SELLER", uen="200509501E")
-    )
+    user = service.create_user(_make_data(email="seller@test.com", role="SELLER", uen="200509501E"))
 
     assert user.role == "SELLER"
     assert user.uen == "200509501E"
@@ -103,6 +105,7 @@ def test_create_seller_success(db):
 # ---------------------------------------------------------------------------
 # get_user — 404 for missing user
 # ---------------------------------------------------------------------------
+
 
 def test_get_user_not_found_raises_404(db):
     service = UserService(db)
@@ -116,6 +119,7 @@ def test_get_user_not_found_raises_404(db):
 # get_user — returns correct user
 # ---------------------------------------------------------------------------
 
+
 def test_get_user_returns_user(db):
     seeded = _seed_user(db, email="find@test.com")
     service = UserService(db)
@@ -128,6 +132,7 @@ def test_get_user_returns_user(db):
 # ---------------------------------------------------------------------------
 # update_status — happy path
 # ---------------------------------------------------------------------------
+
 
 def test_update_status_changes_account_status(db):
     user = _seed_user(db)
@@ -149,6 +154,7 @@ def test_update_status_back_to_active(db):
 # ---------------------------------------------------------------------------
 # update_status — 404 for missing user
 # ---------------------------------------------------------------------------
+
 
 def test_update_status_not_found_raises_404(db):
     service = UserService(db)

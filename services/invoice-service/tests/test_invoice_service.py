@@ -12,6 +12,7 @@ from fastapi import HTTPException
 # Helpers
 # ═══════════════════════════════════════════════════════════════
 
+
 def _make_service(db):
     """InvoiceService with mocked MinIO + PDF extractor."""
     service = InvoiceService(db)
@@ -43,6 +44,7 @@ def _make_invoice_data(**overrides):
 # ═══════════════════════════════════════════════════════════════
 # TOKEN GENERATION
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestTokenGeneration:
     def test_format_with_seller_name(self):
@@ -85,6 +87,7 @@ class TestTokenGeneration:
 # CREATE INVOICE
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestCreateInvoice:
     def test_persists_record(self, db):
         service = _make_service(db)
@@ -100,7 +103,9 @@ class TestCreateInvoice:
 
     def test_seller_debtor_name_takes_precedence(self, db):
         service = _make_service(db)
-        invoice = service.create_invoice(_make_invoice_data(debtor_name="Seller Provided"), pdf_bytes=b"")
+        invoice = service.create_invoice(
+            _make_invoice_data(debtor_name="Seller Provided"), pdf_bytes=b""
+        )
         assert invoice.debtor_name == "Seller Provided"
 
     def test_falls_back_to_extracted_debtor_name(self, db):
@@ -156,6 +161,7 @@ class TestCreateInvoice:
 # GET INVOICE BY TOKEN
 # ═══════════════════════════════════════════════════════════════
 
+
 class TestGetInvoice:
     def test_get_existing_invoice(self, db):
         service = _make_service(db)
@@ -185,6 +191,7 @@ class TestGetInvoice:
 # ═══════════════════════════════════════════════════════════════
 # GET INVOICES BY SELLER
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestGetInvoicesBySeller:
     def test_returns_only_seller_invoices(self, db):
@@ -218,6 +225,7 @@ class TestGetInvoicesBySeller:
 # ═══════════════════════════════════════════════════════════════
 # STATUS UPDATES (lifecycle transitions)
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestUpdateStatus:
     def test_draft_to_listed(self, db):
@@ -305,6 +313,7 @@ class TestUpdateStatus:
 # ═══════════════════════════════════════════════════════════════
 # ROUTER / API ENDPOINTS
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestInvoiceRouter:
     def _create_via_db(self, db):
@@ -465,6 +474,7 @@ class TestInvoiceRouter:
 # ═══════════════════════════════════════════════════════════════
 # HEALTH ENDPOINT
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestHealthEndpoint:
     def test_health_endpoint(self, client):

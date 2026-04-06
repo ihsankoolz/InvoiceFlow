@@ -25,10 +25,15 @@ import pytest
 # ---------------------------------------------------------------------------
 
 _STUBBED_MODS = [
-    "grpc", "tenacity",
-    "clients", "clients.grpc_client", "clients.http_client",
-    "activities", "activities.payment_activities",
-    "activities.invoice_activities", "activities.marketplace_activities",
+    "grpc",
+    "tenacity",
+    "clients",
+    "clients.grpc_client",
+    "clients.http_client",
+    "activities",
+    "activities.payment_activities",
+    "activities.invoice_activities",
+    "activities.marketplace_activities",
     "activities.rabbitmq_activities",
 ]
 _previously_present = {m for m in _STUBBED_MODS if m in sys.modules}
@@ -80,6 +85,7 @@ def _base_loan(status: str = "DUE") -> dict:
 # Test 1: signal handler unit test (pure Python, no server)
 # ---------------------------------------------------------------------------
 
+
 def test_repayment_confirmed_signal_sets_flag():
     """repayment_confirmed() sets _repayment_confirmed = True.
 
@@ -95,6 +101,7 @@ def test_repayment_confirmed_signal_sets_flag():
 # ---------------------------------------------------------------------------
 # Shared mock context for workflow.run() tests
 # ---------------------------------------------------------------------------
+
 
 def _workflow_mock(loan_status: str, signal_before_wait: bool = False):
     """
@@ -136,6 +143,7 @@ def _workflow_mock(loan_status: str, signal_before_wait: bool = False):
 # Test 2: no signal, window expires, loan still DUE → OVERDUE + bulk_delist
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_default_path_marks_overdue_and_delists():
     """No signal → wait_condition times out → loan checked → OVERDUE + bulk_delist."""
@@ -147,7 +155,9 @@ async def test_default_path_marks_overdue_and_delists():
 
     names_and_args = [(name, args) for name, args in activity_calls]
 
-    update_statuses = [args[1] for name, args in names_and_args if name == "update_loan_status_grpc"]
+    update_statuses = [
+        args[1] for name, args in names_and_args if name == "update_loan_status_grpc"
+    ]
     assert "DUE" in update_statuses
     assert "OVERDUE" in update_statuses
 
@@ -162,6 +172,7 @@ async def test_default_path_marks_overdue_and_delists():
 # Test 3: no signal, window expires, loan already REPAID → exits cleanly
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_missed_signal_repaid_in_db_exits_cleanly():
     """wait_condition times out but get_loan returns REPAID → OVERDUE never set."""
@@ -171,7 +182,9 @@ async def test_missed_signal_repaid_in_db_exits_cleanly():
         wf = LoanMaturityWorkflow()
         await wf.run(LOAN_ID, DUE_DATE_PAST)
 
-    update_statuses = [args[1] for name, args in activity_calls if name == "update_loan_status_grpc"]
+    update_statuses = [
+        args[1] for name, args in activity_calls if name == "update_loan_status_grpc"
+    ]
     assert "OVERDUE" not in update_statuses
 
     published = [args[0] for name, args in activity_calls if name == "publish_event"]

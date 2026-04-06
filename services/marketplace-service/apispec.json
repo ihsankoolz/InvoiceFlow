@@ -1,0 +1,821 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Marketplace Service",
+    "description": "Manages auction listings. Internal CRUD endpoints for orchestrators + public read-model endpoints for the frontend via KONG.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Endpoint that serves Prometheus metrics.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listings/": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Get All Listings",
+        "description": "Get all listings, optionally filtered by urgency_level or status.",
+        "operationId": "get_all_listings_listings__get",
+        "parameters": [
+          {
+            "name": "urgency_level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Urgency Level"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListingResponse"
+                  },
+                  "title": "Response Get All Listings Listings  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Create Listing",
+        "description": "Create a new auction listing.\n\nCalled by Invoice Orchestrator at step 10 of Scenario 1.",
+        "operationId": "create_listing_listings__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Bulk Delete Listings",
+        "description": "Bulk delete all active listings for a seller.\n\nCalled by Temporal Worker at step B8 of Scenario 3 (business default).",
+        "operationId": "bulk_delete_listings_listings__delete",
+        "parameters": [
+          {
+            "name": "seller_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Seller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listings/by-token/{invoice_token}": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Get Listing By Token",
+        "description": "Look up a listing by invoice token. Returns 404 if not found.",
+        "operationId": "get_listing_by_token_listings_by_token__invoice_token__get",
+        "parameters": [
+          {
+            "name": "invoice_token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invoice Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Delete Listing By Token",
+        "description": "Delete a listing by invoice token.\n\nCalled by Temporal Worker at step C10 of Scenario 2C (auction close).",
+        "operationId": "delete_listing_by_token_listings_by_token__invoice_token__delete",
+        "parameters": [
+          {
+            "name": "invoice_token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Invoice Token"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/listings/{listing_id}": {
+      "get": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Get Listing",
+        "description": "Get a listing by its numeric ID. Returns 404 if not found.",
+        "operationId": "get_listing_listings__listing_id__get",
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Update Listing",
+        "description": "Update listing fields (e.g. deadline extension).\n\nCalled by Bidding Orchestrator at step B12b (anti-snipe +300s extension).",
+        "operationId": "update_listing_listings__listing_id__patch",
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Listings"
+        ],
+        "summary": "Delete Listing",
+        "description": "Delete a listing by ID.",
+        "operationId": "delete_listing_listings__listing_id__delete",
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/listings": {
+      "get": {
+        "tags": [
+          "Public Listings"
+        ],
+        "summary": "Get marketplace listings",
+        "description": "Returns active auction listings from the read model for the frontend marketplace page.\n\nSingle DB query — no calls to invoice-service or bidding-service.\nFilters: urgency_level, search (invoice_token / debtor_name / debtor_uen), seller_id.\nOnly returns listings with status=ACTIVE and deadline in the future.",
+        "operationId": "get_listings_api_listings_get",
+        "parameters": [
+          {
+            "name": "urgency_level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Urgency Level"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "seller_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Seller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/listings/{listing_id}": {
+      "get": {
+        "tags": [
+          "Public Listings"
+        ],
+        "summary": "Get a single listing",
+        "description": "Returns a single active listing by ID.\n\nCalled by Bidding Orchestrator at step B11 to check the anti-snipe window.\nReturns 404 if not found.",
+        "operationId": "get_listing_api_listings__listing_id__get",
+        "parameters": [
+          {
+            "name": "listing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Listing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ListingCreate": {
+        "properties": {
+          "invoice_token": {
+            "type": "string",
+            "title": "Invoice Token"
+          },
+          "seller_id": {
+            "type": "integer",
+            "title": "Seller Id"
+          },
+          "debtor_uen": {
+            "type": "string",
+            "title": "Debtor Uen"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "minimum_bid": {
+            "type": "number",
+            "title": "Minimum Bid"
+          },
+          "urgency_level": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "title": "Urgency Level"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Deadline"
+          },
+          "face_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Face Value"
+          },
+          "debtor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Debtor Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invoice_token",
+          "seller_id",
+          "debtor_uen",
+          "amount",
+          "minimum_bid",
+          "urgency_level",
+          "deadline"
+        ],
+        "title": "ListingCreate"
+      },
+      "ListingResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "invoice_token": {
+            "type": "string",
+            "title": "Invoice Token"
+          },
+          "seller_id": {
+            "type": "integer",
+            "title": "Seller Id"
+          },
+          "debtor_uen": {
+            "type": "string",
+            "title": "Debtor Uen"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "minimum_bid": {
+            "type": "number",
+            "title": "Minimum Bid"
+          },
+          "urgency_level": {
+            "type": "string",
+            "title": "Urgency Level"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Deadline"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "face_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Face Value"
+          },
+          "debtor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Debtor Name"
+          },
+          "current_bid": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Bid"
+          },
+          "bid_count": {
+            "type": "integer",
+            "title": "Bid Count",
+            "default": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "invoice_token",
+          "seller_id",
+          "debtor_uen",
+          "amount",
+          "minimum_bid",
+          "urgency_level",
+          "deadline",
+          "status",
+          "created_at"
+        ],
+        "title": "ListingResponse"
+      },
+      "ListingUpdate": {
+        "properties": {
+          "deadline": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "CLOSED",
+                  "EXPIRED"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "current_bid": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Bid"
+          },
+          "bid_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bid Count"
+          }
+        },
+        "type": "object",
+        "title": "ListingUpdate"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Listings",
+      "description": "Internal CRUD — used by orchestrators and Temporal Worker"
+    },
+    {
+      "name": "Public Listings",
+      "description": "Read-model endpoints — used by frontend via KONG/Nginx"
+    },
+    {
+      "name": "Health",
+      "description": "Health check"
+    }
+  ]
+}

@@ -17,7 +17,16 @@ class Invoice(Base):
     currency = Column(String(3), default="SGD")
     pdf_url = Column(String(500), nullable=True)
     status = Column(
-        Enum("DRAFT", "LISTED", "FINANCED", "REPAID", "DEFAULTED", "REJECTED", "EXPIRED", name="invoice_status"),
+        Enum(
+            "DRAFT",
+            "LISTED",
+            "FINANCED",
+            "REPAID",
+            "DEFAULTED",
+            "REJECTED",
+            "EXPIRED",
+            name="invoice_status",
+        ),
         default="DRAFT",
     )
     extracted_data = Column(JSON, nullable=True)

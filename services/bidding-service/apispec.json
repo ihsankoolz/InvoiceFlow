@@ -1,0 +1,503 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bidding Service",
+    "description": "Manages bid records for invoice auctions. Called internally by the Bidding Orchestrator and Temporal Worker.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Endpoint that serves Prometheus metrics.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bids": {
+      "post": {
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Create Bid",
+        "description": "Create a new bid record.\n\nCalled by Bidding Orchestrator at step B8. Also returns the previous\nhighest bidder's info if one exists, so the orchestrator can publish bid.outbid.",
+        "operationId": "create_bid_bids_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BidCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Get Bids",
+        "description": "Get bids filtered by invoice_token or investor_id.\n\nCalled by Temporal Worker at step C2 to fetch all bids before auction close.\nMust provide exactly one of invoice_token or investor_id.",
+        "operationId": "get_bids_bids_get",
+        "parameters": [
+          {
+            "name": "invoice_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Invoice Token"
+            }
+          },
+          {
+            "name": "investor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Investor Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BidResponse"
+                  },
+                  "title": "Response Get Bids Bids Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bids/{bid_id}": {
+      "get": {
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Get Bid",
+        "description": "Get a single bid by its ID.",
+        "operationId": "get_bid_bids__bid_id__get",
+        "parameters": [
+          {
+            "name": "bid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bid Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Delete Bid",
+        "description": "Delete a bid record by ID.",
+        "operationId": "delete_bid_bids__bid_id__delete",
+        "parameters": [
+          {
+            "name": "bid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bid Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bids/{bid_id}/accept": {
+      "patch": {
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Accept Bid",
+        "description": "Mark a bid as ACCEPTED (winner).\n\nCalled by Temporal Worker at step C11 after auction closes.",
+        "operationId": "accept_bid_bids__bid_id__accept_patch",
+        "parameters": [
+          {
+            "name": "bid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bid Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bids/{bid_id}/reject": {
+      "patch": {
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Reject Bid",
+        "description": "Mark a bid as REJECTED (loser).\n\nCalled by Temporal Worker at step C12 for all losing bids after auction closes.",
+        "operationId": "reject_bid_bids__bid_id__reject_patch",
+        "parameters": [
+          {
+            "name": "bid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bid Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bids/{bid_id}/outbid": {
+      "patch": {
+        "tags": [
+          "Bids"
+        ],
+        "summary": "Outbid Bid",
+        "description": "Mark a bid as OUTBID when a higher bid is placed.\n\nCalled by the RabbitMQ consumer processing bid.outbid events (step B10b).",
+        "operationId": "outbid_bid_bids__bid_id__outbid_patch",
+        "parameters": [
+          {
+            "name": "bid_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Bid Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BidResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BidCreate": {
+        "properties": {
+          "invoice_token": {
+            "type": "string",
+            "title": "Invoice Token"
+          },
+          "investor_id": {
+            "type": "integer",
+            "title": "Investor Id"
+          },
+          "bid_amount": {
+            "type": "number",
+            "title": "Bid Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invoice_token",
+          "investor_id",
+          "bid_amount"
+        ],
+        "title": "BidCreate"
+      },
+      "BidCreateResponse": {
+        "properties": {
+          "bid": {
+            "$ref": "#/components/schemas/BidResponse"
+          },
+          "previous_highest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BidResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "bid"
+        ],
+        "title": "BidCreateResponse"
+      },
+      "BidResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "invoice_token": {
+            "type": "string",
+            "title": "Invoice Token"
+          },
+          "investor_id": {
+            "type": "integer",
+            "title": "Investor Id"
+          },
+          "bid_amount": {
+            "type": "number",
+            "title": "Bid Amount"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "invoice_token",
+          "investor_id",
+          "bid_amount",
+          "status",
+          "created_at"
+        ],
+        "title": "BidResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Bids",
+      "description": "Bid creation, retrieval, and status transitions"
+    }
+  ]
+}

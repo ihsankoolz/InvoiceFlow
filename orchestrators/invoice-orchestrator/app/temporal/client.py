@@ -16,7 +16,13 @@ class TemporalClient:
             self.client = await Client.connect(config.TEMPORAL_HOST)
         return self.client
 
-    async def start_workflow(self, workflow_name: str, workflow_id: str, args: dict, task_queue: str = "invoiceflow-queue"):
+    async def start_workflow(
+        self,
+        workflow_name: str,
+        workflow_id: str,
+        args: dict,
+        task_queue: str = "invoiceflow-queue",
+    ):
         """
         Start a Temporal workflow.
 
