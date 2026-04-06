@@ -23,7 +23,17 @@ async def lifespan(app: FastAPI):
     await consumer.stop()
 
 
-app = FastAPI(title="Loan Orchestrator", lifespan=lifespan)
+app = FastAPI(
+    title="Loan Orchestrator",
+    description="Orchestrates loan repayment via Stripe and confirms repayment via Temporal. Also exposes loan listing for the frontend.",
+    version="1.0.0",
+    openapi_tags=[
+        {"name": "Loans", "description": "List loans by investor or seller"},
+        {"name": "Repayment", "description": "Initiate and confirm loan repayment — Scenario 3 repayment flow"},
+        {"name": "Health", "description": "Health check"},
+    ],
+    lifespan=lifespan,
+)
 Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(

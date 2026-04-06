@@ -48,7 +48,16 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Webhook Router", version="1.0.0", lifespan=lifespan)
+app = FastAPI(
+    title="Webhook Router",
+    description="Receives Stripe webhook events via KONG/Nginx, verifies HMAC-SHA256 signature, and publishes normalised events to RabbitMQ.",
+    version="1.0.0",
+    openapi_tags=[
+        {"name": "Webhooks", "description": "Stripe inbound webhook endpoint"},
+        {"name": "Health", "description": "Health check"},
+    ],
+    lifespan=lifespan,
+)
 Instrumentator().instrument(app).expose(app)
 
 

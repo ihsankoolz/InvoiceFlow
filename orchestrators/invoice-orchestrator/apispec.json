@@ -1,0 +1,329 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Invoice Orchestrator",
+    "description": "Orchestrates the full Scenario 1 invoice listing flow: user check, invoice creation, UEN validation, marketplace listing, Temporal workflow start, and RabbitMQ publish.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Endpoint that serves Prometheus metrics.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invoices": {
+      "get": {
+        "tags": [
+          "Invoice Workflow"
+        ],
+        "summary": "List invoices for a seller",
+        "description": "Returns all invoices belonging to the given seller_id.",
+        "operationId": "list_invoices_api_invoices_get",
+        "parameters": [
+          {
+            "name": "seller_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Seller user ID",
+              "title": "Seller Id"
+            },
+            "description": "Seller user ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Invoice Workflow"
+        ],
+        "summary": "List an invoice for auction (full Scenario 1 orchestration)",
+        "description": "Full Scenario 1 orchestration:\n1. Check seller account is ACTIVE (User Service)\n2. Create invoice + upload PDF (Invoice Service)\n3. Validate debtor UEN (ACRA Wrapper)\n4. If invalid → PATCH status to REJECTED + publish invoice.rejected\n5. Create marketplace listing (Marketplace Service)\n6. Update invoice status to LISTED (Invoice Service)\n7. Start AuctionCloseWorkflow (Temporal)\n8. Publish invoice.listed event (RabbitMQ)",
+        "operationId": "list_invoice_api_invoices_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_list_invoice_api_invoices_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListInvoiceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/invoices/extract": {
+      "post": {
+        "tags": [
+          "Invoice Workflow"
+        ],
+        "summary": "Extract fields from an invoice PDF",
+        "description": "Upload a PDF and get extracted debtor_name and amount back to prepopulate the form.",
+        "operationId": "extract_invoice_api_invoices_extract_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_extract_invoice_api_invoices_extract_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_extract_invoice_api_invoices_extract_post": {
+        "properties": {
+          "pdf": {
+            "type": "string",
+            "format": "binary",
+            "title": "Pdf"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pdf"
+        ],
+        "title": "Body_extract_invoice_api_invoices_extract_post"
+      },
+      "Body_list_invoice_api_invoices_post": {
+        "properties": {
+          "seller_id": {
+            "type": "integer",
+            "title": "Seller Id"
+          },
+          "debtor_name": {
+            "type": "string",
+            "title": "Debtor Name"
+          },
+          "debtor_uen": {
+            "type": "string",
+            "title": "Debtor Uen"
+          },
+          "face_value": {
+            "type": "number",
+            "title": "Face Value"
+          },
+          "minimum_bid": {
+            "type": "number",
+            "title": "Minimum Bid"
+          },
+          "due_date": {
+            "type": "string",
+            "title": "Due Date"
+          },
+          "bid_period_hours": {
+            "type": "number",
+            "title": "Bid Period Hours",
+            "default": 48
+          },
+          "urgency_level": {
+            "type": "string",
+            "title": "Urgency Level",
+            "default": "MEDIUM"
+          },
+          "pdf": {
+            "type": "string",
+            "format": "binary",
+            "title": "Pdf"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seller_id",
+          "debtor_uen",
+          "face_value",
+          "minimum_bid",
+          "due_date",
+          "pdf"
+        ],
+        "title": "Body_list_invoice_api_invoices_post"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ListInvoiceResponse": {
+        "properties": {
+          "invoice_token": {
+            "type": "string",
+            "title": "Invoice Token"
+          },
+          "listing_id": {
+            "type": "integer",
+            "title": "Listing Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invoice_token",
+          "listing_id",
+          "status",
+          "message"
+        ],
+        "title": "ListInvoiceResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Invoice Workflow",
+      "description": "Full Scenario 1 orchestration endpoints"
+    },
+    {
+      "name": "Health",
+      "description": "Health check"
+    }
+  ]
+}

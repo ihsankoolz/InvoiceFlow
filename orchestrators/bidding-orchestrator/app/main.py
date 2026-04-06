@@ -23,7 +23,17 @@ async def lifespan(app: FastAPI):
     await consumer.stop()
 
 
-app = FastAPI(title="Bidding Orchestrator", lifespan=lifespan)
+app = FastAPI(
+    title="Bidding Orchestrator",
+    description="Orchestrates wallet top-up (via Stripe) and bid placement (with anti-snipe extension). Entry point from KONG for all investor bidding actions.",
+    version="1.0.0",
+    openapi_tags=[
+        {"name": "Bidding", "description": "Place bids and list bids — full Scenario 2B orchestration"},
+        {"name": "Wallet", "description": "Wallet balance, top-up, and transaction history"},
+        {"name": "Health", "description": "Health check"},
+    ],
+    lifespan=lifespan,
+)
 Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(

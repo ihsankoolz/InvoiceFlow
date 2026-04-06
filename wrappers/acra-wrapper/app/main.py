@@ -11,6 +11,10 @@ app = FastAPI(
     description="Wraps the data.gov.sg ACRA UEN registry API for debtor UEN validation.",
     version="1.0.0",
     docs_url="/docs",
+    openapi_tags=[
+        {"name": "UEN Validation", "description": "Validate Singapore UENs against the ACRA public registry"},
+        {"name": "Health", "description": "Health check"},
+    ],
 )
 Instrumentator().instrument(app).expose(app)
 

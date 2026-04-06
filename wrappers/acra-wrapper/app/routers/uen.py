@@ -14,7 +14,12 @@ router = APIRouter()
 )
 async def validate_uen(data: UENValidateRequest):
     """
-    Validate a debtor UEN against the data.gov.sg ACRA dataset.
+    Validate a Singapore UEN against the data.gov.sg ACRA public dataset.
+
+    Called by Invoice Orchestrator at step 7 of Scenario 1.
+    Returns valid=True with entity details if UEN exists.
+    Returns valid=False if UEN is not found in registry.
+    Returns 502 if data.gov.sg is unreachable.
     """
     service = ACRAService()
     try:

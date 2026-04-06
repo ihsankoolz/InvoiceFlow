@@ -34,10 +34,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Invoice Service",
-    description="Manages invoice upload, PDF extraction, and status lifecycle.",
+    description="Manages invoice upload, PDF extraction via pdfplumber, MinIO PDF storage, and invoice status lifecycle.",
     version="1.0.0",
+    openapi_tags=[
+        {"name": "Invoices", "description": "Create, retrieve, and update invoice records"},
+        {"name": "Status", "description": "Invoice status transitions (LISTED, REJECTED, FINANCED, REPAID, DEFAULTED)"},
+        {"name": "Health", "description": "Health check"},
+    ],
     lifespan=lifespan,
 )
+
 Instrumentator().instrument(app).expose(app)
 
 app.add_middleware(

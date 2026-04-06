@@ -45,9 +45,11 @@ def get_listings(
     db: Session = Depends(get_db),
 ):
     """
-    Returns active marketplace listings from the read model.
-    Filters: urgency_level, search (matches invoice_token, debtor_name, debtor_uen), seller_id.
+    Returns active auction listings from the read model for the frontend marketplace page.
+
     Single DB query — no calls to invoice-service or bidding-service.
+    Filters: urgency_level, search (invoice_token / debtor_name / debtor_uen), seller_id.
+    Only returns listings with status=ACTIVE and deadline in the future.
     """
     now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
     query = db.query(Listing).filter(Listing.status == "ACTIVE", Listing.deadline > now_utc)
@@ -72,6 +74,12 @@ def get_listings(
 
 @router.get("/api/listings/{listing_id}", summary="Get a single listing")
 def get_listing(listing_id: int, db: Session = Depends(get_db)):
+    """
+    Returns a single active listing by ID.
+
+    Called by Bidding Orchestrator at step B11 to check the anti-snipe window.
+    Returns 404 if not found.
+    """
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")
