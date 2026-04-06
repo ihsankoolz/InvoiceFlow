@@ -209,7 +209,7 @@ export default function MyBidsPage() {
                         </td>
                         <td className="px-4 py-3 text-ink/50">{fmtDate(bid.deadline)}</td>
                         <td className="px-6 py-3 text-center">
-                          {bid.status === 'PENDING' && bid.listing_id ? (
+                          {bid.listing_id ? (
                             <Link
                               to={`/marketplace/${bid.listing_id}`}
                               className="inline-flex items-center gap-1 font-['Lato'] text-xs font-medium text-ink hover:text-teal hover:underline transition-colors duration-100"
