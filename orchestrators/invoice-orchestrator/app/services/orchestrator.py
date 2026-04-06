@@ -34,13 +34,8 @@ def calculate_urgency(due_date_str: str) -> str:
 
 
 def calculate_deadline(bid_period_hours: float) -> str:
-    """Calculate auction deadline as ISO 8601 string.
-    In demo mode, uses DEMO_AUCTION_SECONDS so the frontend countdown matches the actual workflow timer."""
-    if config.DEMO_MODE:
-        delta = timedelta(seconds=config.DEMO_AUCTION_SECONDS)
-    else:
-        delta = timedelta(hours=bid_period_hours)
-    return (datetime.now(timezone.utc) + delta).isoformat()
+    """Calculate auction deadline as ISO 8601 string."""
+    return (datetime.now(timezone.utc) + timedelta(hours=bid_period_hours)).isoformat()
 
 
 class InvoiceOrchestrator:
