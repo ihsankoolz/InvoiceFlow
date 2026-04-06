@@ -5,6 +5,7 @@ Started as a CHILD workflow from AuctionCloseWorkflow via start_child_workflow (
 This workflow runs for days/weeks — it sleeps until the loan's due date.
 """
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 from temporalio import workflow
@@ -55,10 +56,15 @@ class LoanMaturityWorkflow:
             if config.DEMO_MODE
             else config.REPAYMENT_WINDOW_SECONDS
         )
-        grace_end = (workflow.now() + repayment_window).strftime("%Y-%m-%dT%H:%M:%SZ")
-        await workflow.execute_activity(
-            update_loan_status_grpc, args=[loan_id, "DUE", grace_end], **act_opts
-        )
+        if workflow.patched("grace-end-on-due"):
+            grace_end = (workflow.now() + repayment_window).strftime("%Y-%m-%dT%H:%M:%SZ")
+            await workflow.execute_activity(
+                update_loan_status_grpc, args=[loan_id, "DUE", grace_end], **act_opts
+            )
+        else:
+            await workflow.execute_activity(
+                update_loan_status_grpc, args=[loan_id, "DUE"], **act_opts
+            )
         loan_due = await workflow.execute_activity(get_loan_grpc, args=[loan_id], **act_opts)
         seller_due = await workflow.execute_activity(
             get_user, args=[loan_due["seller_id"]], **act_opts
@@ -77,10 +83,19 @@ class LoanMaturityWorkflow:
         )
 
         # Step 3: Wait for repayment window — exits early if repayment_confirmed signal arrives
-        await workflow.wait_condition(
-            lambda: self._repayment_confirmed,
-            timeout=repayment_window,
-        )
+        if workflow.patched("catch-timeout-on-wait-condition"):
+            try:
+                await workflow.wait_condition(
+                    lambda: self._repayment_confirmed,
+                    timeout=repayment_window,
+                )
+            except asyncio.TimeoutError:
+                pass  # Repayment window expired — fall through to OVERDUE
+        else:
+            await workflow.wait_condition(
+                lambda: self._repayment_confirmed,
+                timeout=repayment_window,
+            )
 
         # Step 4: Check if repaid (signal received or status already REPAID)
         if self._repayment_confirmed:
