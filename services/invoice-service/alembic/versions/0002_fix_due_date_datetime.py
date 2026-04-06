@@ -26,13 +26,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.alter_column(
-        "invoices",
-        "due_date",
-        existing_type=sa.Date(),
-        type_=sa.DateTime(),
-        existing_nullable=False,
-    )
+    # Use raw SQL so this is idempotent regardless of current column type.
+    # Safe to run even if the column is already DATETIME.
+    op.execute("ALTER TABLE invoices MODIFY COLUMN due_date DATETIME NOT NULL")
 
 
 def downgrade() -> None:
