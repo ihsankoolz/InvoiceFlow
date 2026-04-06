@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from './AuthContext'
+import api from '../api/axios'
 
 const NotificationContext = createContext(null)
 
@@ -7,7 +8,21 @@ export function NotificationProvider({ children }) {
   const { user } = useAuth()
   const [toasts, setToasts] = useState([])
   const [lastMessage, setLastMessage] = useState(null)
+  const [unreadCount, setUnreadCount] = useState(0)
   const wsRef = useRef(null)
+
+  useEffect(() => {
+    if (!user) { setUnreadCount(0); return }
+    api.get(`/notifications?user_id=${user.sub}`)
+      .then((res) => {
+        const data = res.data?.notifications || res.data || []
+        const arr = Array.isArray(data) ? data : []
+        setUnreadCount(arr.filter((n) => !n.is_read).length)
+      })
+      .catch(() => {})
+  }, [user])
+
+  const resetUnreadCount = useCallback(() => setUnreadCount(0), [])
 
   const dismiss = useCallback((id) => {
     setToasts((prev) => prev.map((t) => t.id === id ? { ...t, leaving: true } : t))
@@ -17,6 +32,7 @@ export function NotificationProvider({ children }) {
   const addToast = useCallback((msg) => {
     const id = msg.id ? `ws-${msg.id}` : `ws-${Date.now()}-${Math.random()}`
     setToasts((prev) => [...prev.slice(-4), { ...msg, id, leaving: false }])
+    setUnreadCount((prev) => prev + 1)
     setTimeout(() => dismiss(id), 5000)
   }, [dismiss])
 
@@ -67,7 +83,7 @@ export function NotificationProvider({ children }) {
   }, [user, addToast])
 
   return (
-    <NotificationContext.Provider value={{ toasts, dismiss, lastMessage }}>
+    <NotificationContext.Provider value={{ toasts, dismiss, lastMessage, unreadCount, resetUnreadCount }}>
       {children}
     </NotificationContext.Provider>
   )

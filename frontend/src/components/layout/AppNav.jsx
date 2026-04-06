@@ -11,6 +11,7 @@ import {
   Store,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { useNotifications } from '../../context/NotificationContext'
 
 const SELLER_NAV = [
   { icon: Home,            label: 'Home',          path: '/dashboard' },
@@ -33,6 +34,7 @@ const INVESTOR_NAV = [
 export default function AppNav() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { unreadCount } = useNotifications()
 
   const navItems = user?.role === 'INVESTOR' ? INVESTOR_NAV : SELLER_NAV
 
@@ -70,6 +72,11 @@ export default function AppNav() {
           >
             <Icon size={15} strokeWidth={1.8} />
             {label}
+            {label === 'Notifications' && unreadCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[#ff9500] text-white font-['Lato'] text-[10px] font-bold px-1 leading-none">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </div>

@@ -534,7 +534,13 @@ function InvestorDashboard({ user }) {
                 return (
                   <div key={bid.id || i} className="border-b border-black/5 pb-4 last:border-0 flex flex-col gap-1.5">
                     <div className="flex items-center justify-between">
-                      <p className="font-['Lato'] font-medium text-sm text-ink">{bid.invoice_token || bid.invoice_id || `BID-${bid.id}`}</p>
+                      {bid.listing_id ? (
+                        <Link to={`/marketplace/${bid.listing_id}`} className="font-['Lato'] font-medium text-sm text-ink hover:text-teal hover:underline transition-colors duration-100">
+                          {bid.invoice_token || bid.invoice_id || `BID-${bid.id}`}
+                        </Link>
+                      ) : (
+                        <p className="font-['Lato'] font-medium text-sm text-ink">{bid.invoice_token || bid.invoice_id || `BID-${bid.id}`}</p>
+                      )}
                       <p className="font-['Lato'] font-medium text-sm text-ink">{fmt(bid.amount)}</p>
                     </div>
                     <div className="flex items-center justify-between">

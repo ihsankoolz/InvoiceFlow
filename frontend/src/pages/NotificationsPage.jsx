@@ -4,6 +4,7 @@ import { Bell, AlertTriangle, CheckCircle, DollarSign, Info } from 'lucide-react
 import AppLayout from '../components/layout/AppLayout'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import { useNotifications } from '../context/NotificationContext'
 import { useInView } from '../hooks/useInView'
 
 /* ── Animation helper ── */
@@ -70,6 +71,7 @@ function getNotifLink(eventType, role) {
 export default function NotificationsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { resetUnreadCount } = useNotifications()
 
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading]             = useState(true)
@@ -80,6 +82,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!user) return
+    resetUnreadCount()
     loadNotifications()
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
 
