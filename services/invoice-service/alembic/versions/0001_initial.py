@@ -25,7 +25,7 @@ def upgrade() -> None:
         sa.Column("debtor_name", sa.String(255), nullable=True),
         sa.Column("debtor_uen", sa.String(20), nullable=False),
         sa.Column("amount", sa.DECIMAL(12, 2), nullable=False),
-        sa.Column("due_date", sa.Date(), nullable=False),
+        sa.Column("due_date", sa.DateTime(), nullable=False),
         sa.Column("currency", sa.String(3), server_default="SGD"),
         sa.Column("pdf_url", sa.String(500), nullable=True),
         sa.Column(

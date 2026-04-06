@@ -1,4 +1,4 @@
-from sqlalchemy import DECIMAL, JSON, Column, Date, DateTime, Enum, Integer, String
+from sqlalchemy import DECIMAL, JSON, Column, DateTime, Enum, Integer, String
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -13,7 +13,7 @@ class Invoice(Base):
     debtor_name = Column(String(255), nullable=True)
     debtor_uen = Column(String(20), nullable=False)
     amount = Column(DECIMAL(12, 2), nullable=False)
-    due_date = Column(Date, nullable=False)
+    due_date = Column(DateTime, nullable=False)
     currency = Column(String(3), default="SGD")
     pdf_url = Column(String(500), nullable=True)
     status = Column(

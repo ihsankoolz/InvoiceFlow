@@ -31,7 +31,7 @@ CREATE TABLE loans (
     bid_amount      DECIMAL(12,2) NOT NULL,
     penalty_amount  DECIMAL(12,2) DEFAULT 0.00,
     status          ENUM('ACTIVE', 'DUE', 'REPAID', 'OVERDUE') DEFAULT 'ACTIVE',
-    due_date        DATE NOT NULL,
+    due_date        DATETIME NOT NULL,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
