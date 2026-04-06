@@ -219,12 +219,15 @@ services:
       JWT_ALGORITHM: HS256
       JWT_EXPIRY_HOURS: "24"
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      ACRA_WRAPPER_URL: http://acra-wrapper:5007
     volumes:
       - ./shared:/app/shared
     depends_on:
       user-db:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      acra-wrapper:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\""]
