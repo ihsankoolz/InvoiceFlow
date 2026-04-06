@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.consumers.loan_consumer import LoanEventConsumer
-from app.database import Base, engine
 from app.routers import invoices
 
 logger = logging.getLogger(__name__)
@@ -18,10 +17,6 @@ loan_consumer = LoanEventConsumer()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan: start RabbitMQ consumer on startup, stop on shutdown."""
-    try:
-        Base.metadata.create_all(bind=engine)
-    except Exception:
-        pass  # DB unavailable in test/CI environments; conftest handles table creation
     try:
         await loan_consumer.start()
         logger.info("LoanEventConsumer started successfully.")
