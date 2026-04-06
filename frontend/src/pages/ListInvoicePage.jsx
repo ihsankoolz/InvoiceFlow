@@ -118,8 +118,8 @@ export default function ListInvoicePage() {
       formData.append('debtor_uen', debtorUen.trim())
       formData.append('face_value', faceValue)
       formData.append('minimum_bid', minimumBid)
-      // Convert datetime-local value (browser local time) to UTC ISO string for backend storage
-      formData.append('due_date', new Date(dueDate).toISOString())
+      // Treat datetime-local value as SGT (UTC+8) — system is Singapore-only
+      formData.append('due_date', new Date(dueDate + ':00+08:00').toISOString())
       const bidPeriodHours = (Number(bidHours) + Number(bidMinutes) / 60).toFixed(4)
       formData.append('bid_period_hours', bidPeriodHours)
       formData.append('urgency_level', urgency)
