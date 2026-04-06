@@ -109,7 +109,7 @@ class PaymentGRPCClient:
             "seller_id": response.seller_id,
         }
 
-    async def update_loan_status(self, loan_id: str, status: str) -> dict:
+    async def update_loan_status(self, loan_id: str, status: str, grace_end: str = "") -> dict:
         """Call UpdateLoanStatus RPC."""
         from proto import payment_pb2
 
@@ -118,6 +118,7 @@ class PaymentGRPCClient:
             payment_pb2.UpdateLoanStatusRequest(
                 loan_id=loan_id,
                 status=status,
+                grace_end=grace_end,
             )
         )
         return {"loan_id": response.loan_id, "status": response.status}

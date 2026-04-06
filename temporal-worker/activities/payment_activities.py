@@ -56,9 +56,9 @@ async def get_loan_grpc(loan_id: str) -> dict:
 
 
 @activity.defn
-async def update_loan_status_grpc(loan_id: str, status: str) -> dict:
+async def update_loan_status_grpc(loan_id: str, status: str, grace_end: str = "") -> dict:
     """Update loan status via gRPC UpdateLoanStatus RPC. Used by LoanMaturityWorkflow."""
-    return await grpc_client.update_loan_status(loan_id=loan_id, status=status)
+    return await grpc_client.update_loan_status(loan_id=loan_id, status=status, grace_end=grace_end)
 
 
 @activity.defn
