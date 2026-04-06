@@ -716,8 +716,6 @@ All jobs run in parallel on `ubuntu-latest`.
 |-----|---------|-------------|
 | `deploy` | Push to `main`, only after all CI jobs pass | SSHs into the EC2 instance, runs `git pull origin main` and `docker compose up --build -d` |
 
-**Frontend** is deployed separately via Vercel, which auto-deploys on every push to `main`.
-
 ### Secrets required (stored in GitHub repository secrets)
 
 | Secret | Purpose |
