@@ -201,14 +201,15 @@ Note: Stripe Wrapper handles **outbound** calls only (creating checkout sessions
 | Service | Purpose | Called By |
 |---------|---------|----------|
 | data.gov.sg | ACRA UEN registry (seller + debtor validation) | User Service (seller UEN at registration, direct), ACRA Wrapper (debtor UEN per invoice) |
-| Stripe | Payment processing, hosted checkout, webhooks | Stripe Wrapper (outbound checkout sessions), Stripe → KONG → Webhook Router (inbound webhook) |
+| Stripe | Payment processing, hosted checkout, webhooks | Stripe Wrapper (outbound checkout sessions), Stripe → Nginx → KONG → Webhook Router (inbound webhook) |
 | Resend | Transactional email delivery | Notification Service (built-in, no wrapper) |
 
 ### Infrastructure
 
 | Component | Port | Purpose |
 |-----------|------|---------|
-| KONG API Gateway | :8000 | JWT auth, rate limiting, CORS, routing. **External traffic only.** **BTL #2** |
+| Nginx Reverse Proxy | :80 / :443 | SSL termination (Let's Encrypt), HTTP→HTTPS redirect, routes `/ws/*` → Notification Service, `/api/*` → KONG, `/` → Frontend. **Outermost entry point for all external traffic.** |
+| KONG API Gateway | :8000 (internal) | JWT auth, rate limiting, CORS, routing. Receives traffic from Nginx only — not directly exposed externally. **BTL #2** |
 | RabbitMQ | :5672 / :15672 | Topic exchange (`invoiceflow_events`). Async event delivery, DLQ per consumer |
 | Temporal Server | :7233 | Durable workflow state, timers, task queues |
 | Temporal Worker | — | Polls Temporal Server, executes workflow activities. Calls atomic services directly |
@@ -229,13 +230,15 @@ Note: Stripe Wrapper handles **outbound** calls only (creating checkout sessions
 
 ## All Connections
 
-### Presentation → Gateway
+### Presentation → Reverse Proxy → Gateway
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 1 | Business uses app | Business → React Frontend | Browser |
-| 2 | Investor uses app | Investor → React Frontend | Browser |
-| 3 | All API requests | React Frontend → KONG | HTTPS |
+| 1 | Business uses app | Business → React Frontend (via Nginx) | Browser → HTTPS :443 |
+| 2 | Investor uses app | Investor → React Frontend (via Nginx) | Browser → HTTPS :443 |
+| 3a | All API requests | React Frontend → Nginx | HTTPS (same origin :443) |
+| 3b | API routing | Nginx → KONG :8000 | HTTP (internal, `/api/*`) |
+| 3c | Frontend asset serving | Nginx → Frontend container :8080 | HTTP (internal, `/`) |
 
 ### Gateway → Composites / Services
 
@@ -254,7 +257,7 @@ Stripe communication runs in two directions — these are separate paths through
 | Direction | Path | Purpose |
 |-----------|------|---------|
 | Outbound (your system calls Stripe) | Orchestrator → Stripe Wrapper → Stripe | Create checkout sessions for wallet top-up or loan repayment |
-| Inbound (Stripe calls your system) | Stripe → KONG → Webhook Router → RabbitMQ → Orchestrator → Temporal | Webhook confirms payment, triggers WalletTopUpWorkflow or LoanRepaymentWorkflow |
+| Inbound (Stripe calls your system) | Stripe → Nginx → KONG → Webhook Router → RabbitMQ → Orchestrator → Temporal | Webhook confirms payment, triggers WalletTopUpWorkflow or LoanRepaymentWorkflow |
 
 Stripe webhook safeguards: Webhook Router recomputes the Stripe-Signature using the shared secret + payload body — mismatches are rejected. The `stripe_session_id` in the Temporal workflow ID (`wallet-topup-{session_id}`) ensures Temporal refuses duplicate workflows if Stripe fires the same webhook twice.
 
@@ -404,7 +407,7 @@ Separate queues are required for each fan-out consumer. A single queue with mult
 
 ## Architectural Rules
 
-1. **KONG handles external traffic only.** React frontend and Stripe webhooks go through KONG. All internal service-to-service calls use direct HTTP via Docker hostnames (e.g., `http://invoice-service:5001`).
+1. **Nginx is the outermost entry point.** All external traffic (browser, Stripe webhooks) enters via Nginx (:443). Nginx handles SSL termination and routes to KONG (API), Notification Service (WebSocket), or the Frontend container. KONG is no longer directly exposed externally. All internal service-to-service calls use direct HTTP via Docker hostnames (e.g., `http://invoice-service:5001`).
 2. **Atomic services never call each other.** All inter-atomic coordination goes through composite services or RabbitMQ choreography.
 3. **Notification Service and Activity Log Bridge are RabbitMQ-only consumers.** No composite service connects to them. They react to events asynchronously.
 4. **User Service, Invoice Service, and Payment Service also consume specific RabbitMQ events.** They react to `loan.repaid`, `loan.overdue`, and `bid.outbid` via choreography. This does not violate rule #2 — they are reacting to events independently, not calling each other.
@@ -417,7 +420,7 @@ Separate queues are required for each fan-out consumer. A single queue with mult
 11. **Webhook Router owns Stripe webhook intake.** It is the single entry point for all Stripe events. Downstream orchestrators consume normalised events from RabbitMQ rather than raw Stripe payloads, decoupling them from Stripe's schema.
 12. **Repayment and default flows are symmetrical.** Both `loan.repaid` and `loan.overdue` use the same four-consumer choreography pattern — the Temporal Worker publishes to RabbitMQ, and Invoice Service + Payment Service + User Service + Notification Service each react independently.
 13. **Notification Service persists to notification_db.** Notifications are stored in MySQL (notification_db, :3311) — not in-memory. The API serves the last 50 per user ordered by `created_at DESC`.
-14. **WebSocket connections bypass KONG.** The React frontend connects directly to Notification Service (`ws://notification-service:5005/ws/{user_id}`) for real-time push. KONG's HTTP/1.1 proxy does not natively support WebSocket upgrade. The frontend (`NotificationContext.jsx`) implements exponential backoff reconnect — starting at 1s, doubling on each failure, capped at 30s — so transient disconnects recover automatically without user action.
+14. **WebSocket connections bypass KONG, proxied through Nginx.** The React frontend connects to Notification Service via `wss://<host>/ws/{user_id}`. Nginx matches the `/ws/` prefix, performs the HTTP → WebSocket upgrade, and proxies to `notification-service:5005` with `proxy_read_timeout 86400`. KONG is bypassed entirely for WebSocket — its HTTP/1.1 proxy does not support the upgrade. The frontend (`NotificationContext.jsx`) implements exponential backoff reconnect — starting at 1s, doubling on each failure, capped at 30s.
 
 ---
 
@@ -495,7 +498,8 @@ These flows show every service interaction in order for each scenario. Steps lab
 | Step | From | To | Action | Tech | Notes |
 |------|------|----|--------|------|-------|
 | 1 | Business | React Frontend | Upload PDF + fill form | Browser | |
-| 2 | React Frontend | KONG | `POST /api/invoices` (JWT + PDF multipart) | HTTPS | |
+| 2a | React Frontend | Nginx :443 | `POST /api/invoices` (JWT + PDF multipart) | HTTPS | SSL termination |
+| 2b | Nginx | KONG :8000 | Forward `/api/invoices` | HTTP (internal) | |
 | 3 | KONG | Invoice Orchestrator :5010 | Route | REST/JSON | JWT validated |
 | 4 | Invoice Orchestrator | User Service | `GET /users/{id}` — check account_status ACTIVE | HTTP | Rejects if DEFAULTED |
 | 5 | Invoice Orchestrator | Invoice Service | `POST /invoices` — create record, pdfplumber extract, upload to MinIO | HTTP | |
@@ -531,7 +535,8 @@ These flows show every service interaction in order for each scenario. Steps lab
 | Step | From | To | Action | Tech | Notes |
 |------|------|----|--------|------|-------|
 | A1 | Investor | React Frontend | Click "Top Up Wallet" | Browser | |
-| A2 | React Frontend | KONG | `POST /api/wallet/topup` | HTTPS | |
+| A2a | React Frontend | Nginx :443 | `POST /api/wallet/topup` | HTTPS | SSL termination |
+| A2b | Nginx | KONG :8000 | Forward `/api/wallet/topup` | HTTP (internal) | |
 | A3 | KONG | Bidding Orchestrator :5011 | Route | REST/JSON | |
 | A4 | Bidding Orchestrator | Stripe Wrapper :5008 | `POST /create-checkout-session` (type=wallet_topup) | REST/JSON | |
 | A5 | Stripe Wrapper | Stripe | Create Checkout Session | HTTPS (external) | |
@@ -540,7 +545,8 @@ These flows show every service interaction in order for each scenario. Steps lab
 | A8 | Bidding Orchestrator | KONG | Return checkout URL | REST response | |
 | A9 | KONG | React Frontend | Forward checkout URL → redirect investor | REST response | |
 | A10 | Investor | Stripe | Complete payment on hosted checkout | Browser | |
-| A11 | Stripe | KONG | Webhook `checkout.session.completed` (Stripe-Signature header) | HTTPS | |
+| A11a | Stripe | Nginx :443 | Webhook `checkout.session.completed` (Stripe-Signature header) | HTTPS | SSL termination |
+| A11b | Nginx | KONG :8000 | Forward `/api/webhooks/stripe` | HTTP (internal) | |
 | A12 | KONG | Webhook Router :5013 | Route | REST/JSON | |
 | A13 | Webhook Router | — | Verify Stripe-Signature HMAC; reject mismatches/replays >5 min | Internal | |
 | A14 | Webhook Router | RabbitMQ | Publish `stripe.checkout.completed` (type=wallet_topup) | AMQP | |
@@ -559,11 +565,13 @@ These flows show every service interaction in order for each scenario. Steps lab
 | Step | From | To | Action | Tech | Notes |
 |------|------|----|--------|------|-------|
 | B1 | Investor | React Frontend | Browse marketplace listings | Browser | |
-| B2 | React Frontend | KONG | `GET /api/listings` | HTTPS | |
+| B2a | React Frontend | Nginx :443 | `GET /api/listings` | HTTPS | SSL termination |
+| B2b | Nginx | KONG :8000 | Forward `/api/listings` | HTTP (internal) | |
 | B3 | KONG | Marketplace Service | Fetch listings from market_db read-model | REST/JSON | |
 | B4 | Marketplace Service | React Frontend | Return filtered listings with current deadlines | REST response | |
 | B5 | Investor | React Frontend | Place bid | Browser | |
-| B6 | React Frontend | KONG | `POST /api/bids` | HTTPS | |
+| B6a | React Frontend | Nginx :443 | `POST /api/bids` | HTTPS | SSL termination |
+| B6b | Nginx | KONG :8000 | Forward `/api/bids` | HTTP (internal) | |
 | B7 | KONG | Bidding Orchestrator :5011 | Route | REST/JSON | |
 | B8 | Bidding Orchestrator | Bidding Service | `POST /bids` — validate + create bid, fetch previous highest bidder | HTTP | |
 | B9 | Bidding Orchestrator | Payment Service | `LockEscrow` — lock bid amount from investor wallet | gRPC :50051 | Idempotency key attached |
