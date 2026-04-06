@@ -524,6 +524,8 @@ services:
       USER_SERVICE_URL: http://user-service:5000
       REPAYMENT_WINDOW_SECONDS: "86400"
       ANTI_SNIPE_SECONDS: "300"
+      DEMO_MODE: "true"
+      DEMO_REPAYMENT_WINDOW_SECONDS: "60"
     volumes:
       - ./shared:/app/shared
     depends_on:
