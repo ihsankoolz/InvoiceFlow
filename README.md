@@ -196,15 +196,19 @@ docker compose up --build       # re-creates databases from init.sql
 
 | Service | URL | Notes |
 |---------|-----|-------|
-| **KONG API Gateway** | http://localhost:8000 | All external traffic enters here |
+| **Nginx Reverse Proxy** | http://localhost:80 / https://localhost:443 | SSL termination, routes to Kong & frontend |
+| **KONG API Gateway** | http://localhost:8000 | API routing, JWT validation, rate limiting |
 | **RabbitMQ Management** | http://localhost:15672 | guest / guest |
 | **Temporal UI** | http://localhost:8088 | Monitor workflows |
 | **MinIO Console** | http://localhost:9001 | minioadmin / minioadmin |
+| **Grafana** | http://localhost:3001 | admin / admin — dashboards, logs, traces |
+| **Prometheus** | http://localhost:9090 | Metrics |
+| **Loki** | http://localhost:3100 | Log aggregation |
+| **Tempo** | http://localhost:3200 | Distributed tracing (OTLP on :4317) |
 | **OutSystems Activity Log** | https://personal-xowqm3b2.outsystemscloud.com/ActivityLog/ActivityEvents | invoiceflow / testing1 |
 | User Service | http://localhost:5000/docs | Swagger UI |
 | Invoice Service | http://localhost:5001/docs | Swagger UI |
-| Marketplace Service | http://localhost:5002/docs | REST Swagger |
-| Marketplace GraphQL | http://localhost:5002/graphql | GraphQL playground |
+| Marketplace Service | http://localhost:5002/docs | Swagger UI |
 | Bidding Service | http://localhost:5003/docs | Swagger UI |
 | Payment Service | http://localhost:5004/docs | Swagger UI (REST read-only) |
 | Notification Service | http://localhost:5005/docs | Swagger UI |
@@ -224,7 +228,7 @@ invoiceflow/
 ├── services/                    # Atomic services (direct DB access)
 │   ├── user-service/            # :5000  Python/FastAPI · user_db
 │   ├── invoice-service/         # :5001  Python/FastAPI · invoice_db
-│   ├── marketplace-service/     # :5002  Python/FastAPI + Strawberry GraphQL · market_db
+│   ├── marketplace-service/     # :5002  Python/FastAPI · market_db
 │   ├── bidding-service/         # :5003  Python/FastAPI · bidding_db
 │   ├── payment-service/         # :5004/:50051  Node.js/Express + gRPC · payment_db
 │   └── notification-service/    # :5005  Python/FastAPI + WebSocket
@@ -241,6 +245,15 @@ invoiceflow/
 │   ├── activities/              # invoice, bidding, payment (gRPC), marketplace, rabbitmq
 │   └── clients/                 # HTTPClient, PaymentGRPCClient
 ├── frontend/                    # React + Vite frontend
+├── shared/                      # Shared Python library (logging, tracing, RabbitMQ publisher/consumer, correlation middleware)
+├── monitoring/                  # Observability stack configs
+│   ├── prometheus/              # Metrics collection + alert rules
+│   ├── grafana/                 # Dashboard provisioning + datasources
+│   ├── loki/                    # Log aggregation config
+│   ├── promtail/                # Log shipping config
+│   └── tempo/                   # Distributed tracing config
+├── nginx/
+│   └── conf.d/default.conf      # Nginx reverse proxy — SSL termination, WebSocket, routing
 ├── gateway/
 │   └── kong.yml                 # Declarative KONG config — routes, JWT, rate-limiting, CORS
 ├── databases/                   # Per-service MySQL init scripts
@@ -252,7 +265,11 @@ invoiceflow/
 │   └── notification-db/init.sql
 ├── proto/
 │   └── payment.proto            # gRPC service definition (8 RPCs)
-├── docker-compose.yml           # Full stack — all services, DBs, RabbitMQ, MinIO, Temporal, KONG
+├── config/                      # Temporal server dynamic config
+├── scripts/                     # Helper scripts
+├── docs/                        # Additional documentation
+├── ruff.toml                    # Python linter config
+├── docker-compose.yml           # Full stack — all services, DBs, RabbitMQ, MinIO, Temporal, KONG, Nginx, monitoring
 └── .env.example                 # All environment variables grouped by service
 ```
 
@@ -261,10 +278,13 @@ invoiceflow/
 ## Architecture Overview
 
 ```
-Frontend (React)
+Frontend (React + Vite)
       │
       ▼
-KONG API Gateway :8000   ← JWT validation, rate limiting, CORS, routing
+Nginx :80/:443           ← SSL termination, WebSocket proxy, static routing
+      │
+      ▼
+KONG API Gateway :8000   ← JWT validation, rate limiting, CORS, API routing
       │
       ├─→ User Orchestrator :5015      → ACRA Wrapper (seller UEN validation)
       │                                 → User Service (account creation)
@@ -294,6 +314,13 @@ RabbitMQ  exchange: invoiceflow_events  (topic)
   loan.repaid   → 4 consumers (Invoice, Payment, User, Notification)
   loan.overdue  → 4 consumers (Invoice, Payment, User, Notification)
   wallet.credited
+
+Monitoring Stack
+  Prometheus :9090   ← scrapes /metrics from all services + RabbitMQ
+  Grafana    :3001   ← dashboards, alerting (datasources: Prometheus, Loki, Tempo)
+  Loki       :3100   ← log aggregation (fed by Promtail)
+  Promtail              ← ships container logs to Loki
+  Tempo      :3200   ← distributed tracing (OTLP gRPC :4317)
 ```
 
 ---
