@@ -159,12 +159,17 @@ class BidOrchestrator:
                 for o in current_offers:
                     u = await self.http_client.get(f"{config.USER_SERVICE_URL}/users/{o['investor_id']}")
                     bidders.append({"user_id": o["investor_id"], "email": u["email"]})
+                seller_info = await self.http_client.get(
+                    f"{config.USER_SERVICE_URL}/users/{listing['seller_id']}"
+                )
                 await self.publisher.publish(
                     "auction.extended",
                     {
                         "invoice_token": data.invoice_token,
                         "new_deadline": new_deadline_iso,
                         "bidders": bidders,
+                        "seller_id": listing["seller_id"],
+                        "seller_email": seller_info["email"],
                     },
                 )
 

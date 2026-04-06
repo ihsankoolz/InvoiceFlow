@@ -68,8 +68,10 @@ EVENT_MAPPING = {
         "template": "auction_closing_warning.html",  # same context as closing warning
         "subject": "Auction deadline has been extended",
         "get_recipients": lambda p: (
-            [{"email": b.get("email"), "user_id": b.get("user_id")} for b in p.get("bidders", [])],
-            [str(b.get("user_id")) for b in p.get("bidders", [])],
+            [{"email": b.get("email"), "user_id": b.get("user_id")} for b in p.get("bidders", [])]
+            + ([{"email": p["seller_email"], "user_id": p["seller_id"]}] if p.get("seller_id") and p.get("seller_email") else []),
+            [str(b.get("user_id")) for b in p.get("bidders", [])]
+            + ([str(p["seller_id"])] if p.get("seller_id") else []),
         ),
     },
     "auction.closed.winner": {

@@ -5,10 +5,6 @@
       "destination": "http://52.77.224.181:8000/api/:path*"
     },
     {
-      "source": "/graphql",
-      "destination": "http://52.77.224.181:8000/graphql"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

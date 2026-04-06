@@ -394,15 +394,6 @@ export default function ListingDetailPage() {
 
                     {existingBid ? (
                       <div className="space-y-4">
-                        <div className="px-4 py-3 rounded-lg bg-[#e8f5e0] border border-[#3e9b00]/20">
-                          <p className="font-['Lato'] text-sm text-[#3e9b00] font-medium">
-                            You have already placed a bid on this listing.
-                          </p>
-                          <p className="font-['Lato'] text-xs text-[#3e9b00]/70 mt-1">
-                            Your bid: {fmt(existingBid.amount || existingBid.bid_amount)}
-                          </p>
-                        </div>
-
                         {/* Anti-snipe note */}
                         <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-[#fff3e0]">
                           <Shield size={14} className="text-[#ff9500] mt-0.5 flex-shrink-0" />
@@ -417,6 +408,15 @@ export default function ListingDetailPage() {
                         >
                           Bid Placed
                         </button>
+
+                        <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200">
+                          <p className="font-['Lato'] text-sm text-red-700 font-medium">
+                            You have already placed a bid on this listing.
+                          </p>
+                          <p className="font-['Lato'] text-xs text-red-500 mt-1">
+                            Your bid: {fmt(existingBid.amount || existingBid.bid_amount)}
+                          </p>
+                        </div>
                       </div>
                     ) : (
                     <form onSubmit={handleBid} className="space-y-4">
