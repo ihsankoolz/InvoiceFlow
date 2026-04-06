@@ -324,9 +324,3 @@ Monitoring Stack
 ```
 
 ---
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [FINAL_ARCHITECTURE.md](FINAL_ARCHITECTURE.md) | Authoritative architecture — services, connections, protocols, rules, CI/CD, demo mode |
