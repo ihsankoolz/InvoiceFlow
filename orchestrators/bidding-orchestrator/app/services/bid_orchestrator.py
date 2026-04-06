@@ -20,6 +20,7 @@ from app.services.http_client import HTTPClient
 from app.services.rabbitmq_publisher import RabbitMQPublisher
 from app.temporal.client import TemporalClient
 
+
 def _anti_snipe_window() -> timedelta:
     secs = config.DEMO_ANTI_SNIPE_WINDOW_SECONDS if config.DEMO_MODE else config.ANTI_SNIPE_WINDOW_SECONDS
     return timedelta(seconds=secs)
