@@ -160,6 +160,7 @@ jobs:
             set -e
             cd ~/InvoiceFlow
             git pull origin main
+            docker builder prune -f
             docker compose down --remove-orphans
             docker compose up --build -d
             docker compose ps
