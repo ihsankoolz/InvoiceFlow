@@ -39,13 +39,6 @@ function fmtDateTime(str) {
   return new Date(utc).toLocaleString('en-SG', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Singapore' })
 }
 
-/** Returns the grace period deadline = due_date + 24 hours */
-function graceEnd(dueDateStr) {
-  if (!dueDateStr) return '—'
-  const utc = /Z|[+-]\d{2}:\d{2}$/.test(dueDateStr) ? dueDateStr : dueDateStr + 'Z'
-  const d = new Date(new Date(utc).getTime() + 24 * 60 * 60 * 1000)
-  return fmtDateTime(d.toISOString())
-}
 
 const STATUS_TABS = ['ALL', 'DRAFT', 'LISTED', 'FINANCED', 'REPAID', 'DEFAULTED', 'REJECTED', 'EXPIRED']
 
@@ -114,6 +107,7 @@ export default function MyInvoicesPage() {
             loan_status:  loan?.status           ?? null,
             loan_id:      loan?.loan_id          ?? null,
             loan_penalty: loan?.penalty_amount   ?? null,
+            loan_grace_end: loan?.grace_end      ?? null,
           }
         })
 
@@ -287,7 +281,7 @@ export default function MyInvoicesPage() {
                                 {loanDue && (
                                   <div>
                                     <p className="text-[10px] text-[#ff9500] uppercase tracking-wide leading-none mb-0.5">Grace ends</p>
-                                    <span className="text-[#ff9500] font-medium">{graceEnd(inv.due_date)}</span>
+                                    <span className="text-[#ff9500] font-medium">{fmtDateTime(inv.loan_grace_end)}</span>
                                   </div>
                                 )}
                                 {inv.loan_penalty > 0 && (

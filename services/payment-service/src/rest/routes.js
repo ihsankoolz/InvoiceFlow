@@ -31,13 +31,22 @@ router.get('/wallets/:userId', async (req, res) => {
   }
 });
 
+function serializeLoan(loan) {
+  const data = loan.toJSON();
+  return {
+    ...data,
+    due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
+    grace_end: data.grace_end ? new Date(data.grace_end).toISOString() : null,
+  };
+}
+
 /**
  * GET /loans/:loanId — Get loan details.
  */
 router.get('/loans/:loanId', async (req, res) => {
   try {
     const loan = await LoanService.getLoan(req.params.loanId);
-    res.json(loan);
+    res.json(serializeLoan(loan));
   } catch (err) {
     res.status(404).json({ error: err.message });
   }
@@ -51,10 +60,10 @@ router.get('/loans', async (req, res) => {
   try {
     if (req.query.seller_id) {
       const loans = await LoanService.getLoansBySeller(parseInt(req.query.seller_id, 10));
-      return res.json(loans);
+      return res.json(loans.map(serializeLoan));
     }
     const loans = await LoanService.getLoansByInvestor(parseInt(req.query.investor_id, 10));
-    res.json(loans);
+    res.json(loans.map(serializeLoan));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

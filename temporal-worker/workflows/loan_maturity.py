@@ -49,8 +49,16 @@ class LoanMaturityWorkflow:
         if delay.total_seconds() > 0:
             await workflow.sleep(delay)
 
-        # Step 2: Mark loan DUE
-        await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "DUE"], **act_opts)
+        # Step 2: Mark loan DUE — compute grace_end so it can be stored and displayed
+        repayment_window = timedelta(
+            seconds=config.DEMO_REPAYMENT_WINDOW_SECONDS
+            if config.DEMO_MODE
+            else config.REPAYMENT_WINDOW_SECONDS
+        )
+        grace_end = (workflow.now() + repayment_window).strftime("%Y-%m-%dT%H:%M:%SZ")
+        await workflow.execute_activity(
+            update_loan_status_grpc, args=[loan_id, "DUE", grace_end], **act_opts
+        )
         loan_due = await workflow.execute_activity(get_loan_grpc, args=[loan_id], **act_opts)
         seller_due = await workflow.execute_activity(
             get_user, args=[loan_due["seller_id"]], **act_opts
@@ -69,11 +77,6 @@ class LoanMaturityWorkflow:
         )
 
         # Step 3: Wait for repayment window — exits early if repayment_confirmed signal arrives
-        repayment_window = timedelta(
-            seconds=config.DEMO_REPAYMENT_WINDOW_SECONDS
-            if config.DEMO_MODE
-            else config.REPAYMENT_WINDOW_SECONDS
-        )
         await workflow.wait_condition(
             lambda: self._repayment_confirmed,
             timeout=repayment_window,

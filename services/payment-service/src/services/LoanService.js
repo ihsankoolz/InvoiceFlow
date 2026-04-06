@@ -62,7 +62,7 @@ class LoanService {
    * @param {string} status - DUE | REPAID | OVERDUE
    * @returns {Promise<Loan>}
    */
-  async updateStatus(loanId, status) {
+  async updateStatus(loanId, status, graceEnd = null) {
     const loan = await this.getLoan(loanId);
     const allowed = VALID_TRANSITIONS[loan.status] || [];
 
@@ -70,7 +70,9 @@ class LoanService {
       throw new Error(`Invalid status transition: ${loan.status} → ${status}`);
     }
 
-    await loan.update({ status });
+    const updates = { status };
+    if (graceEnd) updates.grace_end = graceEnd;
+    await loan.update(updates);
     return loan;
   }
 

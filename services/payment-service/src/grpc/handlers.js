@@ -85,6 +85,7 @@ async function createLoan(call, callback) {
       investor_id: loan.investor_id,
       seller_id: loan.seller_id,
       invoice_token: loan.invoice_token || '',
+      grace_end: loan.grace_end ? new Date(loan.grace_end).toISOString() : '',
     });
   } catch (err) {
     grpcOpsTotal.inc({ method: 'createLoan', status: 'error' });
@@ -145,6 +146,7 @@ async function getLoan(call, callback) {
       investor_id: loan.investor_id,
       seller_id: loan.seller_id,
       invoice_token: loan.invoice_token || '',
+      grace_end: loan.grace_end ? new Date(loan.grace_end).toISOString() : '',
     });
   } catch (err) {
     callback({ code: 5, message: err.message });
@@ -156,8 +158,8 @@ async function getLoan(call, callback) {
  */
 async function updateLoanStatus(call, callback) {
   try {
-    const { loan_id, status } = call.request;
-    const loan = await LoanService.updateStatus(loan_id, status);
+    const { loan_id, status, grace_end } = call.request;
+    const loan = await LoanService.updateStatus(loan_id, status, grace_end || null);
     callback(null, {
       loan_id: loan.loan_id,
       status: loan.status,
@@ -166,6 +168,7 @@ async function updateLoanStatus(call, callback) {
       investor_id: loan.investor_id,
       seller_id: loan.seller_id,
       invoice_token: loan.invoice_token || '',
+      grace_end: loan.grace_end ? new Date(loan.grace_end).toISOString() : '',
     });
   } catch (err) {
     callback({ code: 3, message: err.message });
