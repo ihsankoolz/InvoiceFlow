@@ -11,8 +11,6 @@ Covers the critical registration paths that were previously untested:
 - update_status happy path and 404
 """
 
-from unittest.mock import AsyncMock, patch
-
 import pytest
 from app.models.user import User
 from app.schemas import UserCreate
@@ -52,13 +50,12 @@ def _seed_user(db, email="existing@test.com", role="INVESTOR"):
 # create_user — duplicate email
 # ---------------------------------------------------------------------------
 
-@pytest.mark.asyncio
-async def test_create_user_duplicate_email_raises_409(db):
+def test_create_user_duplicate_email_raises_409(db):
     _seed_user(db, email="taken@test.com")
     service = UserService(db)
 
     with pytest.raises(HTTPException) as exc_info:
-        await service.create_user(_make_data(email="taken@test.com"))
+        service.create_user(_make_data(email="taken@test.com"))
     assert exc_info.value.status_code == 409
 
 
@@ -66,39 +63,22 @@ async def test_create_user_duplicate_email_raises_409(db):
 # create_user — SELLER without UEN
 # ---------------------------------------------------------------------------
 
-@pytest.mark.asyncio
-async def test_create_seller_without_uen_raises_422(db):
+def test_create_seller_without_uen_raises_422(db):
     service = UserService(db)
 
     with pytest.raises(HTTPException) as exc_info:
-        await service.create_user(_make_data(role="SELLER", uen=None))
+        service.create_user(_make_data(role="SELLER", uen=None))
     assert exc_info.value.status_code == 422
     assert "UEN" in exc_info.value.detail
-
-
-# ---------------------------------------------------------------------------
-# create_user — SELLER with invalid UEN
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_create_seller_invalid_uen_raises_422(db):
-    service = UserService(db)
-
-    with patch("app.services.user_service.UENValidator.validate_uen", new=AsyncMock(return_value=False)):
-        with pytest.raises(HTTPException) as exc_info:
-            await service.create_user(_make_data(role="SELLER", uen="INVALID123"))
-    assert exc_info.value.status_code == 422
-    assert "Invalid UEN" in exc_info.value.detail
 
 
 # ---------------------------------------------------------------------------
 # create_user — successful INVESTOR registration
 # ---------------------------------------------------------------------------
 
-@pytest.mark.asyncio
-async def test_create_investor_success(db):
+def test_create_investor_success(db):
     service = UserService(db)
-    user = await service.create_user(_make_data(email="investor@test.com", role="INVESTOR"))
+    user = service.create_user(_make_data(email="investor@test.com", role="INVESTOR"))
 
     assert user.id is not None
     assert user.email == "investor@test.com"
@@ -107,17 +87,14 @@ async def test_create_investor_success(db):
 
 
 # ---------------------------------------------------------------------------
-# create_user — successful SELLER registration
+# create_user — successful SELLER registration (UEN validation done by orchestrator)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.asyncio
-async def test_create_seller_success(db):
+def test_create_seller_success(db):
     service = UserService(db)
-
-    with patch("app.services.user_service.UENValidator.validate_uen", new=AsyncMock(return_value=True)):
-        user = await service.create_user(
-            _make_data(email="seller@test.com", role="SELLER", uen="200509501E")
-        )
+    user = service.create_user(
+        _make_data(email="seller@test.com", role="SELLER", uen="200509501E")
+    )
 
     assert user.role == "SELLER"
     assert user.uen == "200509501E"

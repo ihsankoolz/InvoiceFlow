@@ -145,10 +145,11 @@ The LoanMaturityWorkflow (already running as a child of AuctionCloseWorkflow) fi
 
 ## Service Inventory
 
-### Composite Services (3)
+### Composite Services (4)
 
 | Service | Port | Technology | Scenario |
 |---------|------|------------|----------|
+| User Orchestrator | :5015 | Python / FastAPI | Registration — UEN validation (SELLER only) → account creation |
 | Invoice Orchestrator | :5010 | Python / FastAPI | Scenario 1 — invoice creation, UEN validation, listing |
 | Bidding Orchestrator | :5011 | Python / FastAPI | Scenario 2 — bid placement, escrow locking, wallet top-up, Stripe event handling |
 | Loan Orchestrator | :5012 | Python / FastAPI | Scenario 3 — repayment initiation, debt resolution |
@@ -159,7 +160,7 @@ Composite services orchestrate atomic services via direct HTTP (inside Docker ne
 
 | Service | Port | Technology | Database | Notes |
 |---------|------|------------|----------|-------|
-| User Service | :5000 | Python / FastAPI | user_db (MySQL :3306) | Registration, login, JWT, account status. Calls data.gov.sg directly for seller UEN validation at registration. Also a RabbitMQ consumer for `loan.repaid` and `loan.overdue` (account status updates via choreography) |
+| User Service | :5000 | Python / FastAPI | user_db (MySQL :3306) | Login, JWT, account status, user CRUD. Registration requests are routed via User Orchestrator (which handles UEN validation). Also a RabbitMQ consumer for `loan.repaid` and `loan.overdue` (account status updates via choreography) |
 | Invoice Service | :5001 | Python / FastAPI | invoice_db (MySQL :3307) | Invoice CRUD, PDF upload, pdfplumber, MinIO storage, status tracking. Also a RabbitMQ consumer for `loan.repaid` and `loan.overdue` |
 | Marketplace Service | :5002 | Python / FastAPI | market_db (MySQL :3308) | Listings read-model, urgency levels, filtering. Denormalises `current_bid` and `bid_count` from events |
 | Bidding Service | :5003 | Python / FastAPI | bidding_db (MySQL :3309) | Bid CRUD, offer accept/reject/outbid management |
@@ -179,7 +180,7 @@ Atomic services never call each other directly. All inter-atomic coordination go
 
 | Service | Port | Technology | Wraps | Called By |
 |---------|------|------------|-------|----------|
-| ACRA Wrapper | :5007 | Python / FastAPI | data.gov.sg ACRA UEN registry | Invoice Orchestrator (debtor UEN validation per invoice) |
+| ACRA Wrapper | :5007 | Python / FastAPI | data.gov.sg ACRA UEN registry | User Orchestrator (seller UEN validation at registration), Invoice Orchestrator (debtor UEN validation per invoice) |
 | Stripe Wrapper | :5008 | Python / FastAPI | Stripe API (checkout sessions) | Bidding Orchestrator (wallet top-up checkout), Loan Orchestrator (loan repayment checkout) |
 
 Note: Stripe Wrapper handles **outbound** calls only (creating checkout sessions). **Inbound** Stripe webhooks go through KONG → Webhook Router — the Stripe Wrapper is bypassed on the inbound path.
@@ -200,7 +201,7 @@ Note: Stripe Wrapper handles **outbound** calls only (creating checkout sessions
 
 | Service | Purpose | Called By |
 |---------|---------|----------|
-| data.gov.sg | ACRA UEN registry (seller + debtor validation) | User Service (seller UEN at registration, direct), ACRA Wrapper (debtor UEN per invoice) |
+| data.gov.sg | ACRA UEN registry (seller + debtor validation) | ACRA Wrapper (seller UEN at registration via User Orchestrator, debtor UEN per invoice via Invoice Orchestrator) |
 | Stripe | Payment processing, hosted checkout, webhooks | Stripe Wrapper (outbound checkout sessions), Stripe → Nginx → KONG → Webhook Router (inbound webhook) |
 | Resend | Transactional email delivery | Notification Service (built-in, no wrapper) |
 
@@ -244,11 +245,13 @@ Note: Stripe Wrapper handles **outbound** calls only (creating checkout sessions
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 4 | Scenario 1 routes (`/api/invoices*`) | KONG → Invoice Orchestrator | REST/JSON |
-| 5 | Scenario 2 bid + wallet routes (`/api/bids*`, `/api/wallet/*`) | KONG → Bidding Orchestrator | REST/JSON |
-| 6 | Scenario 3 loan routes (`/api/loans*`) | KONG → Loan Orchestrator | REST/JSON |
-| 7 | Notification read endpoints (`/api/notifications*`) | KONG → Notification Service | REST (direct, bypasses composites) |
-| 8 | Stripe webhook (inbound) (`/api/webhooks/stripe`) | KONG → Webhook Router | REST/JSON (Stripe-Signature header forwarded) |
+| 4 | Registration (`POST /api/auth/register`, unauthenticated) | KONG → User Orchestrator | REST/JSON |
+| 5 | Scenario 1 routes (`/api/invoices*`) | KONG → Invoice Orchestrator | REST/JSON |
+| 6 | Scenario 2 bid + wallet routes (`/api/bids*`, `/api/wallet/*`) | KONG → Bidding Orchestrator | REST/JSON |
+| 7 | Scenario 3 loan routes (`/api/loans*`) | KONG → Loan Orchestrator | REST/JSON |
+| 8 | Login (`POST /api/auth/login`, unauthenticated) | KONG → User Service | REST/JSON |
+| 9 | Notification read endpoints (`/api/notifications*`) | KONG → Notification Service | REST (direct, bypasses composites) |
+| 10 | Stripe webhook (inbound) (`/api/webhooks/stripe`) | KONG → Webhook Router | REST/JSON (Stripe-Signature header forwarded) |
 
 ### Stripe Two-Direction Paths
 
@@ -265,44 +268,40 @@ Stripe webhook safeguards: Webhook Router recomputes the Stripe-Signature using 
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 9 | Debtor UEN validation | Invoice Orchestrator → ACRA Wrapper | REST/JSON |
-| 10 | Checkout session (wallet top-up) | Bidding Orchestrator → Stripe Wrapper | REST/JSON |
-| 11 | Checkout session (loan repayment) | Loan Orchestrator → Stripe Wrapper | REST/JSON |
+| 11 | Seller UEN validation (registration) | User Orchestrator → ACRA Wrapper | REST/JSON |
+| 12 | Debtor UEN validation (invoice listing) | Invoice Orchestrator → ACRA Wrapper | REST/JSON |
+| 13 | Checkout session (wallet top-up) | Bidding Orchestrator → Stripe Wrapper | REST/JSON |
+| 14 | Checkout session (loan repayment) | Loan Orchestrator → Stripe Wrapper | REST/JSON |
 
 ### Wrappers → External APIs
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 12 | ACRA UEN lookup (debtor) | ACRA Wrapper → data.gov.sg | HTTPS (external) |
-| 13 | Stripe API calls (outbound only) | Stripe Wrapper → Stripe | HTTPS (external) |
-
-### Atomics → External APIs (direct)
-
-| # | Call | From → To | Technology |
-|---|------|-----------|------------|
-| 14 | ACRA UEN lookup (seller at registration) | User Service → data.gov.sg | HTTPS (external, direct — ACRA Wrapper not involved) |
+| 15 | ACRA UEN lookup (seller registration + debtor) | ACRA Wrapper → data.gov.sg | HTTPS (external) |
+| 16 | Stripe API calls (outbound only) | Stripe Wrapper → Stripe | HTTPS (external) |
 
 ### Composites → Atomics (direct HTTP inside Docker network)
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 15 | Account status check | Invoice Orchestrator → User Service | HTTP (direct) |
-| 16 | Invoice create / upload / status | Invoice Orchestrator → Invoice Service | HTTP (direct) |
-| 17 | List on marketplace | Invoice Orchestrator → Marketplace Service | HTTP (direct) |
-| 18 | Bid placement / management | Bidding Orchestrator → Bidding Service | HTTP (direct) |
-| 19 | Anti-snipe: check + update listing deadline | Bidding Orchestrator → Marketplace Service | HTTP (direct) |
-| 20 | Escrow lock | Bidding Orchestrator → Payment Service | gRPC :50051 |
-| 21 | Repayment checkout initiation | Loan Orchestrator → Payment Service | gRPC :50051 (GetLoan) |
+| 17 | Create user account | User Orchestrator → User Service | HTTP (direct) |
+| 18 | Account status check | Invoice Orchestrator → User Service | HTTP (direct) |
+| 19 | Invoice create / upload / status | Invoice Orchestrator → Invoice Service | HTTP (direct) |
+| 20 | List on marketplace | Invoice Orchestrator → Marketplace Service | HTTP (direct) |
+| 21 | Bid placement / management | Bidding Orchestrator → Bidding Service | HTTP (direct) |
+| 22 | Anti-snipe: check + update listing deadline | Bidding Orchestrator → Marketplace Service | HTTP (direct) |
+| 23 | Escrow lock | Bidding Orchestrator → Payment Service | gRPC :50051 |
+| 24 | Repayment checkout initiation | Loan Orchestrator → Payment Service | gRPC :50051 (GetLoan) |
 
 ### Composites → Temporal (start / signal workflows)
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 22 | Start AuctionCloseWorkflow | Invoice Orchestrator → Temporal Server | Temporal SDK |
-| 23 | Start WalletTopUpWorkflow | Bidding Orchestrator → Temporal Server | Temporal SDK |
-| 23a | Signal `extend_deadline` on AuctionCloseWorkflow | Bidding Orchestrator → Temporal Server | Temporal SDK (signal) |
-| 24 | Start LoanRepaymentWorkflow | Loan Orchestrator → Temporal Server | Temporal SDK |
-| 24a | Signal `repayment_confirmed` on LoanMaturityWorkflow | Temporal Worker (LoanRepaymentWorkflow) → Temporal Server | Temporal SDK (signal) — causes maturity workflow to exit repayment window early |
+| 25 | Start AuctionCloseWorkflow | Invoice Orchestrator → Temporal Server | Temporal SDK |
+| 26 | Start WalletTopUpWorkflow | Bidding Orchestrator → Temporal Server | Temporal SDK |
+| 26a | Signal `extend_deadline` on AuctionCloseWorkflow | Bidding Orchestrator → Temporal Server | Temporal SDK (signal) |
+| 27 | Start LoanRepaymentWorkflow | Loan Orchestrator → Temporal Server | Temporal SDK |
+| 27a | Signal `repayment_confirmed` on LoanMaturityWorkflow | Temporal Worker (LoanRepaymentWorkflow) → Temporal Server | Temporal SDK (signal) — causes maturity workflow to exit repayment window early |
 
 Invoice Orchestrator starts AuctionCloseWorkflow after an invoice is listed. Bidding Orchestrator starts WalletTopUpWorkflow after consuming `stripe.checkout.completed` (wallet_topup). Bidding Orchestrator signals running AuctionCloseWorkflow instances for anti-snipe deadline extensions. Loan Orchestrator starts LoanRepaymentWorkflow after the Stripe repayment confirm call. Loan Orchestrator does NOT start LoanMaturityWorkflow — that is started internally by the Temporal Worker as a child of AuctionCloseWorkflow.
 
@@ -310,44 +309,44 @@ Invoice Orchestrator starts AuctionCloseWorkflow after an invoice is listed. Bid
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 25 | Poll for tasks | Temporal Worker → Temporal Server | Temporal SDK (long-poll) |
-| 26 | View workflows | Temporal UI → Temporal Server | HTTP |
-| 27 | Start LoanMaturityWorkflow (child) | Temporal Worker → Temporal Server | Temporal SDK (internal, fire-and-forget) |
+| 28 | Poll for tasks | Temporal Worker → Temporal Server | Temporal SDK (long-poll) |
+| 29 | View workflows | Temporal UI → Temporal Server | HTTP |
+| 30 | Start LoanMaturityWorkflow (child) | Temporal Worker → Temporal Server | Temporal SDK (internal, fire-and-forget) |
 
 ### Temporal Worker → Atomics (during workflow execution)
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 28 | Verify / update invoice status | Temporal Worker → Invoice Service | HTTP (direct) |
-| 29 | Delist listing / bulk delist by seller | Temporal Worker → Marketplace Service | HTTP (direct) |
-| 30 | Get offers / accept / reject offers | Temporal Worker → Bidding Service | HTTP (direct) |
-| 31 | Convert escrow, create loan, release funds, credit wallet, update/check loan status | Temporal Worker → Payment Service | gRPC :50051 |
-| 32 | Get user details (email) | Temporal Worker → User Service | HTTP (direct) |
+| 31 | Verify / update invoice status | Temporal Worker → Invoice Service | HTTP (direct) |
+| 32 | Delist listing / bulk delist by seller | Temporal Worker → Marketplace Service | HTTP (direct) |
+| 33 | Get offers / accept / reject offers | Temporal Worker → Bidding Service | HTTP (direct) |
+| 34 | Convert escrow, create loan, release funds, credit wallet, update/check loan status | Temporal Worker → Payment Service | gRPC :50051 |
+| 35 | Get user details (email) | Temporal Worker → User Service | HTTP (direct) |
 
 ### Publishing to RabbitMQ (async)
 
 | # | Event(s) | Published By | Technology |
 |---|----------|-------------|------------|
-| 33 | `invoice.listed`, `invoice.rejected` | Invoice Orchestrator | AMQP (publish) |
-| 34 | `bid.placed`, `bid.outbid`, `bid.confirmed`, `auction.extended` | Bidding Orchestrator | AMQP (publish) |
-| 35 | `stripe.checkout.completed` | Webhook Router | AMQP (publish) |
-| 36 | `auction.closing.warning`, `auction.expired`, `auction.closed.winner`, `auction.closed.loser`, `loan.due`, `loan.overdue`, `loan.repaid`, `wallet.credited` | Temporal Worker | AMQP (publish) |
+| 36 | `invoice.listed`, `invoice.rejected` | Invoice Orchestrator | AMQP (publish) |
+| 37 | `bid.placed`, `bid.outbid`, `bid.confirmed`, `auction.extended` | Bidding Orchestrator | AMQP (publish) |
+| 38 | `stripe.checkout.completed` | Webhook Router | AMQP (publish) |
+| 39 | `auction.closing.warning`, `auction.expired`, `auction.closed.winner`, `auction.closed.loser`, `loan.due`, `loan.overdue`, `loan.repaid`, `wallet.credited` | Temporal Worker | AMQP (publish) |
 
 ### RabbitMQ → Consumers (async)
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 37 | All events (`#` wildcard) | RabbitMQ → Notification Service | AMQP (consume) |
-| 38 | All events (`#` wildcard) | RabbitMQ → Activity Log Bridge → OutSystems | AMQP (consume) → HTTPS |
-| 39 | `stripe.checkout.completed` (type=wallet_topup) | RabbitMQ → Bidding Orchestrator | AMQP (consume) |
-| 40 | `stripe.checkout.completed` (type=loan_repayment) | RabbitMQ → Loan Orchestrator | AMQP (consume) |
-| 41 | `loan.overdue` (queue: `invoice_loan_updates`) | RabbitMQ → Invoice Service | AMQP (consume) |
-| 42 | `loan.overdue` (queue: `payment_loan_updates`) | RabbitMQ → Payment Service | AMQP (consume) |
-| 43 | `loan.overdue` (queue: `user_loan_updates`) | RabbitMQ → User Service | AMQP (consume) |
-| 44 | `loan.repaid` (queue: `invoice_repaid_updates`) | RabbitMQ → Invoice Service | AMQP (consume) |
-| 45 | `loan.repaid` (queue: `payment_repaid_updates`) | RabbitMQ → Payment Service | AMQP (consume) |
-| 46 | `loan.repaid` (queue: `user_repaid_updates`) | RabbitMQ → User Service | AMQP (consume) |
-| 47 | `bid.outbid` (queue: `payment_outbid_updates`) | RabbitMQ → Payment Service | AMQP (consume) |
+| 40 | All events (`#` wildcard) | RabbitMQ → Notification Service | AMQP (consume) |
+| 41 | All events (`#` wildcard) | RabbitMQ → Activity Log Bridge → OutSystems | AMQP (consume) → HTTPS |
+| 42 | `stripe.checkout.completed` (type=wallet_topup) | RabbitMQ → Bidding Orchestrator | AMQP (consume) |
+| 43 | `stripe.checkout.completed` (type=loan_repayment) | RabbitMQ → Loan Orchestrator | AMQP (consume) |
+| 44 | `loan.overdue` (queue: `invoice_loan_updates`) | RabbitMQ → Invoice Service | AMQP (consume) |
+| 45 | `loan.overdue` (queue: `payment_loan_updates`) | RabbitMQ → Payment Service | AMQP (consume) |
+| 46 | `loan.overdue` (queue: `user_loan_updates`) | RabbitMQ → User Service | AMQP (consume) |
+| 47 | `loan.repaid` (queue: `invoice_repaid_updates`) | RabbitMQ → Invoice Service | AMQP (consume) |
+| 48 | `loan.repaid` (queue: `payment_repaid_updates`) | RabbitMQ → Payment Service | AMQP (consume) |
+| 49 | `loan.repaid` (queue: `user_repaid_updates`) | RabbitMQ → User Service | AMQP (consume) |
+| 50 | `bid.outbid` (queue: `payment_outbid_updates`) | RabbitMQ → Payment Service | AMQP (consume) |
 
 Separate queues are required for each fan-out consumer. A single queue with multiple consumers results in round-robin delivery (only one gets each message). Separate queues each bound to the same routing key ensure all target services receive every message independently.
 
@@ -363,21 +362,21 @@ Separate queues are required for each fan-out consumer. A single queue with mult
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 48 | Send transactional emails | Notification Service → Resend | HTTPS (external) |
-| 49 | Push real-time notifications | Notification Service → React Frontend | WebSocket |
+| 51 | Send transactional emails | Notification Service → Resend | HTTPS (external) |
+| 52 | Push real-time notifications | Notification Service → React Frontend | WebSocket |
 
 ### Atomics → Databases
 
 | # | Call | From → To | Technology |
 |---|------|-----------|------------|
-| 50 | User CRUD | User Service → user_db | MySQL :3306 |
-| 51 | Invoice CRUD | Invoice Service → invoice_db | MySQL :3307 |
-| 52 | Listing CRUD | Marketplace Service → market_db | MySQL :3308 |
-| 53 | Offer CRUD | Bidding Service → bidding_db | MySQL :3309 |
-| 54 | Wallet / escrow / loan CRUD | Payment Service → payment_db | MySQL :3310 |
-| 55 | Notification CRUD | Notification Service → notification_db | MySQL :3311 |
-| 56 | Event / error log writes | Activity Log Bridge → OutSystems → OutSystems internal DB | HTTPS → OutSystems managed |
-| 57 | PDF storage | Invoice Service → MinIO | S3 API :9000 |
+| 53 | User CRUD | User Service → user_db | MySQL :3306 |
+| 54 | Invoice CRUD | Invoice Service → invoice_db | MySQL :3307 |
+| 55 | Listing CRUD | Marketplace Service → market_db | MySQL :3308 |
+| 56 | Offer CRUD | Bidding Service → bidding_db | MySQL :3309 |
+| 57 | Wallet / escrow / loan CRUD | Payment Service → payment_db | MySQL :3310 |
+| 58 | Notification CRUD | Notification Service → notification_db | MySQL :3311 |
+| 59 | Event / error log writes | Activity Log Bridge → OutSystems → OutSystems internal DB | HTTPS → OutSystems managed |
+| 60 | PDF storage | Invoice Service → MinIO | S3 API :9000 |
 
 ---
 
