@@ -200,7 +200,7 @@ export default function RepaymentsPage() {
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-sm font-['Lato']">
                         <span className="text-ink/50">Amount</span>
-                        <span className="font-semibold text-ink">{fmt(loan.bid_amount || loan.amount)}</span>
+                        <span className="font-semibold text-ink">{fmt(loan.principal)}</span>
                       </div>
                       <div className="flex justify-between text-sm font-['Lato']">
                         <span className="text-ink/50">Due date</span>
