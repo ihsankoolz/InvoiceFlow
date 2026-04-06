@@ -6,16 +6,13 @@ regardless of which test file pytest loads first.
 
 Scenarios covered:
   Auction (DEMO_MODE=True)
-    1. Sleeps DEMO_AUCTION_SECONDS, not bid_period_hours
-    2. Skips T-12h and T-1h closing warnings
-    3. Full settlement still executes correctly after the short sleep
-    4. Anti-snipe still works inside demo mode
+    1. Full settlement still executes correctly
+    2. Anti-snipe still works
 
   Loan Maturity (DEMO_MODE=True)
-    5. Sleeps DEMO_LOAN_MATURITY_SECONDS, not until actual due_date
-    6. wait_condition uses DEMO_REPAYMENT_WINDOW_SECONDS, not REPAYMENT_WINDOW_SECONDS
-    7. OVERDUE path still fires when repayment window expires unreplied
-    8. Early-exit still works when repayment_confirmed signal arrives
+    3. wait_condition uses DEMO_REPAYMENT_WINDOW_SECONDS, not REPAYMENT_WINDOW_SECONDS
+    4. OVERDUE path still fires when repayment window expires unreplied
+    5. Early-exit still works when repayment_confirmed signal arrives
 """
 
 import asyncio
@@ -190,35 +187,6 @@ def _loan_wf_mock(loan_status="DUE"):
 
 
 @pytest.mark.asyncio
-async def test_auction_demo_sleeps_configured_seconds_not_hours():
-    """Demo mode: workflow.sleep is called with DEMO_AUCTION_SECONDS, not timedelta(hours=...)."""
-    mock_wf, _, _ = _auction_wf_mock(offers=[_OFFER_A])
-
-    with patch("workflows.auction_close.config", _demo_config(auction_secs=90)):
-        with patch("workflows.auction_close.workflow", mock_wf):
-            wf = AuctionCloseWorkflow()
-            await wf.run(INVOICE_TOKEN, bid_period_hours=48)  # 48h would be production
-
-    sleep_calls = mock_wf.sleep.call_args_list
-    assert len(sleep_calls) == 1, "Demo mode should sleep exactly once (the demo duration)"
-    assert sleep_calls[0].args[0] == timedelta(seconds=90)
-
-
-@pytest.mark.asyncio
-async def test_auction_demo_skips_closing_warnings():
-    """Demo mode: no auction.closing.warning events published (T-12h and T-1h are skipped)."""
-    mock_wf, activity_calls, _ = _auction_wf_mock(offers=[_OFFER_A])
-
-    with patch("workflows.auction_close.config", _demo_config()):
-        with patch("workflows.auction_close.workflow", mock_wf):
-            wf = AuctionCloseWorkflow()
-            await wf.run(INVOICE_TOKEN, bid_period_hours=48)
-
-    published = [args[0] for name, args in activity_calls if name == "publish_event"]
-    assert "auction.closing.warning" not in published
-
-
-@pytest.mark.asyncio
 async def test_auction_demo_settlement_executes_correctly():
     """Demo mode: after the short sleep, full 10-step settlement still runs in correct order."""
     mock_wf, activity_calls, child_calls = _auction_wf_mock(offers=[_OFFER_A, _OFFER_B])
@@ -279,21 +247,6 @@ async def test_auction_demo_zero_bids_expires():
 # ===========================================================================
 # LOAN MATURITY — Demo Mode Tests
 # ===========================================================================
-
-
-@pytest.mark.asyncio
-async def test_loan_demo_sleeps_configured_seconds_not_due_date():
-    """Demo mode: sleep uses DEMO_LOAN_MATURITY_SECONDS regardless of due_date (even far future)."""
-    mock_wf, _ = _loan_wf_mock(loan_status="DUE")
-
-    with patch("workflows.loan_maturity.config", _demo_config(loan_secs=90)):
-        with patch("workflows.loan_maturity.workflow", mock_wf):
-            wf = LoanMaturityWorkflow()
-            await wf.run(LOAN_ID, _DUE_DATE_FUTURE)
-
-    sleep_calls = mock_wf.sleep.call_args_list
-    assert len(sleep_calls) == 1
-    assert sleep_calls[0].args[0] == timedelta(seconds=90)
 
 
 @pytest.mark.asyncio

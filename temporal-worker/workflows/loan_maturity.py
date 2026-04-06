@@ -34,23 +34,20 @@ class LoanMaturityWorkflow:
     async def run(self, loan_id: str, due_date: str):
         act_opts = {"schedule_to_close_timeout": timedelta(seconds=30)}
 
-        # Step 1: Sleep until due date (or a short fixed duration in demo mode)
-        if config.DEMO_MODE:
-            await workflow.sleep(timedelta(seconds=config.DEMO_LOAN_MATURITY_SECONDS))
+        # Step 1: Sleep until due date
+        # Parse ISO datetime string. Handles all forms emitted by the system:
+        #   - "YYYY-MM-DD"                   (date-only → treated as UTC midnight)
+        #   - "YYYY-MM-DDTHH:MM:SS"          (naive UTC)
+        #   - "YYYY-MM-DDTHH:MM:SS.mmmZ"     (JS toISOString() — UTC)
+        #   - "YYYY-MM-DDTHH:MM:SS+08:00"    (timezone-aware)
+        due_dt = datetime.fromisoformat(due_date)
+        if due_dt.tzinfo is None:
+            due_dt = due_dt.replace(tzinfo=timezone.utc)
         else:
-            # Parse ISO datetime string. Handles all forms emitted by the system:
-            #   - "YYYY-MM-DD"                   (date-only → treated as UTC midnight)
-            #   - "YYYY-MM-DDTHH:MM:SS"          (naive UTC)
-            #   - "YYYY-MM-DDTHH:MM:SS.mmmZ"     (JS toISOString() — UTC)
-            #   - "YYYY-MM-DDTHH:MM:SS+08:00"    (timezone-aware)
-            due_dt = datetime.fromisoformat(due_date)
-            if due_dt.tzinfo is None:
-                due_dt = due_dt.replace(tzinfo=timezone.utc)
-            else:
-                due_dt = due_dt.astimezone(timezone.utc)
-            delay = due_dt - workflow.now()
-            if delay.total_seconds() > 0:
-                await workflow.sleep(delay)
+            due_dt = due_dt.astimezone(timezone.utc)
+        delay = due_dt - workflow.now()
+        if delay.total_seconds() > 0:
+            await workflow.sleep(delay)
 
         # Step 2: Mark loan DUE
         await workflow.execute_activity(update_loan_status_grpc, args=[loan_id, "DUE"], **act_opts)
