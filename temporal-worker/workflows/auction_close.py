@@ -5,7 +5,7 @@ CRITICAL: LoanMaturityWorkflow MUST be started with start_child_workflow (fire-a
 """
 
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 from temporalio import workflow
 
@@ -33,12 +33,15 @@ class AuctionCloseWorkflow:
     """
 
     def __init__(self):
-        self.extend_requested = False
+        self.new_deadline: datetime | None = None
 
     @workflow.signal
-    async def extend_deadline(self):
+    async def extend_deadline(self, new_deadline_iso: str):
         """Signal received from Bidding Orchestrator when a bid arrives in the final 5 minutes."""
-        self.extend_requested = True
+        dt = datetime.fromisoformat(new_deadline_iso)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        self.new_deadline = dt
 
     @workflow.run
     async def run(self, invoice_token: str, bid_period_hours: float):
@@ -84,8 +87,15 @@ class AuctionCloseWorkflow:
                 **act_opts,
             )
 
-        # Wait until deadline
-        await workflow.sleep(deadline - workflow.now())
+        # Wait until deadline, re-sleeping if anti-snipe extends it
+        while True:
+            self.new_deadline = None
+            remaining = deadline - workflow.now()
+            if remaining.total_seconds() > 0:
+                await workflow.sleep(remaining)
+            if self.new_deadline is None:
+                break
+            deadline = self.new_deadline
 
         # Fetch all bids
         offers = await workflow.execute_activity(get_offers, args=[invoice_token], **act_opts)

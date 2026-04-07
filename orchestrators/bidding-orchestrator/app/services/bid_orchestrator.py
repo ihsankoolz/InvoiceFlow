@@ -139,11 +139,12 @@ class BidOrchestrator:
                 new_deadline = now + anti_snipe_window
                 new_deadline_iso = new_deadline.isoformat()
 
-                # Signal AuctionCloseWorkflow to reset its 5-min timer
+                # Signal AuctionCloseWorkflow to reset its timer to the new deadline
                 try:
                     await self.temporal_client.signal_workflow(
                         workflow_id=f"auction-{data.invoice_token}",
                         signal_name="extend_deadline",
+                        payload=new_deadline_iso,
                     )
                 except Exception:
                     pass  # Temporal may not be up in dev; don't fail the bid
