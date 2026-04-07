@@ -45,8 +45,8 @@ export default function ToastContainer() {
   return (
     <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 items-end pointer-events-none">
       {toasts.map((toast) => {
-        const title = toast.title || EVENT_TITLES[toast.event_type] || toast.event_type || 'Notification'
-        const message = toast.message || toast.body || ''
+        const title = toast.title || toast.message || EVENT_TITLES[toast.event_type] || toast.event_type || 'Notification'
+        const message = ''
 
         return (
           <div

@@ -49,7 +49,9 @@ class LoanEventConsumer:
         await repaid_queue.consume(self._on_repaid)
         await overdue_queue.consume(self._on_overdue)
 
-        logger.info("LoanEventConsumer started, consuming from user_repaid_updates and user_loan_updates")
+        logger.info(
+            "LoanEventConsumer started, consuming from user_repaid_updates and user_loan_updates"
+        )
 
         try:
             await asyncio.Future()  # run forever until cancelled

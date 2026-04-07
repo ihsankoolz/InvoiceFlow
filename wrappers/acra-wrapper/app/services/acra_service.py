@@ -44,7 +44,9 @@ class ACRAService:
         if config.DATA_GOV_API_KEY:
             headers["x-api-key"] = config.DATA_GOV_API_KEY
         async with httpx.AsyncClient() as client:
-            response = await client.get(config.DATA_GOV_API_URL, params=params, timeout=10.0, headers=headers)
+            response = await client.get(
+                config.DATA_GOV_API_URL, params=params, timeout=10.0, headers=headers
+            )
             response.raise_for_status()
             data = response.json()
 

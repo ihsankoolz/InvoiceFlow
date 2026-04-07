@@ -20,8 +20,14 @@ async def convert_escrow_to_loan(investor_id: int, invoice_token: str) -> dict:
 
 
 @activity.defn
-async def create_loan(investor_id: int, seller_id: int, invoice_token: str,
-                      principal: float, bid_amount: float, due_date: str) -> dict:
+async def create_loan(
+    investor_id: int,
+    seller_id: int,
+    invoice_token: str,
+    principal: float,
+    bid_amount: float,
+    due_date: str,
+) -> dict:
     """Create a loan record via gRPC CreateLoan RPC. Returns loan dict with loan_id and due_date."""
     return await grpc_client.create_loan(
         investor_id=investor_id,
@@ -50,9 +56,9 @@ async def get_loan_grpc(loan_id: str) -> dict:
 
 
 @activity.defn
-async def update_loan_status_grpc(loan_id: str, status: str) -> dict:
+async def update_loan_status_grpc(loan_id: str, status: str, grace_end: str = "") -> dict:
     """Update loan status via gRPC UpdateLoanStatus RPC. Used by LoanMaturityWorkflow."""
-    return await grpc_client.update_loan_status(loan_id=loan_id, status=status)
+    return await grpc_client.update_loan_status(loan_id=loan_id, status=status, grace_end=grace_end)
 
 
 @activity.defn

@@ -8,7 +8,10 @@ import requests
 # print("SCRIPT IS STARTING NOW !!!")
 
 # CONFIGURATION
-OUTSYSTEMS_URL = "https://personal-xowqm3b2.outsystemscloud.com/ActivityLog/rest/ActivityLogAPI/LogEvent"
+OUTSYSTEMS_URL = (
+    "https://personal-xowqm3b2.outsystemscloud.com/ActivityLog/rest/ActivityLogAPI/LogEvent"
+)
+
 
 def relay_to_outsystems(ch, method, properties, body):
     try:
@@ -20,12 +23,12 @@ def relay_to_outsystems(ch, method, properties, body):
         # map RabbitMQ data to OutSystems 'EventRequest' structure
         event_data = {
             "event_type": event_type,
-            "payload": json.dumps(payload_dict), # store the whole JSON as a string
+            "payload": json.dumps(payload_dict),  # store the whole JSON as a string
             "source_service": payload_dict.get("source", "RabbitMQ_Bridge"),
             "timestamp": datetime.now().isoformat(),
             "invoice_token": payload_dict.get("invoice_token", "N/A"),
             "user_id": payload_dict.get("user_id", 0),
-            "severity": "INFO"
+            "severity": "INFO",
         }
 
         # SEND TO OUTSYSTEMS
@@ -43,13 +46,14 @@ def relay_to_outsystems(ch, method, properties, body):
         print(f" [FAILED] Could not process message: {e}")
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
+
 # CONNECT TO RABBITMQ — retry until ready (RabbitMQ can be slow to start)
 # 'localhost' works for local testing, 'rabbitmq' works for docker
 MAX_RETRIES = 15
 RETRY_DELAY = 5  # seconds
 for attempt in range(1, MAX_RETRIES + 1):
     try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host="rabbitmq"))
         print(f" [*] Connected to RabbitMQ on attempt {attempt}")
         break
     except pika.exceptions.AMQPConnectionError as e:
@@ -60,26 +64,26 @@ for attempt in range(1, MAX_RETRIES + 1):
 channel = connection.channel()
 
 # declare the exchange
-channel.exchange_declare(exchange='invoiceflow_events', exchange_type='topic', durable=True)
+channel.exchange_declare(exchange="invoiceflow_events", exchange_type="topic", durable=True)
 
 # declare the DLQ first so it exists before the main queue references it
-channel.queue_declare(queue='outsystems_audit_queue.dlq', durable=True)
+channel.queue_declare(queue="outsystems_audit_queue.dlq", durable=True)
 
 # create the main bridge queue with dead-letter routing to the DLQ
 result = channel.queue_declare(
-    queue='outsystems_audit_queue',
+    queue="outsystems_audit_queue",
     durable=True,
     arguments={
-        'x-dead-letter-exchange': '',           # default exchange (direct)
-        'x-dead-letter-routing-key': 'outsystems_audit_queue.dlq',
-    }
+        "x-dead-letter-exchange": "",  # default exchange (direct)
+        "x-dead-letter-routing-key": "outsystems_audit_queue.dlq",
+    },
 )
 queue_name = result.method.queue
 
 # bind the queue to everything
-channel.queue_bind(exchange='invoiceflow_events', queue=queue_name, routing_key='#')
+channel.queue_bind(exchange="invoiceflow_events", queue=queue_name, routing_key="#")
 
-print(' [*] Bridge is active. Listening for RabbitMQ events. To exit press CTRL+C')
+print(" [*] Bridge is active. Listening for RabbitMQ events. To exit press CTRL+C")
 
 channel.basic_consume(queue=queue_name, on_message_callback=relay_to_outsystems, auto_ack=False)
 channel.start_consuming()

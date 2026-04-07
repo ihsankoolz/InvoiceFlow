@@ -77,7 +77,7 @@ async def list_invoice(
     minimum_bid: float = Form(...),
     due_date: str = Form(...),
     bid_period_hours: float = Form(48),
-    urgency_level: str = Form('MEDIUM'),
+    urgency_level: str = Form("MEDIUM"),
     pdf: UploadFile = File(...),
 ):
     orchestrator = InvoiceOrchestrator(

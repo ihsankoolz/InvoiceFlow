@@ -61,6 +61,7 @@ message GetLoanRequest {
 message UpdateLoanStatusRequest {
     string loan_id = 1;
     string status = 2;
+    string grace_end = 3;
 }
 
 message EscrowResponse {
@@ -78,6 +79,7 @@ message LoanResponse {
     int32 seller_id = 6;
     string invoice_token = 7;
     string bid_amount = 8;
+    string grace_end = 9;
 }
 
 message TransferResponse {

@@ -39,7 +39,7 @@ async def main():
         print(f"Workflow completed: {result}")
     except Exception as e:
         cause = e
-        while hasattr(cause, '__cause__') and cause.__cause__:
+        while hasattr(cause, "__cause__") and cause.__cause__:
             cause = cause.__cause__
         print(f"Workflow FAILED: {type(cause).__name__}: {cause}")
 

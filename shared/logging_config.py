@@ -5,6 +5,7 @@ import sys
 
 try:
     import structlog
+
     _HAS_STRUCTLOG = True
 except ImportError:
     _HAS_STRUCTLOG = False

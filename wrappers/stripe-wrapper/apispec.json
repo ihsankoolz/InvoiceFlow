@@ -1,0 +1,208 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Stripe Wrapper",
+    "description": "Wraps the Stripe API for creating hosted checkout sessions. Called by Bidding Orchestrator (wallet top-up) and Loan Orchestrator (loan repayment). Outbound only — never receives webhooks directly.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Endpoint that serves Prometheus metrics.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/create-checkout-session": {
+      "post": {
+        "tags": [
+          "Stripe"
+        ],
+        "summary": "Create Stripe Checkout Session",
+        "description": "Create a Stripe Checkout Session for wallet top-up or loan repayment.\n\n- type=wallet_topup: called by Bidding Orchestrator at step A4 (Scenario 2A)\n- type=loan_repayment: called by Loan Orchestrator at step B5 (Scenario 3 repayment)\n\nReturns a checkout_url the frontend redirects the user to.\nThe session expires after 30 minutes.",
+        "operationId": "create_checkout_session_create_checkout_session_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CheckoutRequest": {
+        "properties": {
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "wallet_topup",
+              "loan_repayment"
+            ],
+            "title": "Type"
+          },
+          "loan_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loan Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount",
+          "user_id",
+          "type"
+        ],
+        "title": "CheckoutRequest"
+      },
+      "CheckoutResponse": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "session_id"
+        ],
+        "title": "CheckoutResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Stripe",
+      "description": "Create Stripe Checkout Sessions"
+    },
+    {
+      "name": "Health",
+      "description": "Health check"
+    }
+  ]
+}

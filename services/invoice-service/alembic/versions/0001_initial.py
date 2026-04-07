@@ -5,6 +5,7 @@ Revises:
 Create Date: 2026-04-01 00:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -17,6 +18,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.dialect.has_table(bind, "invoices"):
+        return  # Table already exists (created by init.sql) — skip.
+
     op.create_table(
         "invoices",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),

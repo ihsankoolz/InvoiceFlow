@@ -24,11 +24,17 @@ import pytest
 # ---------------------------------------------------------------------------
 
 _STUBBED_MODS = [
-    "grpc", "tenacity",
-    "clients", "clients.grpc_client", "clients.http_client",
-    "activities", "activities.payment_activities",
-    "activities.invoice_activities", "activities.marketplace_activities",
-    "activities.rabbitmq_activities", "activities.bidding_activities",
+    "grpc",
+    "tenacity",
+    "clients",
+    "clients.grpc_client",
+    "clients.http_client",
+    "activities",
+    "activities.payment_activities",
+    "activities.invoice_activities",
+    "activities.marketplace_activities",
+    "activities.rabbitmq_activities",
+    "activities.bidding_activities",
 ]
 _previously_present = {m for m in _STUBBED_MODS if m in sys.modules}
 for _mod in _STUBBED_MODS:
@@ -62,8 +68,8 @@ else:
 
 INVOICE_TOKEN = "INV-TEST-001"
 SELLER_ID = 10
-INVESTOR_A = 1   # winner (highest bid)
-INVESTOR_B = 2   # loser
+INVESTOR_A = 1  # winner (highest bid)
+INVESTOR_B = 2  # loser
 
 _INVOICE = {
     "invoice_token": INVOICE_TOKEN,
@@ -80,6 +86,7 @@ _OFFER_B = {"id": 2, "investor_id": INVESTOR_B, "bid_amount": 3000.0, "status": 
 # ---------------------------------------------------------------------------
 # Mock builder
 # ---------------------------------------------------------------------------
+
 
 def _build_mock(offers: list):
     """
@@ -129,6 +136,7 @@ def _build_mock(offers: list):
 # Test 1: Zero bids — auction.expired, no settlement
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_zero_bids_publishes_auction_expired():
     """No bids → invoice set to EXPIRED, auction.expired published, financial settlement never runs."""
@@ -150,7 +158,9 @@ async def test_zero_bids_publishes_auction_expired():
 
     # Financial settlement must not run
     settlement_names = {
-        "convert_escrow_to_loan", "create_loan", "release_funds_to_seller",
+        "convert_escrow_to_loan",
+        "create_loan",
+        "release_funds_to_seller",
         "accept_offer",
     }
     called_names = {name for name, _ in activity_calls}
@@ -161,6 +171,7 @@ async def test_zero_bids_publishes_auction_expired():
 # ---------------------------------------------------------------------------
 # Test 2: Winner + loser — 10-step settlement in correct order
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_settlement_executes_in_correct_order():
@@ -202,6 +213,7 @@ async def test_settlement_executes_in_correct_order():
 # ---------------------------------------------------------------------------
 # Test 3: Loser escrow released, winner escrow not released
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_loser_escrow_released_winner_escrow_not_released():

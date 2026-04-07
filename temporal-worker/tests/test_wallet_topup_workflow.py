@@ -13,10 +13,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 _STUBBED_MODS = [
-    "grpc", "tenacity",
-    "clients", "clients.grpc_client", "clients.http_client",
-    "activities", "activities.payment_activities",
-    "activities.invoice_activities", "activities.rabbitmq_activities",
+    "grpc",
+    "tenacity",
+    "clients",
+    "clients.grpc_client",
+    "clients.http_client",
+    "activities",
+    "activities.payment_activities",
+    "activities.invoice_activities",
+    "activities.rabbitmq_activities",
 ]
 _previously_present = {m for m in _STUBBED_MODS if m in sys.modules}
 for _mod in _STUBBED_MODS:
@@ -41,6 +46,7 @@ AMOUNT = 500.0
 # Mock builder
 # ---------------------------------------------------------------------------
 
+
 def _build_mock():
     activity_calls: list[tuple] = []
 
@@ -59,6 +65,7 @@ def _build_mock():
 # ---------------------------------------------------------------------------
 # Test 1: Happy path — all three steps execute
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_happy_path_executes_all_steps():
@@ -79,6 +86,7 @@ async def test_happy_path_executes_all_steps():
 # Test 2: credit_wallet called before publish_event
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_credit_before_publish():
     """Wallet is credited before event is published."""
@@ -95,6 +103,7 @@ async def test_credit_before_publish():
 # ---------------------------------------------------------------------------
 # Test 3: wallet.credited event payload
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_wallet_credited_event_payload():

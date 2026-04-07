@@ -72,7 +72,9 @@ class LoanOrchestrator:
         # ── Step 3: Publish loan.repaid event ─────────────────────────────
         # Consumers: Invoice Service, Payment Service, User Service, Notification Service
         seller = await self.http_client.get(f"{config.USER_SERVICE_URL}/users/{loan['seller_id']}")
-        investor = await self.http_client.get(f"{config.USER_SERVICE_URL}/users/{loan['investor_id']}")
+        investor = await self.http_client.get(
+            f"{config.USER_SERVICE_URL}/users/{loan['investor_id']}"
+        )
         await self.publisher.publish(
             "loan.repaid",
             {

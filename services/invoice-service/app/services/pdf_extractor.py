@@ -32,10 +32,7 @@ class PDFExtractor:
             for i, w in enumerate(words):
                 if w["text"].upper() == "BILL":
                     for j in range(i + 1, min(i + 3, len(words))):
-                        if (
-                            words[j]["text"].upper() == "TO"
-                            and abs(words[j]["top"] - w["top"]) < 5
-                        ):
+                        if words[j]["text"].upper() == "TO" and abs(words[j]["top"] - w["top"]) < 5:
                             bill_to_x = w["x0"]
                             bill_to_y = w["top"]
                             break
@@ -74,13 +71,16 @@ class PDFExtractor:
             # ── Due date ──────────────────────────────────────────────────────
             due_match = re.search(
                 r"Due\s+Date[:\s]*([\d]{1,2}\s+\w+\s+\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})",
-                full_text, re.IGNORECASE,
+                full_text,
+                re.IGNORECASE,
             )
             if due_match:
                 raw_date = due_match.group(1).strip()
                 for fmt in ("%d %b %Y", "%d %B %Y", "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
                     try:
-                        extracted["due_date"] = datetime.strptime(raw_date, fmt).strftime("%Y-%m-%d")
+                        extracted["due_date"] = datetime.strptime(raw_date, fmt).strftime(
+                            "%Y-%m-%d"
+                        )
                         break
                     except ValueError:
                         continue
@@ -90,7 +90,8 @@ class PDFExtractor:
             if not amount_match:
                 amount_match = re.search(
                     r"(?:Total\s+Due|Amount\s+Due|Grand\s+Total|Total\s+Amount|Total)[^\d]*([\d,]+\.?\d*)",
-                    full_text, re.IGNORECASE,
+                    full_text,
+                    re.IGNORECASE,
                 )
             if amount_match:
                 try:

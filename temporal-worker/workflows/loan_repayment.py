@@ -50,12 +50,8 @@ class LoanRepaymentWorkflow:
         loan = await workflow.execute_activity(get_loan_grpc, args=[loan_id], **act_opts)
 
         # Step 4: Fetch user details for notification events
-        seller = await workflow.execute_activity(
-            get_user, args=[loan["seller_id"]], **act_opts
-        )
-        investor = await workflow.execute_activity(
-            get_user, args=[loan["investor_id"]], **act_opts
-        )
+        seller = await workflow.execute_activity(get_user, args=[loan["seller_id"]], **act_opts)
+        investor = await workflow.execute_activity(get_user, args=[loan["investor_id"]], **act_opts)
 
         # Step 5: Publish loan.repaid — consumed by invoice-service, notification-service
         await workflow.execute_activity(

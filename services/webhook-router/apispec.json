@@ -1,0 +1,82 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Webhook Router",
+    "description": "Receives Stripe webhook events via KONG/Nginx, verifies HMAC-SHA256 signature, and publishes normalised events to RabbitMQ.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Endpoint that serves Prometheus metrics.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks/stripe": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Handle Stripe Webhook",
+        "description": "Verify and route incoming Stripe webhook events to RabbitMQ.\n\nSupported events:\n  checkout.session.completed (type=wallet_topup)  → stripe.checkout.completed\n  checkout.session.completed (type=loan_repayment) → stripe.checkout.completed",
+        "operationId": "handle_stripe_webhook_api_webhooks_stripe_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Webhooks",
+      "description": "Stripe inbound webhook endpoint"
+    },
+    {
+      "name": "Health",
+      "description": "Health check"
+    }
+  ]
+}

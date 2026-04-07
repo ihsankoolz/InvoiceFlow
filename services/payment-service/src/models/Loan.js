@@ -49,6 +49,10 @@ const Loan = sequelize.define('Loan', {
     type: DataTypes.DATE,
     allowNull: false,
   },
+  grace_end: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   tableName: 'loans',
   timestamps: true,

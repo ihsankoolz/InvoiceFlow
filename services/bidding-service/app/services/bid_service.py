@@ -8,7 +8,6 @@ from app.schemas.bid import BidCreate
 
 
 class BidService:
-
     def __init__(self, db: Session):
         self.db = db
 
@@ -31,7 +30,10 @@ class BidService:
         )
         if existing:
             if existing.status == "PENDING":
-                raise HTTPException(status_code=409, detail="You already have an active bid on this invoice. Only one bid per investor is allowed.")
+                raise HTTPException(
+                    status_code=409,
+                    detail="You already have an active bid on this invoice. Only one bid per investor is allowed.",
+                )
             # Stale CANCELLED record (from a previous failed escrow) — remove it
             # so the unique constraint doesn't block the retry.
             self.db.delete(existing)
@@ -76,10 +78,7 @@ class BidService:
     def get_bids_for_investor(self, investor_id: int) -> List[Bid]:
         """Return all bids placed by a specific investor, newest first."""
         return (
-            self.db.query(Bid)
-            .filter(Bid.investor_id == investor_id)
-            .order_by(Bid.id.desc())
-            .all()
+            self.db.query(Bid).filter(Bid.investor_id == investor_id).order_by(Bid.id.desc()).all()
         )
 
     def get_bid(self, bid_id: int) -> Bid:

@@ -25,7 +25,9 @@ def _listing_to_dict(listing: Listing) -> dict:
         "invoice_token": listing.invoice_token,
         "seller_id": listing.seller_id,
         "debtor_uen": listing.debtor_uen,
-        "face_value": float(listing.face_value) if listing.face_value is not None else float(listing.amount),
+        "face_value": float(listing.face_value)
+        if listing.face_value is not None
+        else float(listing.amount),
         "minimum_bid": float(listing.minimum_bid),
         "current_bid": float(listing.current_bid) if listing.current_bid is not None else None,
         "bid_count": listing.bid_count or 0,
@@ -45,9 +47,11 @@ def get_listings(
     db: Session = Depends(get_db),
 ):
     """
-    Returns active marketplace listings from the read model.
-    Filters: urgency_level, search (matches invoice_token, debtor_name, debtor_uen), seller_id.
+    Returns active auction listings from the read model for the frontend marketplace page.
+
     Single DB query — no calls to invoice-service or bidding-service.
+    Filters: urgency_level, search (invoice_token / debtor_name / debtor_uen), seller_id.
+    Only returns listings with status=ACTIVE and deadline in the future.
     """
     now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
     query = db.query(Listing).filter(Listing.status == "ACTIVE", Listing.deadline > now_utc)
@@ -72,6 +76,12 @@ def get_listings(
 
 @router.get("/api/listings/{listing_id}", summary="Get a single listing")
 def get_listing(listing_id: int, db: Session = Depends(get_db)):
+    """
+    Returns a single active listing by ID.
+
+    Called by Bidding Orchestrator at step B11 to check the anti-snipe window.
+    Returns 404 if not found.
+    """
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
         raise HTTPException(status_code=404, detail="Listing not found")

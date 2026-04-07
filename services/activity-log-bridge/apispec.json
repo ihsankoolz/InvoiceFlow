@@ -1,0 +1,27 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Activity Log Bridge",
+    "description": "Pure RabbitMQ consumer. Subscribes to all events on the invoiceflow_events exchange (routing key #) and relays them to the OutSystems Activity Log REST API over HTTPS. No HTTP endpoints exposed.",
+    "version": "1.0.0"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "EventPayload": {
+        "type": "object",
+        "properties": {
+          "event_type": {"type": "string", "example": "invoice.listed"},
+          "payload": {"type": "string", "description": "JSON-serialised event body"},
+          "source_service": {"type": "string", "example": "RabbitMQ_Bridge"},
+          "timestamp": {"type": "string", "format": "date-time"},
+          "invoice_token": {"type": "string"},
+          "user_id": {"type": "integer"},
+          "severity": {"type": "string", "example": "INFO"}
+        }
+      }
+    }
+  },
+  "x-consumed-events": ["invoice.listed", "invoice.rejected", "bid.placed", "bid.outbid", "auction.closed.winner", "wallet.credited", "loan.due", "loan.overdue", "loan.repaid"],
+  "x-relay-target": "https://personal-xowqm3b2.outsystemscloud.com/ActivityLog/rest/ActivityLogAPI/LogEvent"
+}

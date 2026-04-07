@@ -9,7 +9,11 @@ import imgAcra      from '../assets/images/image 9.png'
 import imgInvestor  from '../assets/images/image 10.png'
 import imgIphone    from '../assets/images/Blue.png'
 import iconArrow    from '../assets/icons/7.svg'
-import cheegyat from '../assets/images/cheegyat.png'
+import cheegyat  from '../assets/images/cheegyat.png'
+import imgKeene   from '../assets/images/keene.jpg'
+import imgIhsan   from '../assets/images/ihsan.png'
+import imgAmanda  from '../assets/images/amanda.jpg'
+import imgMichelle from '../assets/images/michelle.jpeg'
 
 /* ── Animation helpers ── */
 function useInView(threshold = 0.08) {
@@ -83,11 +87,11 @@ const INVESTOR_STEPS = [
 ]
 
 const TEAM = [
-  { name: 'Keene',      photo: null },
-  { name: 'Ihsan',      photo: null },
-  { name: 'Amanda',     photo: null },
+  { name: 'Keene',      photo: imgKeene },
+  { name: 'Ihsan',      photo: imgIhsan },
+  { name: 'Amanda',     photo: imgAmanda },
   { name: 'Gyaltsen',   photo: cheegyat, photoStyle: { objectPosition: 'right center' }, zoom: 1.1 },
-  { name: 'Michelle',   photo: null },
+  { name: 'Michelle',   photo: imgMichelle },
   { name: 'Cheng Lin',  photo: null },
 ]
 

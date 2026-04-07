@@ -32,6 +32,7 @@ CREATE TABLE loans (
     penalty_amount  DECIMAL(12,2) DEFAULT 0.00,
     status          ENUM('ACTIVE', 'DUE', 'REPAID', 'OVERDUE') DEFAULT 'ACTIVE',
     due_date        DATETIME NOT NULL,
+    grace_end       DATETIME,
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

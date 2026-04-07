@@ -18,9 +18,7 @@ async def _fetch_listing_by_token(token: str) -> dict | None:
     """Fetch a marketplace listing by invoice_token; returns None on any error."""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            r = await client.get(
-                f"{config.MARKETPLACE_SERVICE_URL}/listings/by-token/{token}"
-            )
+            r = await client.get(f"{config.MARKETPLACE_SERVICE_URL}/listings/by-token/{token}")
             if r.status_code == 200:
                 return r.json()
     except Exception:
@@ -32,9 +30,7 @@ async def _fetch_invoice_by_token(token: str) -> dict | None:
     """Fetch invoice data directly; used as fallback when listing is delisted."""
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            r = await client.get(
-                f"{config.INVOICE_SERVICE_URL}/invoices/{token}"
-            )
+            r = await client.get(f"{config.INVOICE_SERVICE_URL}/invoices/{token}")
             if r.status_code == 200:
                 return r.json()
     except Exception:
@@ -124,14 +120,16 @@ async def list_bids(
             deadline = None
             listing_id = None
 
-        enriched.append({
-            **bid,
-            "amount": bid.get("bid_amount"),
-            "face_value": face_value,
-            "deadline": deadline,
-            "listing_id": listing_id,
-            "is_leading": is_leading,
-        })
+        enriched.append(
+            {
+                **bid,
+                "amount": bid.get("bid_amount"),
+                "face_value": face_value,
+                "deadline": deadline,
+                "listing_id": listing_id,
+                "is_leading": is_leading,
+            }
+        )
 
     return enriched
 

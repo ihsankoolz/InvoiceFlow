@@ -31,11 +31,17 @@ import pytest
 # ---------------------------------------------------------------------------
 
 _STUBBED_MODS = [
-    "grpc", "tenacity",
-    "clients", "clients.grpc_client", "clients.http_client",
-    "activities", "activities.payment_activities",
-    "activities.invoice_activities", "activities.marketplace_activities",
-    "activities.rabbitmq_activities", "activities.bidding_activities",
+    "grpc",
+    "tenacity",
+    "clients",
+    "clients.grpc_client",
+    "clients.http_client",
+    "activities",
+    "activities.payment_activities",
+    "activities.invoice_activities",
+    "activities.marketplace_activities",
+    "activities.rabbitmq_activities",
+    "activities.bidding_activities",
 ]
 _previously_present = {m for m in _STUBBED_MODS if m in sys.modules}
 for _mod in _STUBBED_MODS:
@@ -74,7 +80,13 @@ INVESTOR_A = 1
 INVESTOR_B = 2
 LOAN_ID = "loan-demo-123"
 
-_INVOICE = {"invoice_token": INVOICE_TOKEN, "seller_id": SELLER_ID, "status": "LISTED", "due_date": "2030-01-01", "amount": 7000.0}
+_INVOICE = {
+    "invoice_token": INVOICE_TOKEN,
+    "seller_id": SELLER_ID,
+    "status": "LISTED",
+    "due_date": "2030-01-01",
+    "amount": 7000.0,
+}
 _LOAN = {"loan_id": LOAN_ID, "due_date": "2030-01-01", "bid_amount": 5000.0}
 _OFFER_A = {"id": 1, "investor_id": INVESTOR_A, "bid_amount": 5000.0, "status": "PENDING"}
 _OFFER_B = {"id": 2, "investor_id": INVESTOR_B, "bid_amount": 3000.0, "status": "PENDING"}
@@ -96,6 +108,7 @@ def _demo_config(auction_secs=90, loan_secs=90, repayment_secs=60, anti_snipe_se
 # ---------------------------------------------------------------------------
 # Auction workflow helpers
 # ---------------------------------------------------------------------------
+
 
 def _auction_wf_mock(offers):
     """Build a workflow mock for AuctionCloseWorkflow (same pattern as main test file)."""
@@ -135,6 +148,7 @@ def _auction_wf_mock(offers):
 # Loan maturity helpers
 # ---------------------------------------------------------------------------
 
+
 def _loan_wf_mock(loan_status="DUE"):
     now_dt = datetime.now(timezone.utc)
     activity_calls: list[tuple] = []
@@ -170,6 +184,7 @@ def _loan_wf_mock(loan_status="DUE"):
 # ===========================================================================
 # AUCTION — Demo Mode Tests
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_auction_demo_settlement_executes_correctly():
@@ -232,6 +247,7 @@ async def test_auction_demo_zero_bids_expires():
 # ===========================================================================
 # LOAN MATURITY — Demo Mode Tests
 # ===========================================================================
+
 
 @pytest.mark.asyncio
 async def test_loan_demo_uses_short_repayment_window():
