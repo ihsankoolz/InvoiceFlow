@@ -46,7 +46,7 @@ class TemporalClient:
             task_queue=task_queue,
         )
 
-    async def signal_workflow(self, workflow_id: str, signal_name: str):
+    async def signal_workflow(self, workflow_id: str, signal_name: str, payload=None):
         """
         Signal a running Temporal workflow.
 
@@ -54,4 +54,7 @@ class TemporalClient:
         """
         client = await self._get_client()
         handle = client.get_workflow_handle(workflow_id)
-        await handle.signal(signal_name)
+        if payload is not None:
+            await handle.signal(signal_name, payload)
+        else:
+            await handle.signal(signal_name)

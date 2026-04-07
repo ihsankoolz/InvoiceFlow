@@ -16,6 +16,6 @@ ANTI_SNIPE_SECONDS = int(os.getenv("ANTI_SNIPE_SECONDS", "300"))
 
 # Demo mode — speeds up all long-running timers for live presentations
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
-DEMO_AUCTION_SECONDS = int(os.getenv("DEMO_AUCTION_SECONDS", "90"))
+# DEMO_AUCTION_SECONDS = int(os.getenv("DEMO_AUCTION_SECONDS", "90"))  # unused — workflow timer is driven by bid_period_hours from request
 DEMO_LOAN_MATURITY_SECONDS = int(os.getenv("DEMO_LOAN_MATURITY_SECONDS", "90"))
 DEMO_REPAYMENT_WINDOW_SECONDS = int(os.getenv("DEMO_REPAYMENT_WINDOW_SECONDS", "60"))
