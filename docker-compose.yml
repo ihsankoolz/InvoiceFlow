@@ -690,9 +690,8 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - certbot-webroot:/var/www/certbot:ro
-      - /etc/letsencrypt/live/invoiceflowsga.duckdns.org/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
-      - /etc/letsencrypt/live/invoiceflowsga.duckdns.org/privkey.pem:/etc/nginx/certs/privkey.pem:ro
+      - /etc/letsencrypt/live/invoiceflow.bid/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
+      - /etc/letsencrypt/live/invoiceflow.bid/privkey.pem:/etc/nginx/certs/privkey.pem:ro
       - /etc/letsencrypt/archive:/etc/letsencrypt/archive:ro
     depends_on:
       - frontend
