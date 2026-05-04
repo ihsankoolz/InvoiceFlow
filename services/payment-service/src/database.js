@@ -24,7 +24,7 @@ async function initDatabase() {
   try {
     await sequelize.authenticate();
     console.log('[payment-service] Database connection established.');
-    await sequelize.sync({ alter: config.nodeEnv === 'development' });
+    await sequelize.sync();
     console.log('[payment-service] Models synchronised.');
   } catch (err) {
     console.error('[payment-service] Unable to connect to database:', err.message);
